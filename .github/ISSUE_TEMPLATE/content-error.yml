@@ -1,0 +1,58 @@
+name: Report a factual error
+description: The handbook says something that is wrong. This is the most valuable report you can file — the site's promise is being right.
+title: "[Error]: "
+labels: ["error"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for catching this. Factual errors are fixed with priority over everything else.
+        Please be specific — verbatim quotes and evidence let us fix it fast and credit you in the changelog.
+  - type: input
+    id: page
+    attributes:
+      label: Page URL or path
+      description: The handbook page where the error appears.
+      placeholder: https://handbook.80x.ai/blocks/send-email/ or src/content/docs/blocks/send-email.mdx
+    validations:
+      required: true
+  - type: textarea
+    id: what-page-says
+    attributes:
+      label: What the page says (verbatim)
+      description: Copy the exact sentence or passage that is wrong. Quote it, don't paraphrase.
+      placeholder: "\"The Send email block retries failed sends three times.\""
+    validations:
+      required: true
+  - type: textarea
+    id: what-is-true
+    attributes:
+      label: What is actually true
+      description: Describe the correct behavior as precisely as you can.
+      placeholder: "Failed sends are not retried; the run moves to the error path immediately."
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: A link to an official Attio source (docs, changelog, support reply), or a screenshot from your workspace with the date you observed the behavior. Attio iterates fast — dated evidence matters.
+      placeholder: |
+        - https://attio.com/help/... (link)
+        - Screenshot attached, observed 2026-06-10 in a Pro-plan workspace
+    validations:
+      required: true
+  - type: dropdown
+    id: plan
+    attributes:
+      label: Attio plan (if relevant)
+      description: Some workflow behavior differs by plan. Pick one if you know which plan you observed this on.
+      options:
+        - Not sure / not relevant
+        - Free
+        - Plus
+        - Pro
+        - Enterprise
+      default: 0
+    validations:
+      required: false

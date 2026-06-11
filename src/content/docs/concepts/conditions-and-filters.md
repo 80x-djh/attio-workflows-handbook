@@ -1,6 +1,7 @@
 ---
 title: Conditions & filters
 description: The complete guide to Attio workflow condition logic — operators by attribute type, and/or grouping, nested condition groups, and Filter vs If vs Switch.
+page-type: concept
 ---
 
 Three blocks make decisions in a workflow — [Filter](/reference/conditions/filter/), [If](/reference/conditions/if/), and [Switch](/reference/conditions/switch/) — and they all share the same underlying condition system. Master the condition system once and all three become trivial. All three are **free** in the new engine, so use them liberally.

@@ -1,6 +1,7 @@
 ---
 title: Build your first workflow
 description: A complete walkthrough — build, test, and publish a deal-stage Slack alert workflow in about ten minutes, and learn the canvas, variables, and publishing model on the way.
+page-type: guide
 ---
 
 We'll build the classic first workflow: **when a deal moves to a new stage, post an alert with the deal's details**. It's simple, it touches every fundamental (trigger, filter, variables, an action, publishing), and it's genuinely useful.

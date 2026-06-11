@@ -1,0 +1,48 @@
+name: Request a GTM recipe
+description: Suggest a real-world workflow recipe you'd like to see documented end to end.
+title: "[Recipe]: "
+labels: ["recipe"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Recipes are complete, copyable workflows for real go-to-market jobs. The best requests describe a
+        business outcome, not a feature — we'll work out the blocks.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Business outcome
+      description: What should be true after this workflow runs? Describe the result, not the mechanism.
+      placeholder: "Every inbound demo request gets a personalized reply within 5 minutes and a deal record with the right owner."
+    validations:
+      required: true
+  - type: textarea
+    id: trigger
+    attributes:
+      label: Trigger event
+      description: What kicks the workflow off? A record change, a form submission, an email, a schedule, a webhook from another tool, etc.
+      placeholder: "A new person record is created from the website demo form."
+    validations:
+      required: true
+  - type: textarea
+    id: systems
+    attributes:
+      label: Systems involved
+      description: Every tool the recipe needs to touch besides Attio.
+      placeholder: "Slack, Gmail, Clearbit (enrichment), Cal.com"
+    validations:
+      required: true
+  - type: dropdown
+    id: plan
+    attributes:
+      label: Attio plan tier
+      description: The plan the recipe needs to work on. Block availability differs by plan, so this shapes which blocks we can use.
+      options:
+        - Any / not sure
+        - Free
+        - Plus
+        - Pro
+        - Enterprise
+      default: 0
+    validations:
+      required: false

@@ -1,6 +1,7 @@
 ---
 title: Permissions & workflow access
 description: Workflows don't get write access to objects by default, access levels only escalate, and agents run with someone's credentials — the three permission models that govern Attio workflows.
+page-type: concept
 ---
 
 Three separate permission systems touch every workflow you build. Knowing which one is biting you turns a confusing failure into a two-minute fix.

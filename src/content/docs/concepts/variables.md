@@ -1,6 +1,7 @@
 ---
 title: Variables & data passing
 description: How data flows between Attio workflow blocks — variables, multiple data sources, fallbacks, and the wiring mistakes that cause most broken workflows.
+page-type: concept
 ---
 
 Blocks don't share memory. The *only* way data moves through a workflow is **outputs → variables → inputs**: a block produces outputs during a run, and downstream blocks reference them as variables. Almost every "my workflow is broken" ends up being a wiring problem here, so it's worth understanding properly.

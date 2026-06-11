@@ -19,3 +19,11 @@ pnpm-debug.log*
 
 # macOS-specific files
 .DS_Store
+
+# internal strategy — never publish
+PROMPT.md
+PLAYBOOK.md
+research/
+
+# internal outreach drafts — never publish
+outreach/

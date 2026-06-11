@@ -1,49 +1,36 @@
-# Starlight Starter Kit: Basics
+# Attio Workflows Handbook
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+The open-source, GTM-engineering handbook for Attio's new Workflows engine.
 
-```
-npm create astro@latest -- --template starlight
-```
+This site is built with Astro and Starlight. It is designed to be useful for humans, search engines, and AI assistants:
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+- Structured docs pages for core concepts, block reference, recipes, migration, troubleshooting, and paid implementation offers.
+- `starlight-llms-txt` enabled so assistants can ingest a clean markdown index at `/llms.txt`.
+- Source-backed explanations that point readers back to the official Attio Help Center.
+- Productized services page so the handbook can convert launch traffic into paid audits, builds, and MRR.
 
-## 🚀 Project Structure
+## Local Development
 
-Inside of your Astro + Starlight project, you'll see the following folders and files:
-
-```
-.
-├── public/
-├── src/
-│   ├── assets/
-│   ├── content/
-│   │   └── docs/
-│   └── content.config.ts
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
+```bash
+npm install
+npm run dev
 ```
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+## Production Build
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+```bash
+npm run build
+npm run preview
+```
 
-Static assets, like favicons, can be placed in the `public/` directory.
+## Contributing
 
-## 🧞 Commands
+Corrections, verified gotchas, and recipes from real workspaces are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) and [STYLE.md](STYLE.md). Every behavioral or cost claim needs an official Attio source or a "verified in workspace" note.
 
-All commands are run from the root of the project, from a terminal:
+## License
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+Prose is CC BY-NC-SA 4.0; code snippets and scripts are MIT. See [LICENSE.md](LICENSE.md).
 
-## 👀 Want to learn more?
+## Disclaimer
 
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+This is a community resource. It is not affiliated with or endorsed by Attio Ltd. Always verify high-risk implementation details against the official Attio documentation and your own workspace behavior before publishing production workflows.

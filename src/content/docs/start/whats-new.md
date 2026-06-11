@@ -1,9 +1,10 @@
 ---
 title: What's new in the 2026 Workflows engine
 description: Attio replaced its workflows engine in June 2026 — AI agent blocks, custom JavaScript, MCP access, multi-trigger workflows, and a much cheaper credit model. Here's the complete rundown.
+page-type: guide
 ---
 
-In June 2026 Attio shipped a new Workflows engine and deprecated the old one — you can no longer create legacy workflows, only edit existing ones. This isn't a facelift; it's a different product with a different pricing model. Here's what actually changed and why it matters.
+In June 2026 Attio shipped a new Workflows engine and closed the old one to new creation — you can no longer create legacy workflows; existing ones keep running, and Attio says sunset notice will come "well in advance." This isn't a facelift; it's a different product with a different pricing model. Here's what actually changed and why it matters.
 
 ## The headline changes
 
@@ -17,22 +18,19 @@ The biggest shift: AI agents run *inside* workflows.
 
 ### 2. Custom code, natively
 
-The **[Execute code](/reference/calculations/execute-code/)** block runs arbitrary JavaScript as a step — your `main(inputs)` function's return value becomes the block's output. Data transformations, custom scoring, payload shaping: things that used to require an external webhook round-trip now run inline. 100-second timeout.
+The **[Execute code](/reference/calculations/execute-code/)** block runs arbitrary JavaScript as a step — you export a `main(inputs)` function and its return value becomes the block's output. Data transformations, custom scoring, payload shaping: things that used to require an external webhook round-trip now run inline. 100-second timeout.
 
 ### 3. Most blocks are now free
 
-The credit model was rebuilt in your favor:
+The credit model was rebuilt in your favor. Triggers, logic, and data lookups are free. Credits are only consumed when a block writes data, sends or receives something externally, or uses AI.
 
 | What | Legacy | New engine |
 | --- | --- | --- |
-| Triggers | Free | Free |
-| Logic (If, Switch, Filter, Delay, Loop, Round robin…) | 1 credit | **Free** |
-| Lookups (Find records, Formula, Aggregate…) | 1 credit | **Free** |
-| Writes (create/update/delete records, tasks) | 1 credit | 1 credit |
-| External (Slack, HTTP, sequences) | 1 credit | 1 credit |
+| Logic, lookups, delays | 1 credit | **Free** |
+| Writes & external sends (Slack, HTTP, sequences) | 1 credit | 1 credit |
 | AI blocks | 1–10 credits fixed | **Token-based (variable)** |
 
-Read-heavy, logic-heavy workflows got dramatically cheaper. AI-heavy workflows became variable-cost — see [credits & pricing](/start/credits-and-pricing/) for how to reason about that.
+Read-heavy, logic-heavy workflows got dramatically cheaper. AI-heavy workflows became variable-cost — see [credits & pricing](/start/credits-and-pricing/) for the full per-block table and how to reason about variable cost.
 
 ### 4. Builder quality-of-life
 
@@ -44,7 +42,7 @@ Read-heavy, logic-heavy workflows got dramatically cheaper. AI-heavy workflows b
 
 ## What this means in practice
 
-**If you have legacy workflows running:** they keep working for now, and Attio has committed to notice before sunsetting them — but new capability and the cheaper pricing only exist in the new engine. Several blocks were renamed and a few behave differently. Follow the [migration guide](/migration/) and check the [block changes reference](/migration/block-changes/) before you rebuild.
+**If you have legacy workflows running:** they keep running, and Attio says sunset notice will come "well in advance" — but new capability and the cheaper pricing only exist in the new engine. Several blocks were renamed and a few behave differently. Follow the [migration guide](/migration/) and check the [block changes reference](/migration/block-changes/) before you rebuild.
 
 **If you're starting fresh:** ignore legacy entirely. Learn the new engine's [block library](/reference/) and the handful of [core concepts](/concepts/triggers/) that everything else hangs off.
 

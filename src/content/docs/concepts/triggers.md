@@ -1,6 +1,7 @@
 ---
 title: Choosing the right trigger
 description: A decision guide for Attio workflow triggers — record vs list vs data triggers, why Attribute value changed beats Record updated, and when to reach for schedules, webhooks, or manual commands.
+page-type: concept
 ---
 
 Picking the wrong trigger is the most common way workflows fail silently — they don't error, they just don't fire when you expected. This page is the decision guide; each trigger's full reference lives in the [block library](/reference/).

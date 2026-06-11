@@ -1,6 +1,7 @@
 ---
 title: What are Attio Workflows?
 description: Attio Workflows are event-driven automations that run inside your CRM — triggers start them, step blocks do the work. Here's the mental model that makes everything else click.
+page-type: guide
 ---
 
 An Attio workflow is an automation that lives inside your CRM: **when something happens, do these things**. A deal moves stage → notify the channel. A form submits → create the lead, enrich it, route it. Every Monday → sweep the pipeline for stale deals and assign follow-ups.

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Hire Dan / paid help
+    url: https://handbook.80x.ai/pro/
+    about: Need a workflow built, a workspace audited, or hands-on Attio help? See paid offerings.
+  - name: General questions
+    url: mailto:dan@80x.ai
+    about: Anything that isn't an error report, a documentation gap, or a recipe request.

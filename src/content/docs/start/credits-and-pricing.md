@@ -1,13 +1,18 @@
 ---
 title: Credits & pricing explained
 description: How Attio workflow credits actually work in the new engine — what's free, what costs 1 credit, how token-based AI pricing behaves, and how to estimate a workflow's monthly cost before publishing.
+page-type: guide
 ---
 
 Workflows consume **workspace credits**. The new engine's pricing is genuinely simple once you see the pattern — but AI blocks introduced variable cost, and loops multiply everything. This page gives you the full picture, including the arithmetic to run before you publish.
 
+:::tip[One-page version]
+Grab the [credit-model cheat sheet (PDF)](/attio-credits-cheatsheet.pdf) — the full cost table, plan allowances, and worked examples on a single printable page.
+:::
+
 ## The one rule that explains everything
 
-> **Reading and thinking are free. Writing, talking to the outside world, and AI cost credits.**
+> **Triggers, logic, and data lookups are free. Credits are only consumed when a block writes data, sends or receives something externally, or uses AI.**
 
 | Category | Blocks | Cost |
 | --- | --- | --- |

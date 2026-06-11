@@ -1,6 +1,7 @@
 ---
 title: Loops & processing many records
 description: How the Loop block works in Attio workflows — iterating over Find results, relationship attributes, and multi-selects, with the credit math and the one-record default trap.
+page-type: concept
 ---
 
 Workflows process **one thing at a time** by default. The moment a block returns *many* things — Find results, a multi-reference relationship, a multi-select — you need a [Loop](/reference/utilities/loop/) to act on all of them. This page covers the patterns; the block's full spec is in the [reference](/reference/utilities/loop/).

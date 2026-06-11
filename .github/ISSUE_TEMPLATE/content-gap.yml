@@ -1,0 +1,34 @@
+name: Request missing documentation
+description: A block, feature, or scenario you expected the handbook to cover, but it doesn't.
+title: "[Gap]: "
+labels: ["gap"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gaps are how the handbook grows. Tell us what's missing and what you were actually trying to do —
+        the real task behind the question usually shapes a better page than the question alone.
+  - type: textarea
+    id: missing
+    attributes:
+      label: What block, feature, or scenario is missing?
+      description: Name the workflow block, Attio feature, or situation you couldn't find documented.
+      placeholder: "The 'Wait for condition' block — there's a page for 'Wait' but nothing on condition-based waits."
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: What were you trying to do?
+      description: The actual outcome you were after when you hit the gap. Include your setup if it matters (objects, integrations, plan).
+      placeholder: "Pause a workflow until a deal moves out of 'Diligence', then notify the partner channel in Slack."
+    validations:
+      required: true
+  - type: textarea
+    id: looked-first
+    attributes:
+      label: Where did you look first?
+      description: Which handbook pages, search terms, or other sources you tried before filing this. Helps us fix discoverability, not just add a page.
+      placeholder: "Searched the handbook for 'wait', read /blocks/wait/, also checked Attio's own help center."
+    validations:
+      required: true

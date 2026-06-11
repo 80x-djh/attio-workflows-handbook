@@ -1,6 +1,7 @@
 ---
 title: Runs, debugging & publishing
 description: The publish lifecycle, the run viewer, input/output tracing, retry-from-failed, and pause/cancel — how to operate Attio workflows like production software.
+page-type: concept
 ---
 
 A workflow is production software that edits your CRM. This page covers its operational surface: how versions go live, how to read a run, and how to recover when one fails.
