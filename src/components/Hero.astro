@@ -1,0 +1,88 @@
+---
+/**
+ * Custom paper hero for the Attio Workflows Handbook.
+ * Replaces Starlight's default splash hero with a warm, editorial,
+ * GTM Atlas-style composition: a mono-caps eyebrow, an argument-as-title
+ * headline, a one-line subhead, and accent CTAs. The landing card grid
+ * lives in the page body (index.mdx), below this hero.
+ */
+import { LinkButton } from '@astrojs/starlight/components';
+
+// Starlight's PAGE_TITLE_ID is the constant string '_top' (not exported publicly).
+const PAGE_TITLE_ID = '_top';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, actions = [] } = data.hero || {};
+
+// Optional eyebrow text from frontmatter (hero.eyebrow), with a sensible default.
+const eyebrow =
+  (data.hero as Record<string, unknown> | undefined)?.eyebrow ??
+  'The Attio Workflows Handbook';
+---
+
+<div class="atlas-hero">
+  <p class="eyebrow mono-caps">{eyebrow}</p>
+  <h1 id={PAGE_TITLE_ID} data-page-title set:html={title} />
+  {tagline && <p class="tagline" set:html={tagline} />}
+  {
+    actions.length > 0 && (
+      <div class="actions">
+        {actions.map(
+          ({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }) => (
+            <LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
+              {text}
+              {icon?.html && <Fragment set:html={icon.html} />}
+            </LinkButton>
+          )
+        )}
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .atlas-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: start;
+    gap: 1.1rem;
+    padding-block: clamp(2.5rem, calc(1rem + 7vmin), 6rem);
+    max-width: 46rem;
+  }
+
+  .eyebrow {
+    color: var(--sl-color-text-accent);
+    margin: 0;
+  }
+
+  .atlas-hero h1 {
+    font-family: var(--atlas-font-display);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.08;
+    color: var(--sl-color-white);
+    margin: 0;
+    font-size: clamp(2.25rem, calc(1.2rem + 4.5vw), 3.75rem);
+    text-wrap: balance;
+  }
+
+  .atlas-hero .tagline {
+    font-size: clamp(1.05rem, calc(0.9rem + 0.7vw), 1.3rem);
+    line-height: 1.55;
+    color: var(--atlas-700);
+    margin: 0;
+    max-width: 40ch;
+  }
+
+  :global(:root[data-theme='dark']) .atlas-hero .tagline {
+    color: var(--atlas-300);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    margin-top: 0.5rem;
+  }
+</style>

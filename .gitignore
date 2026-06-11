@@ -27,3 +27,4 @@ research/
 
 # internal outreach drafts — never publish
 outreach/
+.vercel

@@ -1,0 +1,374 @@
+/* ============================================================
+   Attio Workflows Handbook — GTM Atlas theme
+   A warm, paper-toned, editorial field-guide skin for Starlight.
+   Inspired by atlas.attio.com: warm near-black ink on paper, a
+   single editorial blue accent, hairline borders, mono-caps
+   kicker labels, and ultra-subtle layered shadows.
+   Light-first; dark is a credible fallback.
+   ============================================================ */
+
+/* ---- 1. Fonts (families; the faces load via @fontsource in astro.config) */
+:root {
+  --sl-font:
+    'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Arial, Helvetica, sans-serif;
+  --sl-font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --atlas-font-display: 'Inter Variable', 'Inter', sans-serif;
+
+  /* spacing rhythm + shape */
+  --atlas-radius-sm: 0.25rem;
+  --atlas-radius-md: 0.375rem;
+  --atlas-radius-lg: 0.5rem;
+
+  /* the signature warm, layered micro-shadows */
+  --atlas-shadow-card: 0 1px 2px #0000000a, 0 1px 3px -1px #0000000d;
+  --atlas-shadow-pop:
+    0 1px 2px #0000000a, 0 2px 6px -1px #0000000f, 0 12px 28px -8px #0000001f;
+}
+
+/* ---- 2. Colour tokens — LIGHT (default) ------------------- */
+:root,
+:root[data-theme='light'] {
+  /* warm neutral ramp (one ink scaled up — never cool gray) */
+  --atlas-100: #e4e2e2;
+  --atlas-200: #c8c6c6;
+  --atlas-300: #adabaa;
+  --atlas-400: #939190;
+  --atlas-500: #787776;
+  --atlas-600: #5f5e5e;
+  --atlas-700: #474746;
+  --atlas-800: #313030;
+  --atlas-900: #1c1b1b;
+
+  /* paper + ink → Starlight tokens */
+  --sl-color-bg: #e4e2e2; /* paper */
+  --sl-color-bg-nav: #f1f0f0f2; /* frosted */
+  --sl-color-bg-sidebar: #e4e2e2;
+  --sl-color-text: #1c1b1b; /* ink */
+  --sl-color-white: #1c1b1b; /* Starlight uses --white for primary text/headings */
+  --sl-color-black: #e4e2e2;
+
+  --sl-color-gray-1: #313030;
+  --sl-color-gray-2: #474746;
+  --sl-color-gray-3: #787776;
+  --sl-color-gray-4: #939190;
+  --sl-color-gray-5: #adabaa;
+  --sl-color-gray-6: #c8c6c6;
+  --sl-color-gray-7: #efeeee;
+
+  /* hairlines = ink at low alpha — use everywhere a border is drawn */
+  --sl-color-hairline: #1c1b1b1a;
+  --atlas-hairline: #1c1b1b1a; /* 10% — default border */
+  --atlas-hairline-08: #1c1b1b0d; /* 5%  — faint surfaces */
+  --atlas-hairline-15: #1c1b1b26; /* 15% — section rules */
+  --atlas-muted: #1c1b1b99; /* 60% — captions */
+
+  /* prose body slightly softened off pure ink */
+  --atlas-prose: #2a2928;
+
+  /* accent — Atlas's own editorial blue (deliberately not the product blue) */
+  --sl-color-accent: #1b6edc;
+  --sl-color-accent-low: #1b6edc26;
+  --sl-color-accent-high: #003dff;
+  --sl-color-text-accent: #1b6edc;
+  --atlas-focus-ring: #1b6edc;
+
+  /* surfaces + semantics */
+  --atlas-surface: #ffffff; /* cards/panels sit on paper */
+  --atlas-red: #c0202b;
+  --atlas-amber: #b9760d;
+  --atlas-green: #1a7f5a;
+
+  --sl-color-bg-inline-code: #1c1b1b0d;
+}
+
+/* ---- 3. Colour tokens — DARK (credible fallback) ---------- */
+:root[data-theme='dark'] {
+  --sl-color-bg: #1c1b1b; /* ink becomes background */
+  --sl-color-bg-nav: #1c1b1bcc;
+  --sl-color-bg-sidebar: #1c1b1b;
+  --sl-color-text: #e4e2e2;
+  --sl-color-white: #ffffff;
+  --sl-color-black: #1c1b1b;
+
+  --sl-color-gray-1: #e4e2e2;
+  --sl-color-gray-2: #c8c6c6;
+  --sl-color-gray-3: #adabaa;
+  --sl-color-gray-4: #787776;
+  --sl-color-gray-5: #5f5e5e;
+  --sl-color-gray-6: #313030;
+  --sl-color-gray-7: #242323;
+
+  --sl-color-hairline: #ffffff1a;
+  --atlas-hairline: #ffffff1a;
+  --atlas-hairline-08: #ffffff0d;
+  --atlas-hairline-15: #ffffff26;
+  --atlas-muted: #e4e2e299;
+  --atlas-prose: #d6d4d3;
+
+  --atlas-surface: #2a2929; /* atlas-800-ish panels */
+  --sl-color-accent-low: #1b6edc40;
+
+  --sl-color-bg-inline-code: #ffffff14;
+}
+
+/* ---- 4. Typography --------------------------------------- */
+:root {
+  --sl-line-height-headings: 1.18;
+}
+
+.sl-markdown-content {
+  line-height: 1.7;
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6),
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--atlas-font-display);
+  font-weight: 600; /* never heavier than semibold */
+  letter-spacing: -0.02em;
+  color: var(--sl-color-white);
+}
+
+.sl-markdown-content p,
+.sl-markdown-content li {
+  color: var(--atlas-prose);
+}
+
+/* the page title also gets the display treatment */
+.content-panel h1[data-page-title] {
+  font-family: var(--atlas-font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+/* SIGNATURE element — mono-caps kicker (eyebrows, badges, card numbers, bylines) */
+.mono-caps,
+.sl-markdown-content .mono-caps {
+  font-family: var(--sl-font-mono);
+  font-size: 0.6875rem; /* 11px */
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  color: var(--atlas-500);
+}
+
+/* ---- 5. Components --------------------------------------- */
+
+/* frosted, hairline-ruled sticky header */
+.header {
+  background: var(--sl-color-bg-nav);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--atlas-hairline);
+}
+
+/* links — drop Starlight's underline default for a low-alpha accent border */
+.sl-markdown-content a {
+  color: var(--sl-color-text-accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--sl-color-accent-low);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.sl-markdown-content a:hover {
+  color: var(--sl-color-accent-high);
+  border-bottom-color: currentColor;
+}
+/* headings that contain anchor links shouldn't get an underline */
+.sl-markdown-content :is(h1, h2, h3, h4) a {
+  border-bottom: none;
+}
+
+/* cards (landing grid, section previews) — white panel, hairline, micro-shadow,
+   led by a mono-caps auto-number */
+.sl-markdown-content .card-grid {
+  counter-reset: atlas-card;
+}
+.sl-markdown-content .card {
+  position: relative;
+  background: var(--atlas-surface);
+  border: 1px solid var(--atlas-hairline);
+  border-radius: var(--atlas-radius-lg);
+  box-shadow: var(--atlas-shadow-card);
+  transition:
+    box-shadow 0.2s cubic-bezier(0.215, 0.61, 0.355, 1),
+    transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1),
+    border-color 0.2s ease;
+}
+.sl-markdown-content .card:hover {
+  box-shadow: var(--atlas-shadow-pop);
+  transform: translateY(-2px);
+  border-color: var(--atlas-hairline-15);
+}
+.sl-markdown-content .card::before {
+  counter-increment: atlas-card;
+  content: counter(atlas-card, decimal-leading-zero);
+  display: block;
+  margin-bottom: 0.6rem;
+  font-family: var(--sl-font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  color: var(--atlas-400);
+}
+.sl-markdown-content .card .title {
+  font-family: var(--atlas-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--sl-color-white);
+}
+.sl-markdown-content .card .icon {
+  color: var(--sl-color-text-accent);
+  background: var(--sl-color-accent-low);
+}
+
+/* asides / callouts — Atlas uses restraint: hairline left-rule, faint tint, no loud fill */
+.sl-markdown-content .starlight-aside {
+  border: none;
+  border-left: 3px solid var(--atlas-hairline-15);
+  border-radius: 0;
+  background: var(--atlas-hairline-08);
+  padding: 1rem 1.25rem;
+}
+.sl-markdown-content .starlight-aside--note {
+  border-left-color: var(--sl-color-accent);
+}
+.sl-markdown-content .starlight-aside--tip {
+  border-left-color: var(--atlas-green);
+}
+.sl-markdown-content .starlight-aside--caution {
+  border-left-color: var(--atlas-amber);
+}
+.sl-markdown-content .starlight-aside--danger {
+  border-left-color: var(--atlas-red);
+}
+.sl-markdown-content .starlight-aside__title {
+  font-family: var(--sl-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+/* inline code — faint ink wash, restrained radius */
+.sl-markdown-content :not(pre) > code {
+  background: var(--sl-color-bg-inline-code);
+  border-radius: var(--atlas-radius-sm);
+  padding: 0.12em 0.36em;
+  font-size: 0.875em;
+  color: var(--sl-color-text);
+}
+
+/* code blocks — slightly tighter corners to match the restrained radius scale */
+.sl-markdown-content .expressive-code .frame pre,
+.sl-markdown-content .expressive-code .frame {
+  border-radius: var(--atlas-radius-md);
+}
+
+/* tables — hairline borders + tabular figures (credit-cost tables read cleanly) */
+.sl-markdown-content table {
+  font-variant-numeric: tabular-nums;
+}
+.sl-markdown-content :is(th, td) {
+  border-color: var(--atlas-hairline);
+}
+.sl-markdown-content thead th {
+  font-family: var(--atlas-font-display);
+  font-weight: 600;
+  border-bottom: 2px solid var(--atlas-hairline-15);
+}
+
+/* section dividers = hairline */
+.sl-markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--atlas-hairline-15);
+}
+
+/* keyboard hints */
+.sl-markdown-content kbd {
+  font-family: var(--sl-font-mono);
+  font-size: 0.8125em;
+  background: var(--atlas-surface);
+  color: var(--sl-color-text);
+  border: 1px solid var(--atlas-hairline);
+  border-radius: var(--atlas-radius-sm);
+  box-shadow: 0 1px 0 var(--atlas-hairline-15);
+  padding: 0.1em 0.4em;
+}
+
+/* sidebar — soft accent wash on the current page */
+.sidebar-content a[aria-current='page'] {
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-text-accent);
+  font-weight: 500;
+}
+/* sidebar group headings adopt the mono-caps register */
+.sidebar-content summary .group-label .large,
+.sidebar-content > ul > li > details > summary .group-label span {
+  font-family: var(--sl-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.6875rem;
+  color: var(--atlas-500);
+}
+
+/* focus ring */
+:focus-visible {
+  outline: 2px solid var(--atlas-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ---- 6. Reusable editorial blocks (used by guides/tutorials) ---- */
+
+/* page eyebrow — a kicker above a heading, e.g. "GUIDE · CAPTURE & QUALIFY" */
+.eyebrow {
+  font-family: var(--sl-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--sl-color-text-accent);
+  margin-bottom: 0.35rem;
+}
+
+/* the at-a-glance badge row on a guide: Difficulty · Time · Credits · Blocks */
+.sl-markdown-content .guide-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  margin: 1rem 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+.sl-markdown-content .guide-meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--atlas-hairline);
+  border-radius: 999px;
+  background: var(--atlas-surface);
+  font-family: var(--sl-font-mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--atlas-600);
+}
+.sl-markdown-content .guide-meta li b {
+  color: var(--sl-color-white);
+  font-weight: 600;
+}
+
+/* difficulty dots */
+.difficulty-starter {
+  color: var(--atlas-green);
+}
+.difficulty-intermediate {
+  color: var(--atlas-amber);
+}
+.difficulty-advanced {
+  color: var(--atlas-red);
+}

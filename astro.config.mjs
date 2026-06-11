@@ -25,8 +25,22 @@ export default defineConfig({
 				baseUrl: 'https://github.com/80x-djh/attio-workflows-handbook/edit/main/',
 			},
 			lastUpdated: true,
+			customCss: [
+				// Self-hosted fonts (see package.json @fontsource deps)
+				'@fontsource-variable/inter',
+				'@fontsource/dm-mono/400.css',
+				'@fontsource/dm-mono/500.css',
+				// GTM Atlas theme — must load last so it wins the cascade
+				'./src/styles/atlas.css',
+			],
+			expressiveCode: {
+				// Dark slate code blocks read as intentional against the warm paper page.
+				themes: ['github-dark'],
+				styleOverrides: { borderRadius: '0.375rem', borderColor: 'transparent' },
+			},
 			components: {
 				Footer: './src/components/Footer.astro',
+				Hero: './src/components/Hero.astro',
 			},
 			plugins: [
 				starlightLlmsTxt({
