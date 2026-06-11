@@ -45,14 +45,14 @@
         "icon": "graduation-cap",
         "groups": [
           {
-            "group": "Foundations",
+            "group": "Start here",
             "pages": [
               "learn",
               "learn/build-your-first-workflow"
             ]
           },
           {
-            "group": "Applied tracks",
+            "group": "Learning paths",
             "pages": [
               "learn/capture-and-qualify",
               "learn/route-and-sequence",

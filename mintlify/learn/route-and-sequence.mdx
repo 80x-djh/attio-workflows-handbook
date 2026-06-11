@@ -1,18 +1,20 @@
 ---
-title: "Track 2: Route and sequence"
+title: "Route and sequence"
 description: Route and sequence moves a qualified lead to the right owner, enrolls it in a sequence, and exits the instant the lead replies.
 icon: route
 ---
 
 **Route and sequence** moves a qualified lead to the right owner, enrolls it in a sequence, and exits the instant the lead replies. You build the system in the order a lead actually moves through it. Routing decides *who* owns an account. Sequencing decides *what* that account receives. Clean enroll and exit hygiene makes sure nobody is still being sequenced after they have already booked a meeting.
 
+This is a guided path. It teaches the approach, then walks you through the matching [Guides](/guides) builds in order. Come here to learn the sequence; go straight to [Guides](/guides) when you just need one build.
+
 <Note>
-  **Prerequisites:** finish [Track 1: Capture and qualify](/learn/capture-and-qualify), or know how to filter and score a lead, and skim [Choosing the right trigger](/explanation/triggers).
+  **Prerequisites:** finish [Capture and qualify](/learn/capture-and-qualify), or know how to filter and score a lead, and skim [Choosing the right trigger](/explanation/triggers).
 
   **By the end you can:** auto-route a qualified lead to its owner, enroll it in the matching sequence, alert that owner, and exit the sequence the moment the lead replies or converts.
 </Note>
 
-This track is for a seed-stage founder running founder-led sales. You want enterprise-grade routing and follow-up, but you do not want to hire a revenue-operations (RevOps) team to get it. You build the system before you write a single message. Each module maps to one complete recipe in Guides, so you can stop at any point and ship what you have.
+This path is for a seed-stage founder running founder-led sales. You want enterprise-grade routing and follow-up, but you do not want to hire a revenue-operations (RevOps) team to get it. You build the system before you write a single message. Each module maps to one complete recipe in Guides, so you can stop at any point and ship what you have.
 
 ## The mental model
 
@@ -20,9 +22,9 @@ Routing and sequencing are two separate decisions, not one. Routing answers *who
 
 There is an unglamorous third decision: enroll and exit hygiene. It is the one that keeps the whole motion from embarrassing you. Every enrollment needs a matching exit, so that a rep and an automated message never both land on the same person in the same hour.
 
-Hold one rule through the whole track: every enroll needs an exit. Say you build the enrollment but skip its paired exit. A lead who replies on Tuesday still gets the Wednesday outbound step. The prospect learns that nobody on your side is reading their messages.
+Hold one rule through the whole path: every enroll needs an exit. Say you build the enrollment but skip its paired exit. A lead who replies on Tuesday still gets the Wednesday outbound step. The prospect learns that nobody on your side is reading their messages.
 
-## Build the track
+## Build the path
 
 Work these modules in order. Each module is a complete build you can ship on its own. Together they form the routing-into-enrollment system you wire up in the challenge.
 
@@ -56,7 +58,7 @@ Work these modules in order. Each module is a complete build you can ship on its
 
 Routing logic is cheap because the blocks that make the decision are free. The trigger, [Filter](/reference/conditions/filter), [Switch](/reference/conditions/switch), and [Round robin](/reference/workspace/round-robin) are logic blocks that consume no credits. So a run that gets filtered out costs nothing. You pay only when a write actually happens. Setting the owner, creating the first-touch task, posting to Slack, and enrolling or exiting a sequence each consume credits.
 
-That makes the cost of this track fixed and predictable, because no module calls an artificial-intelligence (AI) block. Before you scale the rep pool or add channels, check your monthly allowance against your expected routed volume on [Credits & pricing explained](/reference/credits-and-pricing).
+That makes the cost of this path fixed and predictable, because no module calls an artificial-intelligence (AI) block. Before you scale the rep pool or add channels, check your monthly allowance against your expected routed volume on [Credits & pricing explained](/reference/credits-and-pricing).
 
 ## The challenge
 
@@ -66,13 +68,13 @@ Then test the exit path on purpose. Reply to the test lead, or flip its status t
 
 ## Where this goes next
 
-Once routing and sequencing run themselves, the next track shifts focus. You move from reacting to leads to maintaining the pipeline they create. [Track 3: Keep the pipeline honest](/learn/keep-the-pipeline-honest) shows you how to make the pipeline self-clean, self-summarize, and hand off on a schedule. It does all of this with no false positives and no manual work.
+Once routing and sequencing run themselves, the next path shifts focus. You move from reacting to leads to maintaining the pipeline they create. [Keep the pipeline honest](/learn/keep-the-pipeline-honest) shows you how to make the pipeline self-clean, self-summarize, and hand off on a schedule. It does all of this with no false positives and no manual work.
 
 ## See also
 
 - [Enroll and auto-exit sequences](/guides/route-and-sequence/sequence-enrollment)
 - [Round-robin lead routing](/guides/route-and-sequence/round-robin-routing)
-- [Track 3: Keep the pipeline honest](/learn/keep-the-pipeline-honest)
+- [Keep the pipeline honest](/learn/keep-the-pipeline-honest)
 - [Choosing the right trigger](/explanation/triggers)
 - [Credits & pricing explained](/reference/credits-and-pricing)
 

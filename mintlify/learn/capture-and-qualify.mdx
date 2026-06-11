@@ -1,12 +1,14 @@
 ---
-title: "Track 1: Capture and qualify"
+title: "Capture and qualify"
 description: "Capture and qualify makes inbound and webhook leads arrive enriched, scored on fit and intent, and tagged for routing."
 icon: inbox
 ---
 
 **Capture and qualify** makes inbound and webhook leads arrive enriched, scored on fit and intent, and tagged for routing. Here, enrich means filling in missing company details. A webhook is a way for another system to push a lead to you over the web.
 
-This track is for a 12-rep B2B SaaS team drowning in form-fills. For that team, data quality is the number-one complaint. Good leads sit unworked while someone copies fields by hand.
+This is a guided path. It teaches the approach, then walks you through the matching [Guides](/guides) builds in order. Come here to learn the sequence; go straight to [Guides](/guides) when you just need one build.
+
+This path is for a 12-rep B2B SaaS team drowning in form-fills. For that team, data quality is the number-one complaint. Good leads sit unworked while someone copies fields by hand.
 
 You build the front of the funnel as three shippable workflows. You pay for AI only where it changes a decision.
 
@@ -22,7 +24,7 @@ Qualification is a stack of three questions. Fit asks whether this is the right 
 
 You check the cheap, free signals first. Then you spend money only on the records that clear the bar. That money goes to enrichment calls and AI classification.
 
-This is the signal waterfall: enrich when a signal fires, not on every raw lead. The cheapest filter is a [Filter](/reference/conditions/filter) block. It stops a run silently and costs nothing, so it belongs in front of every step that costs credits. The engine vocabulary used across this track lives in the [Glossary](/reference/glossary).
+This is the signal waterfall: enrich when a signal fires, not on every raw lead. The cheapest filter is a [Filter](/reference/conditions/filter) block. It stops a run silently and costs nothing, so it belongs in front of every step that costs credits. The engine vocabulary used across this path lives in the [Glossary](/reference/glossary).
 
 ## Build the three modules in order
 
@@ -48,7 +50,7 @@ Each step is a complete, follow-along build in [Guides](/guides) that you ship i
 
 ## What this costs
 
-Most of this track is free. Triggers, [Parse JSON](/reference/utilities/parse-json), [Filter](/reference/conditions/filter), [Find records](/reference/records/find-records), [Formula](/reference/calculations/formula), and [Switch](/reference/conditions/switch) are logic and lookup blocks. They consume no credits, so you can qualify aggressively before you spend anything.
+Most of this path is free. Triggers, [Parse JSON](/reference/utilities/parse-json), [Filter](/reference/conditions/filter), [Find records](/reference/records/find-records), [Formula](/reference/calculations/formula), and [Switch](/reference/conditions/switch) are logic and lookup blocks. They consume no credits, so you can qualify aggressively before you spend anything.
 
 Credits are spent only on the writes and the enrichment calls at the end of each path. Any record a [Filter](/reference/conditions/filter) rejects costs zero. The new engine no longer enforces per-workflow credit caps, so estimate the spend yourself before you publish. Read [Credits & pricing explained](/reference/credits-and-pricing) for the per-block costs and your plan's monthly allowance.
 
@@ -60,13 +62,13 @@ The third module is where the bands become routing, so build it last. Test the A
 
 ## Where this goes next
 
-Once leads arrive qualified, [Track 2: Route and sequence](/learn/route-and-sequence) gets the right rep on the right account. It also keeps sequence enrollment and exit clean, so leads do not get stuck in the wrong outreach. The band this track produces becomes the input that routing reads.
+Once leads arrive qualified, [Route and sequence](/learn/route-and-sequence) gets the right rep on the right account. It also keeps sequence enrollment and exit clean, so leads do not get stuck in the wrong outreach. The band this path produces becomes the input that routing reads.
 
 *Source: [Workflows in the Attio Help Center](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026.*
 
 ## See also
 
 - [Score leads into explainable bands](/guides/capture-and-qualify/signal-scoring)
-- [Track 2: Route and sequence](/learn/route-and-sequence)
+- [Route and sequence](/learn/route-and-sequence)
 - [Conditions & filters](/explanation/conditions-and-filters)
 - [Credits & pricing explained](/reference/credits-and-pricing)

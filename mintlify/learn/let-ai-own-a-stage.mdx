@@ -1,20 +1,22 @@
 ---
-title: "Track 4: Let AI own a stage"
+title: "Let AI own a stage"
 description: An AI agent owns one stage of your funnel, reads but never writes, runs only on records that pass a free filter, and you prove its cost on a sample first.
 icon: brain
 ---
 
-An AI agent owns one stage of your funnel, reads but never writes, runs only on records that pass a free filter, and you prove its cost on a sample first. In the earlier tracks, a workflow helped a person do the work. In this track, the workflow does the research and qualification for a whole stage on its own. Three rules keep it safe. The agent only reads, never writes. It only runs on records that clear a bar you set. And you know what a run costs before you publish.
+An AI agent owns one stage of your funnel, reads but never writes, runs only on records that pass a free filter, and you prove its cost on a sample first. In the earlier paths, a workflow helped a person do the work. In this path, the workflow does the research and qualification for a whole stage on its own. Three rules keep it safe. The agent only reads, never writes. It only runs on records that clear a bar you set. And you know what a run costs before you publish.
+
+This is a guided path. It teaches the approach, then walks you through the matching [Guides](/guides) builds in order. Come here to learn the sequence; go straight to [Guides](/guides) when you just need one build.
 
 <Note>
-  **Prerequisites:** finish [Track 1: Capture and qualify](/learn/capture-and-qualify), then read [Permissions & workflow access](/explanation/permissions-and-access) and [Infinite loops and safety](/explanation/infinite-loops-and-safety).
+  **Prerequisites:** finish [Capture and qualify](/learn/capture-and-qualify), then read [Permissions & workflow access](/explanation/permissions-and-access) and [Infinite loops and safety](/explanation/infinite-loops-and-safety).
 
   **By the end you can:** stand up a read-only research-and-qualification agent that owns a funnel segment, and reason about its permissions, credit cost, and loop safety before you publish.
 </Note>
 
-This track is written for the solo Attio consultant, or the technical RevOps lead, who reuses agent patterns across client workspaces. In that work, a surprise credit bill can get you fired. So every pattern here defaults to read-only access and spend you can see in advance.
+This path is written for the solo Attio consultant, or the technical RevOps lead, who reuses agent patterns across client workspaces. In that work, a surprise credit bill can get you fired. So every pattern here defaults to read-only access and spend you can see in advance.
 
-## The shift this track makes
+## The shift this path makes
 
 An owned stage hands a slice of the funnel to an agent block instead of a rep. An agent is an AI block that can research a record and the web, then answer questions about it. The agent reads the record under the [**Run as**](/explanation/permissions-and-access) permission model, which sets the identity and tools it runs with. It decides fit and writes its conclusion to a field that later blocks route on.
 
@@ -57,7 +59,7 @@ A run's cost is the agent's token-based charge plus 1 credit for each write the 
 
 ## Where this goes next
 
-The Challenge for this track is the [**AI ICP-fit research and routing**](/guides/signals-and-ai/inbound-lead-research) recipe. Gate a read-only agent behind a filter so it runs only on records that clear your bar. Classify fit, write the summary to source fields, and route only the qualified records. Prove the credit math on a ten-record sample before the live trigger. For client work, fire it from a command so spend is always explicit.
+The Challenge for this path is the [**AI ICP-fit research and routing**](/guides/signals-and-ai/inbound-lead-research) recipe. Gate a read-only agent behind a filter so it runs only on records that clear your bar. Classify fit, write the summary to source fields, and route only the qualified records. Prove the credit math on a ten-record sample before the live trigger. For client work, fire it from a command so spend is always explicit.
 
 ## See also
 
