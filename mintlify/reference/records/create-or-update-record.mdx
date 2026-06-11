@@ -4,7 +4,9 @@ description: The Create or update record block (Records) matches on a unique att
 icon: square-plus
 ---
 
-The **Create or update record** block (Records) matches on a unique attribute, updates the record if found, or creates one if not. It is the idempotent upsert step for records, so a webhook or trigger that fires twice for the same person or company produces one record instead of two. The match attribute must be genuinely unique, such as `email_address` for a person or `domains` for a company, or the block can silently overwrite the wrong record.
+The **Create or update record** block (Records) matches on a unique attribute, updates the record if found, or creates one if not. This is the upsert step for records. Upsert means update if a record already exists, or insert a new one if it does not. The block reuses the existing record instead of adding another. So a webhook or trigger that fires twice for the same person or company produces one record, not two.
+
+The match works only if the attribute you match on is truly unique to one record. Good choices are `email_address` for a person or `domains` for a company. If you match on something that several records share, the block can overwrite the wrong one.
 
 | | |
 | --- | --- |
@@ -18,10 +20,10 @@ The **Create or update record** block (Records) matches on a unique attribute, u
 
 | Input | Type | Required | Default | Notes |
 | --- | --- | --- | --- | --- |
-| Object | Object | Yes | — | The object to create or update a record in, such as People or Companies. |
-| Matching attribute | Attribute | Yes | — | The unique attribute used to find an existing record. Choose an attribute that identifies one record only, such as email or domain. |
-| Attributes to set | Attribute values | No | — | The values to write. On a match these update the existing record; with no match they populate the new record. |
-| Replace existing values | Boolean | No | Off | Controls multi-select behavior. When on, the block replaces the existing values; when off, it appends to them. |
+| Object | Object | Yes | None | The object to create or update a record in, such as People or Companies. |
+| Matching attribute | Attribute | Yes | None | The unique attribute used to find an existing record. Choose an attribute that identifies one record only, such as email or domain. |
+| Attributes to set | Attribute values | No | None | The values to write. On a match these update the existing record. With no match they populate the new record. |
+| Replace existing values | Boolean | No | Off | Controls multi-select behavior. When on, the block replaces the existing values. When off, it appends to them. |
 
 ## Outputs
 
@@ -34,18 +36,18 @@ Reference the resulting record's ID in a later block as `{{ steps.create_or_upda
 
 ## Behavior
 
-The block reads the matching attribute first, then decides whether to update or create. If exactly one record has the same value on the matching attribute, the block updates that record. If no record matches, the block creates a new one and populates it from the **Attributes to set** input. The output is the same shape in both cases, so a downstream block does not need to know which branch ran.
+The block reads the matching attribute first, then decides whether to update or create. If exactly one record has the same value on the matching attribute, the block updates that record. If no record matches, the block creates a new one and fills it from the **Attributes to set** input. The output looks the same in both cases. A downstream block does not need to know which branch ran.
 
-Single-value attributes always overwrite. Writing a new email or stage replaces the previous value regardless of the **Replace existing values** setting, which only governs multi-value attributes.
+Single-value attributes always overwrite. Writing a new email or stage replaces the previous value no matter how **Replace existing values** is set. That toggle only affects multi-value attributes.
 
-Multi-value attributes follow the **Replace existing values** toggle. With the toggle off, the block appends the new values to whatever is already on the record. With the toggle on, the block discards the existing values and writes only the new set. This setting is the single most common cause of unexpected data loss with this block, because turning it on for a `tags` or `categories` attribute deletes every value the block did not explicitly include.
+Multi-value attributes follow the **Replace existing values** toggle. With the toggle off, the block adds the new values to whatever is already on the record. With the toggle on, the block throws away the existing values and writes only the new set. This toggle is the single most common cause of unexpected data loss with this block. Turning it on for a `tags` or `categories` attribute deletes every value the block did not explicitly include.
 
-The block writes on every run. It does not deduplicate beyond the single matching attribute, so a record that matches on email still updates even if other attributes differ.
+The block writes on every run. It does not deduplicate beyond the single matching attribute. A record that matches on email still updates even if its other attributes differ.
 
 ## Gotchas
 
-- **The wrong record gets overwritten.** A non-unique matching attribute, such as a first name or a company stage, can match several records, and the block updates one of them rather than the one you meant. Match on an attribute that is unique per record, such as `email_address` or `domains`.
-- **Multi-select values disappear.** Turning on **Replace existing values** for a multi-value attribute deletes every existing value that the run does not re-supply. Leave the toggle off to append, and turn it on only when you intend to replace the full set.
+- **The wrong record gets overwritten.** A non-unique matching attribute, such as a first name or a company stage, can match several records. The block then updates one of them instead of the one you meant. Match on an attribute that is unique per record, such as `email_address` or `domains`.
+- **Multi-select values disappear.** Turning on **Replace existing values** for a multi-value attribute deletes every existing value the run does not re-supply. Leave the toggle off to append. Turn it on only when you mean to replace the full set.
 - **The block updates with stale data.** Reading from the trigger payload after an earlier block has already changed the record writes outdated values. Reference the output of the block that made the change, not the original trigger data.
 - **The run fails on a write without access.** A workflow has no write access to objects by default, so the block errors until you grant the workflow write access to the target object. Grant access before you publish.
 
@@ -53,7 +55,7 @@ The block writes on every run. It does not deduplicate beyond the single matchin
 
 ### Upserting an inbound person by email
 
-A webhook lead-intake workflow receives a form submission and needs to create the person once, then update them on every later submission.
+A webhook lead-intake workflow receives a form submission. It needs to create the person once, then update them on every later submission.
 
 | Field | Value |
 | --- | --- |
@@ -62,11 +64,11 @@ A webhook lead-intake workflow receives a form submission and needs to create th
 | Attributes to set | `name` = `Priya Sharma`, `job_title` = `VP of Revenue`, `company` = `acme.com` |
 | Replace existing values | Off |
 
-The first submission from `priya@acme.com` creates the person record. A second submission with an updated job title finds the same record by email and updates it in place, leaving the workspace with one Priya Sharma record.
+The first submission from `priya@acme.com` creates the person record. A second submission with an updated job title finds the same record by email and updates it in place. The workspace keeps one Priya Sharma record.
 
 ### Appending a source tag without losing existing tags
 
-A routing workflow tags inbound people with the channel they arrived on while preserving the tags they already carry.
+A routing workflow tags inbound people with the channel they arrived on. It keeps the tags they already carry.
 
 ```json
 {
@@ -79,11 +81,11 @@ A routing workflow tags inbound people with the channel they arrived on while pr
 }
 ```
 
-A person who already has `["Newsletter"]` on `lead_source` ends up with `["Newsletter", "Webinar"]`, because the toggle is off and the block appends rather than replaces.
+A person who already has `["Newsletter"]` on `lead_source` ends up with `["Newsletter", "Webinar"]`. The toggle is off, so the block appends rather than replaces.
 
 ### Resetting a multi-select to a single value
 
-A cleanup workflow needs the `lifecycle_stage` tags on a company to reflect exactly one current state, discarding prior values.
+A cleanup workflow needs the `lifecycle_stage` tags on a company to reflect exactly one current state and to drop the rest.
 
 | Field | Value |
 | --- | --- |
@@ -92,11 +94,11 @@ A cleanup workflow needs the `lifecycle_stage` tags on a company to reflect exac
 | Attributes to set | `lifecycle_stage` = `Customer` |
 | Replace existing values | On |
 
-The company matched on `acme.com` keeps only `Customer` on `lifecycle_stage`, and any earlier values such as `Prospect` or `Trial` are removed.
+The company matched on `acme.com` keeps only `Customer` on `lifecycle_stage`. Any earlier values, such as `Prospect` or `Trial`, are removed.
 
 ## Credit cost worked example
 
-The block costs 1 credit per run, charged whether it creates a record or updates one. A webhook lead-intake workflow that upserts 800 inbound people a month spends 800 credits on this block. Triggers, conditions, and lookups in the same workflow are free, so the upsert is the only paid step in a typical intake flow. Compare that monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+The block costs 1 credit per run. You pay it whether the block creates a record or updates one. A webhook lead-intake workflow that upserts 800 inbound people a month spends 800 credits on this block. Triggers, conditions, and lookups in the same workflow are free, so the upsert is the only paid step in a typical intake flow. Compare that monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
 
 ## Source
 

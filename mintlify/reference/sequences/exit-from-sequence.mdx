@@ -4,7 +4,7 @@ description: The Exit from sequence block (Sequences) stops all future emails fo
 icon: user-minus
 ---
 
-The **Exit from sequence** block (Sequences) stops all future emails for a person already enrolled in an Attio sequence. Use it the moment a contact replies, books a meeting, or becomes a customer, so your sequence stops emailing someone the rest of the funnel has already moved past. If the person is not currently enrolled, the block does nothing and the run still succeeds.
+The **Exit from sequence** block (Sequences) stops all future emails for a person already enrolled in an Attio sequence. A sequence is a set of emails Attio sends to a contact on a schedule. Use this block the moment a contact replies, books a meeting, or becomes a customer. It stops the sequence from emailing someone the rest of the funnel has already moved past. If the person is not currently enrolled, the block does nothing and the run still succeeds.
 
 | | |
 | --- | --- |
@@ -25,46 +25,46 @@ The **Exit from sequence** block (Sequences) stops all future emails for a perso
 
 None.
 
-The **Exit from sequence** block does not expose a useful downstream output, so no later block can reference a result from it. To branch on whether someone was actually enrolled, look the person up with [Find records](/reference/records/find-records) before this block instead of trying to read a result after it.
+The **Exit from sequence** block does not expose a useful downstream output. No later block can read a result from it. To branch on whether someone was actually enrolled, look the person up with [Find records](/reference/records/find-records) before this block. Do not try to read a result after it.
 
 ## Behavior
 
-The block removes the recipient from the sequence's pending and scheduled emails. Emails Attio has already sent are not affected; exiting stops future sends only.
+The block removes the recipient from the sequence's pending and scheduled emails. Emails Attio has already sent are not affected. Exiting stops future sends only.
 
-If the recipient is not enrolled in the named sequence, the block is a no-op and the run does not fail. This makes **Exit from sequence** safe to place on a path that fires for both enrolled and never-enrolled people without guarding it behind an [If](/reference/conditions/if) condition first.
+If the recipient is not enrolled in the named sequence, the block is a no-op and the run does not fail. A no-op means the block runs but does nothing. This makes **Exit from sequence** safe to place on a path that fires for both enrolled and never-enrolled people. You do not need to guard it behind an [If](/reference/conditions/if) condition first.
 
-Because removal is a write, it runs once per execution. Enrolling the same person again later, with [Enroll in sequence](/reference/sequences/enroll-in-sequence), starts a fresh enrollment rather than resuming the exited one.
+Removal is a write, so it runs once per execution. Enrolling the same person again later, with [Enroll in sequence](/reference/sequences/enroll-in-sequence), starts a fresh enrollment. It does not resume the exited one.
 
 ## Gotchas
 
-- **Exits the named sequence only.** The block removes the recipient from the one sequence you select, not from every sequence they are in. If a contact is enrolled in three sequences, add one **Exit from sequence** block per sequence, or loop over the sequences you want to clear.
+- **Exits the named sequence only.** The block removes the recipient from the one sequence you select, not from every sequence they are in. Say a contact is enrolled in three sequences. Add one **Exit from sequence** block per sequence, or loop over the sequences you want to clear.
 - **Already-sent emails still land.** Exiting cancels future sends, not messages already dispatched. To suppress a same-day send, exit before the next scheduled send time rather than after it.
 - **Recipient must be a person record.** Wiring a company record or a list entry into the recipient input fails the block. Resolve the person first with [Find records](/reference/records/find-records) when your trigger gives you a company or an entry.
-- **No output to branch on.** Because the block returns nothing useful downstream, you cannot test "was this person enrolled?" after it runs. Check enrollment with a lookup beforehand if a later step depends on it.
+- **No output to branch on.** The block returns nothing useful downstream, so you cannot test "was this person enrolled?" after it runs. Check enrollment with a lookup beforehand if a later step depends on it.
 
 ## Examples
 
 ### Exiting on reply
 
-Stop outbound the moment a prospect replies, so a rep takes over a live conversation instead of a sequence sending the next templated email.
+Stop outbound the moment a prospect replies. A rep then takes over a live conversation instead of the sequence sending the next templated email.
 
 | Field | Value |
 | --- | --- |
-| Sequence | Q3 outbound — founders |
+| Sequence | Q3 outbound: founders |
 | Recipient | `{{ trigger.record }}` (Priya Sharma) |
 
-Result: Priya Sharma is removed from the `Q3 outbound — founders` sequence, no further automated emails are scheduled for her, and the run completes with 1 credit consumed.
+Result: Priya Sharma is removed from the `Q3 outbound: founders` sequence. No further automated emails are scheduled for her, and the run completes with 1 credit consumed.
 
 ### Exiting when a deal is created
 
-When a contact converts and a deal is created with them attached, pull them out of the nurture sequence so prospecting stops the instant they enter the pipeline.
+When a contact converts and a deal is created with them attached, pull them out of the nurture sequence. Prospecting then stops the instant they enter the pipeline.
 
 | Field | Value |
 | --- | --- |
 | Sequence | Inbound nurture |
 | Recipient | `jane@acme.com` (the contact on the new deal) |
 
-Result: `jane@acme.com` is unenrolled from the `Inbound nurture` sequence; if she was never enrolled, the block does nothing and the run still succeeds.
+Result: `jane@acme.com` is unenrolled from the `Inbound nurture` sequence. If she was never enrolled, the block does nothing and the run still succeeds.
 
 ## Credit cost worked example
 
@@ -76,7 +76,7 @@ Suppose a 12-rep team auto-exits sequences on every reply and every new deal, an
 600 exits × 1 credit = 600 credits / month
 ```
 
-That sits well inside a single monthly plan allowance. Note that runs where the person was not enrolled still execute the block and bill the credit, so include them in your estimate. For the per-plan monthly allowances, see [Credits & pricing explained](/reference/credits-and-pricing).
+That sits well inside a single monthly plan allowance. Note that runs where the person was not enrolled still execute the block and bill the credit. Include them in your estimate. For the per-plan monthly allowances, see [Credits & pricing explained](/reference/credits-and-pricing).
 
 ## Source
 

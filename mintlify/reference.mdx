@@ -1,16 +1,16 @@
 ---
 title: Block reference overview
-description: Every Attio Workflows block — 11 triggers and 33 steps — has its own reference page with inputs, outputs, credit cost, and a worked example.
+description: Attio Workflows has 11 triggers and 33 steps. Each block has its own reference page with inputs, outputs, credit cost, and a worked example.
 icon: book-open
 ---
 
-Every Attio Workflows block — 11 triggers and 33 steps — has its own reference page with inputs, outputs, credit cost, and a worked example. Every workflow you build is assembled from these blocks, and each reference page follows the same fixed schema, so once you have read one you can skim the rest.
+Attio Workflows has 11 triggers and 33 steps. Each block has its own reference page with inputs, outputs, credit cost, and a worked example. Every workflow you build is assembled from these blocks. Each reference page follows the same fixed layout, so once you have read one you can skim the rest.
 
-Credit costs follow one rule: triggers, logic, and lookups are free, writes and external calls cost 1 credit, and AI is token-priced. The [Credits & pricing explained](/reference/credits-and-pricing) page carries the full table and the per-plan allowances; every block page links to it rather than repeating it.
+Credit costs follow one rule. Triggers, logic, and lookups are free. Writes and external calls cost 1 credit, and AI is priced by the tokens it uses. The [Credits & pricing explained](/reference/credits-and-pricing) page carries the full table and the per-plan allowances. Every block page links to it rather than repeating it.
 
 ## Triggers
 
-A trigger starts a workflow run, and every trigger is free. If you are unsure which one fits your case, read [Choosing the right trigger](/explanation/triggers).
+A trigger is the event that starts a workflow run. Every trigger is free. If you are unsure which one fits your case, read [Choosing the right trigger](/explanation/triggers).
 
 <CardGroup cols={2}>
   <Card title="Record command" icon="square-mouse-pointer" href="/reference/triggers/record-command">
@@ -50,7 +50,7 @@ A trigger starts a workflow run, and every trigger is free. If you are unsure wh
 
 ## Agents
 
-An agent block runs an AI agent against your workspace, and its tool access stays read-only, gated by the "Run as" permission model.
+An agent block runs an AI agent against your workspace. Its tool access stays read-only, gated by the "Run as" permission model. That means the agent can read your data but cannot change it.
 
 <CardGroup cols={2}>
   <Card title="Custom agent" icon="bot" href="/reference/agents/custom-agent">
@@ -63,7 +63,7 @@ An agent block runs an AI agent against your workspace, and its tool access stay
 
 ## AI
 
-An AI block applies a model to a record or to text, and each one is token-priced.
+An AI block applies a model to a record or to text. Each one is priced by the tokens it uses, not at a flat rate.
 
 <CardGroup cols={2}>
   <Card title="Classify record" icon="tags" href="/reference/ai/classify-record">
@@ -79,7 +79,7 @@ An AI block applies a model to a record or to text, and each one is token-priced
 
 ## Records
 
-A record block reads or writes the records in an object, and each write costs 1 credit.
+A record block reads or writes the records in an object. Each write costs 1 credit. Reads are free.
 
 <CardGroup cols={2}>
   <Card title="Create record" icon="square-plus" href="/reference/records/create-record">
@@ -98,7 +98,7 @@ A record block reads or writes the records in an object, and each write costs 1 
 
 ## Lists
 
-A list block reads or writes list entries, which differ from records. See [Records vs list entries](/explanation/records-vs-list-entries) for the distinction.
+A list block reads or writes list entries. List entries are not the same as records. See [Records vs list entries](/explanation/records-vs-list-entries) for the distinction.
 
 <CardGroup cols={2}>
   <Card title="Add record to list" icon="list-plus" href="/reference/lists/add-record-to-list">
@@ -117,7 +117,7 @@ A list block reads or writes list entries, which differ from records. See [Recor
 
 ## Sequences
 
-A sequence block adds a person to an Attio sequence or takes them out of one.
+A sequence is an automated series of outreach emails. A sequence block adds a person to an Attio sequence or takes them out of one.
 
 <CardGroup cols={2}>
   <Card title="Enroll in sequence" icon="mail-plus" href="/reference/sequences/enroll-in-sequence">
@@ -143,7 +143,7 @@ A task block creates a task or marks one complete.
 
 ## Calculations
 
-A calculation block transforms data inside a run, and most of these are free logic blocks. Reference their outputs with the [Variables and expressions reference](/reference/variable-syntax).
+A calculation block transforms data inside a run. Most of these are free logic blocks. To reference their outputs in later steps, see the [Variables and expressions reference](/reference/variable-syntax).
 
 <CardGroup cols={2}>
   <Card title="Execute code" icon="code" href="/reference/calculations/execute-code">
@@ -165,7 +165,7 @@ A calculation block transforms data inside a run, and most of these are free log
 
 ## Conditions
 
-A condition block decides which branch a run takes, and all condition blocks are free.
+A condition block decides which branch a run takes. All condition blocks are free.
 
 <CardGroup cols={2}>
   <Card title="Filter" icon="filter" href="/reference/conditions/filter">
@@ -181,7 +181,7 @@ A condition block decides which branch a run takes, and all condition blocks are
 
 ## Delays
 
-A delay block pauses a run for a duration or until a moment, and both are free.
+A delay block pauses a run. It can wait for a fixed duration or hold until a set moment. Both are free.
 
 <CardGroup cols={2}>
   <Card title="Delay" icon="timer" href="/reference/delays/delay">
@@ -194,7 +194,7 @@ A delay block pauses a run for a duration or until a moment, and both are free.
 
 ## Workspace
 
-A workspace block acts on your team rather than on a single record, from routing assignees to posting messages.
+A workspace block acts on your team rather than on a single record. These cover work like routing assignees and posting messages.
 
 <CardGroup cols={2}>
   <Card title="Round robin" icon="repeat" href="/reference/workspace/round-robin">
@@ -210,7 +210,7 @@ A workspace block acts on your team rather than on a single record, from routing
 
 ## Utilities
 
-A utility block handles iteration and external HTTP, the plumbing the other categories depend on. See [HTTP and JSON patterns](/guides/platform-patterns/http-json-patterns) for common shapes.
+A utility block handles iteration and external HTTP calls. These are the plumbing that the other categories depend on. See [HTTP and JSON patterns](/guides/platform-patterns/http-json-patterns) for common shapes.
 
 <CardGroup cols={2}>
   <Card title="Loop" icon="repeat-2" href="/reference/utilities/loop">
@@ -226,7 +226,7 @@ A utility block handles iteration and external HTTP, the plumbing the other cate
 
 ## Third-party blocks
 
-Connected apps contribute their own triggers and actions, including Slack, Outreach, Mailchimp, Mixmax, Typeform, and newer ecosystem blocks like Webflow, Notion, and Linear.
+Connected apps add their own triggers and actions to your block library. These include Slack, Outreach, Mailchimp, Mixmax, and Typeform. Newer ecosystem blocks cover Webflow, Notion, and Linear.
 
 <CardGroup cols={2}>
   <Card title="Third-party blocks" icon="puzzle" href="/reference/integrations">

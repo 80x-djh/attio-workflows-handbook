@@ -1,22 +1,22 @@
 ---
 title: Credits & pricing explained
-description: Workflows consume workspace credits, and one rule explains the whole model — writes, external calls, and AI cost credits; everything else is free.
+description: "Workflows consume workspace credits, and one rule explains the whole model: writes, external calls, and AI cost credits."
 icon: coins
 ---
 
-Workflows consume **workspace credits**, and one rule explains the whole model — writes, external calls, and AI cost credits; everything else is free. Triggers, logic, and data lookups run for nothing, so the price of a workflow is the price of the blocks that actually change or move data. This page carries the full cost table, the per-plan allowances, and the arithmetic to run before you publish anything new.
+Workflows consume **workspace credits**, and one rule explains the whole model: writes, external calls, and AI cost credits. Everything else is free. A credit is the unit Attio bills workflow activity in. Triggers, logic, and data lookups run for nothing. So the price of a workflow is the price of the blocks that actually change or move data. This page carries the full cost table, the per-plan allowances, and the math to run before you publish anything new.
 
 <Tip>
-  **One-page version.** Grab the [credit-model cheat sheet (PDF)](/attio-credits-cheatsheet.pdf) — the full cost table, plan allowances, and worked examples on a single printable page.
+  **One-page version.** Grab the [credit-model cheat sheet (PDF)](/attio-credits-cheatsheet.pdf). It puts the full cost table, plan allowances, and worked examples on a single printable page.
 </Tip>
 
 ## The one rule that explains everything
 
-Triggers, logic, and data lookups are free. Credits are only consumed when a block writes data, sends or receives something externally, or uses AI. The table maps every block category to its cost.
+Triggers, logic, and data lookups are free. Credits are only consumed when a block writes data, sends or receives something externally, or uses AI. The table below maps every block category to its cost.
 
 | Category | Blocks | Cost |
 | --- | --- | --- |
-| Triggers | All of them — record events, schedules, webhooks, manual | **Free** |
+| Triggers | All of them: record events, schedules, webhooks, manual | **Free** |
 | Logic & control | [Filter](/reference/conditions/filter), [If](/reference/conditions/if), [Switch](/reference/conditions/switch), [Loop](/reference/utilities/loop), [Delay](/reference/delays/delay), [Round robin](/reference/workspace/round-robin), [Celebration](/reference/workspace/celebration), [Broadcast message](/reference/workspace/broadcast-message), [Random number](/reference/calculations/random-number) | **Free** |
 | Lookups & math | [Find records](/reference/records/find-records), [Find list entries](/reference/lists/find-list-entries), [Formula](/reference/calculations/formula), [Aggregate values](/reference/calculations/aggregate-values), [Adjust time](/reference/calculations/adjust-time), [Parse JSON](/reference/utilities/parse-json) | **Free** |
 | Data writes | [Create record](/reference/records/create-record), [Create or update record](/reference/records/create-or-update-record), [Update record](/reference/records/update-record), [Add record to list](/reference/lists/add-record-to-list), [Update list entry](/reference/lists/update-list-entry), [Delete list entry](/reference/lists/delete-list-entry), [Create task](/reference/tasks/create-task), [Complete task](/reference/tasks/complete-task) | **1 credit** |
@@ -26,9 +26,9 @@ Triggers, logic, and data lookups are free. Credits are only consumed when a blo
 
 Three details carry most of the model's weight.
 
-1. **Only the executed path costs anything.** A [Switch](/reference/conditions/switch) with five branches charges only for the blocks on the branch that ran.
+1. **Only the executed path costs anything.** A [Switch](/reference/conditions/switch) sends a run down one of several branches. If it has five branches, you only pay for the blocks on the branch that ran.
 2. **Failed blocks are free.** If a run dies at block four, you pay for blocks one through three only.
-3. **Loops multiply.** The [Loop](/reference/utilities/loop) block is free, but the 1-credit [Update record](/reference/records/update-record) inside it, run over 50 records, is 50 credits. Loop contents dominate the cost of most expensive workflows.
+3. **Loops multiply.** The [Loop](/reference/utilities/loop) block is free. But the 1-credit [Update record](/reference/records/update-record) inside it, run over 50 records, is 50 credits. Loop contents dominate the cost of most expensive workflows.
 
 ## How many credits you have
 
@@ -41,7 +41,7 @@ Each plan includes a monthly pool of workspace credits. The pool renews on your 
 | Pro | 10,000 |
 | Enterprise | Custom |
 
-Admins buy additional credit packages under **Workspace settings → Billing → Manage credits**. The same area shows per-workflow and per-member consumption under **Billing → Credits → Usage**. I check this weekly for the first month after publishing anything new, because that is when an unscoped trigger or a runaway [Loop](/reference/utilities/loop) shows up.
+Admins buy additional credit packages under **Workspace settings → Billing → Manage credits**. The same area shows per-workflow and per-member consumption under **Billing → Credits → Usage**. Check this weekly for the first month after you publish anything new. That is when an unscoped trigger or a runaway [Loop](/reference/utilities/loop) shows up.
 
 <Note>
   Using Ask Attio to *build* a workflow draws on your personal **seat credits**, not workspace credits. Running the workflow draws on workspace credits.
@@ -51,22 +51,22 @@ Admins buy additional credit packages under **Workspace settings → Billing →
 
 Each example pairs a real recipe with its per-run math and a realistic monthly volume.
 
-A **stage-change Slack alert** ([Slack deal alerts on stage change](/guides/route-and-sequence/slack-deal-alerts)) costs the trigger (0) plus a [Filter](/reference/conditions/filter) (0) plus a Slack post (1), for **1 credit per alert**. At 200 stage changes a month, that is 200 credits.
+Start with a **stage-change Slack alert** ([Slack deal alerts on stage change](/guides/route-and-sequence/slack-deal-alerts)). It costs the trigger (0), plus a [Filter](/reference/conditions/filter) (0), plus a Slack post (1), for **1 credit per alert**. At 200 stage changes a month, that is 200 credits.
 
-A **Monday stale-deal sweep** ([Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep)) costs the schedule (0) plus [Find records](/reference/records/find-records) (0) plus a [Loop](/reference/utilities/loop) (0), then a [Create task](/reference/tasks/create-task) (1) for each of 30 stale deals, for **30 credits per week**, or roughly 130 a month.
+Next, a **Monday stale-deal sweep** ([Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep)). It costs the schedule (0), plus [Find records](/reference/records/find-records) (0), plus a [Loop](/reference/utilities/loop) (0). Then it runs a [Create task](/reference/tasks/create-task) (1) for each of 30 stale deals, for **30 credits per week**, or roughly 130 a month.
 
-An **inbound lead research** workflow ([AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research)) costs the trigger (0), a [Web agent](/reference/agents/web-agent) (variable), an [Update record](/reference/records/update-record) (1), and a Slack post (1). The agent's token usage depends on how many questions you ask and how much it has to read. Run it on ten representative records, read the per-run cost in the run viewer (hover over a run), and *then* decide whether it fires on every new lead or only filtered ones.
+Last, an **inbound lead research** workflow ([AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research)). It costs the trigger (0), a [Web agent](/reference/agents/web-agent) (variable), an [Update record](/reference/records/update-record) (1), and a Slack post (1). The agent's token usage depends on how many questions you ask and how much it has to read. So run it on ten representative records first. Read the per-run cost in the run viewer (hover over a run). Then decide whether it fires on every new lead or only on filtered ones.
 
 ## Reasoning about AI block costs
 
-Token-based pricing means you cannot precompute AI costs exactly. Per-workflow credit caps were removed when token pricing arrived, so you cannot bound a run from the settings panel either. Manage the cost in the design instead, in order of effectiveness.
+AI blocks are billed by tokens, the small units of text the model reads and writes. Token-based pricing means you cannot work out an AI cost exactly before a run. Per-workflow credit caps were removed when token pricing arrived. So you cannot cap a run from the settings panel either. Manage the cost in the design instead. The steps below go in order of effectiveness.
 
 <Steps>
   <Step title="Filter before the AI block, not after">
-    Every record that reaches the agent costs money. Put a free [Filter](/reference/conditions/filter) ahead of the AI block and let it do the gatekeeping, so only records that need analysis ever reach a paid block.
+    Every record that reaches the agent costs money. Put a free [Filter](/reference/conditions/filter) ahead of the AI block and let it do the gatekeeping. Then only records that need analysis ever reach a paid block.
   </Step>
   <Step title="Trim the prompt surface">
-    Fewer questions to a [Web agent](/reference/agents/web-agent) and tighter instructions to a [Custom agent](/reference/agents/custom-agent) directly reduce tokens, and tokens are the cost.
+    Fewer questions to a [Web agent](/reference/agents/web-agent) and tighter instructions to a [Custom agent](/reference/agents/custom-agent) directly reduce tokens. Tokens are the cost.
   </Step>
   <Step title="Test on a sample and extrapolate">
     Run the AI block on ten representative records and read the per-run cost before you wire it to a high-volume trigger such as [Record created](/reference/triggers/record-created) on People.
@@ -76,20 +76,20 @@ Token-based pricing means you cannot precompute AI costs exactly. Per-workflow c
   </Step>
 </Steps>
 
-The block configuration sidebar shows credit costs while you build: fixed-cost blocks show the number, AI blocks show a "dynamic" label, and free blocks show nothing.
+The block configuration sidebar shows credit costs while you build. Fixed-cost blocks show the number, AI blocks show a "dynamic" label, and free blocks show nothing.
 
 ## Cost-optimization patterns
 
 These patterns cut credit consumption without changing what a workflow achieves.
 
-- **Prefer [Attribute value changed](/reference/triggers/attribute-value-changed) over an unscoped [Record updated](/reference/triggers/record-updated).** A [Record updated](/reference/triggers/record-updated) trigger with no attribute selected fires on *every* attribute change on *every* record of the object. Each run might cost little, but the run volume can be enormous, and runaway volume is how workspaces hit their cap mid-month.
+- **Prefer [Attribute value changed](/reference/triggers/attribute-value-changed) over an unscoped [Record updated](/reference/triggers/record-updated).** A [Record updated](/reference/triggers/record-updated) trigger with no attribute selected fires on *every* attribute change on *every* record of the object. Each run might cost little, but the run volume can be enormous. Runaway volume is how workspaces hit their cap mid-month.
 - **Use [Create or update record](/reference/records/create-or-update-record) instead of Find + If + Create/Update chains.** It reaches the same outcome with fewer blocks and one credit.
-- **Push derived values into the workflow only when they change** rather than recomputing on a schedule across the whole object.
+- **Push derived values into the workflow only when they change**, rather than recomputing on a schedule across the whole object.
 - **Guard against [infinite loops](/explanation/infinite-loops-and-safety).** A self-triggering workflow burns credits until someone notices.
 
 ## Source
 
-Official Attio Help Center: [Manage workspace and seat credits](https://attio.com/help/reference/workspace-settings-billing/manage-workspace-and-seat-credits) and [Migrate your legacy workflows — pricing](https://attio.com/help/reference/automations/workflows/migrate-your-legacy-workflows).
+Official Attio Help Center: [Manage workspace and seat credits](https://attio.com/help/reference/workspace-settings-billing/manage-workspace-and-seat-credits) and [Migrate your legacy workflows pricing](https://attio.com/help/reference/automations/workflows/migrate-your-legacy-workflows).
 
 Last reviewed against the Attio Help Center, June 2026.
 

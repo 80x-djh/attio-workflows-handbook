@@ -4,7 +4,7 @@ description: The Classify record block (AI step) assigns one or more tags to a r
 icon: tags
 ---
 
-The **Classify record** block (AI step) assigns one or more tags to a record from a fixed list of options you provide. It reads the record's attributes, picks the best-matching tags, and returns them as a run value. The result is not written back to the record, so you pair it with an [Update record](/reference/records/update-record) block to persist the answer.
+The **Classify record** block (AI step) assigns one or more tags to a record from a fixed list of options you provide. It reads the record's attributes, picks the tags that fit best, and returns them as a run value. A run value lives only inside the run, so it is not written back to the record. To save the answer, pair this block with an [Update record](/reference/records/update-record) block.
 
 | | |
 | --- | --- |
@@ -18,8 +18,8 @@ The **Classify record** block (AI step) assigns one or more tags to a record fro
 
 | Input | Type | Required | Default | Notes |
 | --- | --- | --- | --- | --- |
-| `Record` | Record | Yes | — | The record to classify. The block reads its attributes as context. |
-| `Tags` | List of text | Yes | — | The allowed tag options. AI may only return values from this list. |
+| `Record` | Record | Yes | None | The record to classify. The block reads its attributes as context. |
+| `Tags` | List of text | Yes | None | The allowed tag options. AI may only return values from this list. |
 | `Allow multiple tags` | Boolean | No | Off | When on, AI can return more than one tag. When off, it returns a single tag. |
 
 ## Outputs
@@ -28,25 +28,25 @@ The **Classify record** block (AI step) assigns one or more tags to a record fro
 | --- | --- | --- | --- |
 | `Record classification` | Text or list of text | `Tier 1` | One tag when `Allow multiple tags` is off, a list of tags when it is on. |
 
-Reference the chosen tag downstream as `{{ steps.classify_record.classification }}`, and map it into the value field of a later [Update record](/reference/records/update-record) block.
+Reference the chosen tag downstream as `{{ steps.classify_record.classification }}`. Then map it into the value field of a later [Update record](/reference/records/update-record) block.
 
 ## Behavior
 
-The block sends the record's attribute values to the model and constrains the answer to the `Tags` list, so the output is always one of your options rather than free text. With `Allow multiple tags` off, it returns exactly one tag; with it on, it returns zero or more tags as a list.
+The block sends the record's attribute values to the model and limits the answer to the `Tags` list. The output is always one of your options, never free text. With `Allow multiple tags` off, it returns exactly one tag. With it on, it returns zero or more tags as a list.
 
-The output lives only in the run. Nothing is saved to the record until you add a write block, which means a workflow that ends at **Classify record** classifies silently and stores nothing. Each run sends fresh tokens to the model, so the cost scales with how much attribute context the record carries and how many tags you offer.
+The output lives only in the run. Nothing is saved to the record until you add a write block. So a workflow that ends at **Classify record** classifies silently and stores nothing. Each run sends fresh tokens to the model. The cost grows with two things: how much attribute data the record holds, and how many tags you offer.
 
 ## Gotchas
 
 - **The classification is never saved on its own.** The block returns a run value, not a record write, so the tag disappears when the run ends. Add an [Update record](/reference/records/update-record) block and map `{{ steps.classify_record.classification }}` into the target attribute.
-- **Writing to a select attribute fails when the option does not exist.** A select or multi-select attribute only accepts values that are already defined as options. Create the matching options first, spelled exactly as the tags you pass in, before the [Update record](/reference/records/update-record) block runs.
+- **Writing to a select attribute fails when the option does not exist.** A select or multi-select attribute only accepts values that are already defined as options. Create the matching options first, spelled exactly as the tags you pass in. Do this before the [Update record](/reference/records/update-record) block runs.
 - **Overlapping tags produce inconsistent single answers.** When two tags describe the same record and you need one answer, the model has no rule for breaking the tie. Keep tag names mutually exclusive whenever `Allow multiple tags` is off.
 
 ## Examples
 
 ### Sorting new companies into ICP tiers
 
-A workflow on a freshly created company classifies it into an ideal customer profile (ICP) tier, then writes the tier to a select attribute so reps can filter by it.
+This workflow runs on a freshly created company. It classifies the company into an ideal customer profile (ICP) tier, the segment of buyer you most want to win. It then writes the tier to a select attribute so reps can filter by it.
 
 | Field | Value |
 | --- | --- |
@@ -58,7 +58,7 @@ The block returns `Tier 1`. A following [Update record](/reference/records/updat
 
 ### Tagging an account with multiple product interests
 
-A workflow classifies an account against a set of product lines and keeps every match, so a multi-select attribute can hold all of them at once.
+This workflow classifies an account against a set of product lines and keeps every match. A multi-select attribute can then hold all of them at once.
 
 | Field | Value |
 | --- | --- |
@@ -70,7 +70,7 @@ The block returns the list `["Analytics", "Integrations"]`. A following [Update 
 
 ## Credit cost worked example
 
-The block is token-priced, so each run costs a variable number of credits that depends on the record's attribute volume and the size of your `Tags` list. Suppose you classify every new company into four ICP tiers and you create 400 companies a month. That is 400 token-priced runs, plus 400 credits for the [Update record](/reference/records/update-record) write that persists each tier, since record writes cost 1 credit each. Compare that monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing), which holds the per-plan numbers.
+The block is token-priced, so each run costs a variable number of credits. The number depends on the record's attribute volume and the size of your `Tags` list. Suppose you classify every new company into four ICP tiers. Suppose you also create 400 companies a month. That is 400 token-priced runs. You then add an [Update record](/reference/records/update-record) write to save each tier. Record writes cost 1 credit each, so that is 400 more credits. Compare that monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing), which holds the per-plan numbers.
 
 ## Source
 

@@ -3,7 +3,9 @@ title: Slack deal alerts on stage change
 description: Post a Slack alert to your revenue team the moment a deal changes stage, without firing on every minor CRM edit.
 ---
 
-Post a Slack alert to your revenue team the moment a deal changes stage, without firing on every minor CRM edit. This recipe watches the `stage` attribute on your Deals object with the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger, optionally branches the message by stage with [Switch](/reference/conditions/switch), and posts the deal name, value, owner, and Attio link to `#revenue` with the [Slack](/reference/integrations) block. Sales leaders see momentum the moment it happens, not at the next pipeline review.
+Post a Slack alert to your revenue team the moment a deal changes stage, without firing on every minor CRM edit. A stage is the column a deal sits in on your pipeline, such as `Qualified` or `Won`. This recipe watches the `stage` attribute on your Deals object with the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger.
+
+It can optionally change the message per stage with [Switch](/reference/conditions/switch). It then posts the deal name, value, owner, and Attio link to `#revenue` with the [Slack](/reference/integrations) block. Sales leaders see momentum the moment it happens, not at the next pipeline review.
 
 | | |
 | --- | --- |
@@ -17,14 +19,18 @@ Post a Slack alert to your revenue team the moment a deal changes stage, without
 ## Prerequisites
 
 - A Plus plan or above, which includes the Slack integration and the new Workflows engine.
-- The Slack integration connected to your workspace, with the connecting user a member of the target channel `#revenue`.
-- A **Deals** object with a single-select **Stage** attribute (slug `stage`) and the stages you announce already defined, for example `Qualified`, `Proposal`, and `Won`.
-- An **Owner** attribute on Deals (slug `owner`) and an **Amount** or **Deal value** attribute (slug `value`), populated on the deals you expect to announce.
-- No API key is required. The Slack block authenticates through the connected integration.
+- The Slack integration connected to your workspace. The user who connected it must be a member of the target channel `#revenue`.
+- A **Deals** object with a single-select **Stage** attribute. A single-select attribute is one that holds exactly one value from a fixed list. Its slug, the short internal name you reference in the workflow, is `stage`. The stages you announce must already be defined, for example `Qualified`, `Proposal`, and `Won`.
+- An **Owner** attribute on Deals (slug `owner`) and an **Amount** or **Deal value** attribute (slug `value`). Both must be filled in on the deals you expect to announce.
+- No API key is required. The Slack block signs in through the connected integration.
 
 ## How it works
 
-The [Attribute value changed](/reference/triggers/attribute-value-changed) trigger fires only when the `stage` attribute changes, so edits to other fields never reach the Slack step. An optional [Switch](/reference/conditions/switch) reads the new stage value and routes to a different message branch per stage; skip it when one message format covers every stage you announce. The [Slack](/reference/integrations) block then posts a formatted message into `#revenue`, pulling the deal name, value, owner, and Attio link from the triggering record. The Slack post is the only block that writes externally, so it is the only block that costs a credit.
+The [Attribute value changed](/reference/triggers/attribute-value-changed) trigger fires only when the `stage` attribute changes. Edits to any other field never reach the Slack step.
+
+An optional [Switch](/reference/conditions/switch) block reads the new stage value and sends the run down a different message branch for each stage. Skip the Switch when one message format covers every stage you announce.
+
+The [Slack](/reference/integrations) block then posts a formatted message into `#revenue`. It pulls the deal name, value, owner, and Attio link from the record that triggered the run. The Slack post is the only block that writes to an outside service. That makes it the only block that costs a credit.
 
 The run executes in this order:
 
@@ -38,7 +44,7 @@ The run executes in this order:
   <Step title="Add the Attribute value changed trigger">
     In a new workflow, click the **Add trigger** button and choose **Attribute value changed**. Set the object to **Deals** and the attribute to **Stage**.
 
-    Do not reach for an unscoped [Record updated](/reference/triggers/record-updated) trigger here. It fires on every field edit and would post to Slack when someone fixes a typo in a company name. Scoping the trigger to the **Stage** attribute is what keeps the channel signal high.
+    Do not reach for an unscoped [Record updated](/reference/triggers/record-updated) trigger here. An unscoped trigger fires on every field edit. It would even post to Slack when someone fixes a typo in a company name. Scoping the trigger to the **Stage** attribute is what keeps the channel useful.
 
     | Field | Value |
     | --- | --- |
@@ -49,9 +55,11 @@ The run executes in this order:
   </Step>
 
   <Step title="Branch by stage with Switch">
-    When different stages deserve different messages, add a **Switch** block. Set the input to the trigger's new **Stage** value and add one branch per stage you announce. Leave the default branch empty so unlisted stages such as `Discovery` stop the run silently, and a stopped run is free.
+    When different stages deserve different messages, add a **Switch** block. Set the input to the trigger's new **Stage** value, then add one branch per stage you announce.
 
-    Skip this step when one message works for every stage, and wire the trigger straight to Slack instead.
+    Leave the default branch empty. Unlisted stages such as `Discovery` then stop the run silently, and a stopped run is free.
+
+    Skip this step when one message works for every stage. In that case, wire the trigger straight to Slack instead.
 
     | Field | Value |
     | --- | --- |
@@ -63,7 +71,7 @@ The run executes in this order:
   </Step>
 
   <Step title="Post the alert to Slack">
-    Add the **Slack** block and choose **Post message to channel**. Select the connected workspace, set the channel to `#revenue`, and compose the message with variables from the trigger. Use Slack markdown so the deal name and stage stand out.
+    Add the **Slack** block and choose **Post message to channel**. Select the connected workspace and set the channel to `#revenue`. Compose the message with variables from the trigger. Use Slack markdown so the deal name and stage stand out.
 
     | Field | Value |
     | --- | --- |
@@ -77,7 +85,7 @@ The run executes in this order:
 
 ## Variable mapping
 
-Each variable resolves from the triggering record. Map them with the syntax described in [Variables & data passing](/explanation/variables).
+A variable is a placeholder that the run fills in with a real value. Each one here resolves from the record that triggered the run. Map them with the syntax described in [Variables & data passing](/explanation/variables).
 
 | Variable | Source block | Field | Example value |
 | --- | --- | --- | --- |
@@ -89,11 +97,11 @@ Each variable resolves from the triggering record. Map them with the syntax desc
 
 ## Credit cost worked example
 
-The trigger is free, and the optional [Switch](/reference/conditions/switch) is a free logic block. Only the [Slack](/reference/integrations) post costs a credit, and only when the run reaches it.
+The trigger is free. The optional [Switch](/reference/conditions/switch) is a free logic block. Only the [Slack](/reference/integrations) post costs a credit, and only when the run reaches it.
 
-Suppose 120 deals move into an announced stage in a month. That is 120 runs at 1 credit each, or **120 credits**. Runs that hit the empty **Switch** default stop before Slack and cost nothing, so deals cycling through `Discovery` add no cost. Compare 120 credits against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing) to confirm headroom.
+Suppose 120 deals move into an announced stage in a month. That is 120 runs at 1 credit each, or **120 credits**. Runs that hit the empty **Switch** default stop before Slack and cost nothing. Deals cycling through `Discovery` therefore add no cost. Compare 120 credits against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing) to confirm you have headroom.
 
-If you add the optional [Summarize record](/reference/ai/summarize-record) upgrade from the variations, that block's cost is variable and token-based rather than a flat credit. Sample about 10 representative deals, run them through, and read the per-run cost in the run viewer before you estimate a monthly total.
+You can add the optional [Summarize record](/reference/ai/summarize-record) upgrade from the variations. That block's cost is variable and based on tokens rather than a flat credit. To estimate its monthly total, sample about 10 representative deals and run them through. Then read the per-run cost in the run viewer.
 
 ## Test plan
 
@@ -101,7 +109,7 @@ If you add the optional [Summarize record](/reference/ai/summarize-record) upgra
 2. Open the workflow's run history and confirm a new run appears, triggered by the stage change.
 3. Check the **Attribute value changed** trigger output. `new_value` reads `Proposal`, and the record is Acme renewal.
 4. If you built the **Switch**, confirm the run took the `Proposal` branch and not the default.
-5. Check the **Slack** block output for a `200` status and a message timestamp, then open `#revenue` and confirm the post shows the deal name, value, owner, and a working Attio link.
+5. Check the **Slack** block output for a `200` status and a message timestamp. Then open `#revenue` and confirm the post shows the deal name, value, owner, and a working Attio link.
 6. Fire a deliberately failing input: change a deal's **Stage** to `Discovery`, an unlisted value. Confirm the run stops at the **Switch** default with no Slack post and no credit consumed.
 
 ## Failure modes
@@ -118,7 +126,7 @@ If you add the optional [Summarize record](/reference/ai/summarize-record) upgra
 
 ### Route each stage to its own channel
 
-Replace the single Slack block with one Slack block per [Switch](/reference/conditions/switch) branch: send `Proposal` to `#deals-active`, `Won` to `#wins`, and so on. Each branch's Slack post still costs 1 credit, but only one branch runs per stage change, so the per-run cost is unchanged.
+Replace the single Slack block with one Slack block per [Switch](/reference/conditions/switch) branch. Send `Proposal` to `#deals-active`, `Won` to `#wins`, and so on. Each branch's Slack post still costs 1 credit. Only one branch runs per stage change, so the per-run cost is unchanged.
 
 ### Announce only above an amount threshold
 
@@ -126,7 +134,7 @@ Add a free [If](/reference/conditions/if) block before Slack that continues only
 
 ### Add a one-line summary of why it moved
 
-Insert a [Summarize record](/reference/ai/summarize-record) block before Slack to generate a short narrative from the deal's recent notes, then add the summary as a fourth message line. Gate it behind a free [Filter](/reference/conditions/filter) so the model runs only on deals reaching `Proposal` or `Won`. This block's cost is variable and token-based, so do not run it on every stage change.
+Insert a [Summarize record](/reference/ai/summarize-record) block before Slack. It generates a short narrative from the deal's recent notes, which you then add as a fourth message line. Gate it behind a free [Filter](/reference/conditions/filter) so the model runs only on deals reaching `Proposal` or `Won`. This block's cost is variable and based on tokens, so do not run it on every stage change.
 
 ### Create a task instead of posting
 

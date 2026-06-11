@@ -4,12 +4,12 @@ description: The Celebration block plays an in-app animation for selected worksp
 icon: party-popper
 ---
 
-The **Celebration** block (Workspace) plays an in-app animation for selected workspace users to mark a meaningful moment. It writes nothing to your data and consumes no credits, so its only job is to draw attention. Reserve it for genuine milestones such as a closed-won deal, not for every routine stage change.
+The **Celebration** block plays an in-app animation for selected workspace users to mark a meaningful moment. It belongs to the Workspace category. It writes nothing to your data and uses no credits. Its only job is to draw attention. Save it for genuine milestones, such as a closed-won deal, and not for every routine stage change.
 
 | | |
 | --- | --- |
 | **Category** | Workspace |
-| **Credit cost** | Free — logic blocks consume no credits |
+| **Credit cost** | Free. Logic blocks consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
@@ -25,41 +25,41 @@ The **Celebration** block (Workspace) plays an in-app animation for selected wor
 
 None.
 
-The **Celebration** block produces no downstream value, so there is no `{{ steps.celebration.* }}` reference to consume in a later block. Treat it as a terminal action rather than a source of data.
+The **Celebration** block produces no downstream value. There is no `{{ steps.celebration.* }}` reference for a later block to use. Treat it as a final action rather than a source of data.
 
 ## Behavior
 
-The **Celebration** block fires once per run and shows the chosen animation only to the members listed in `Target`, not to everyone in the workspace. Because the block writes no records and calls no external service, it never affects credit usage. The block is the end of its own branch: it produces nothing for a later block to consume.
+The **Celebration** block fires once per run. It shows the chosen animation only to the members listed in `Target`, not to everyone in the workspace. The block writes no records and calls no outside service, so it never affects credit usage. It is also the end of its own branch. It produces nothing for a later block to consume.
 
 ## Gotchas
 
-- **The celebration loses its meaning when overused.** Firing it on every stage change trains members to ignore it. Gate the block behind a tight condition — for example, only when a deal reaches the closed-won stage — so the animation stays a signal rather than noise.
-- **Migrated Confetti blocks now read as Ceiling drop.** In legacy workflows the animation was called Confetti, and Attio maps that single legacy style onto the `Ceiling drop` type in the new engine. If a migrated workflow looks different from the original, check that `Ceiling drop` is the intended style, then switch to `Fireworks` or `Cannons` if you want a different effect.
-- **No one sees the animation unless you set `Target`.** `Target` is a required input that names the specific members who should see the animation. Wire in the members you want to celebrate — for example the deal owner and their manager — rather than assuming the whole workspace is included.
+- **The celebration loses its meaning when overused.** Firing it on every stage change trains members to ignore it. Gate the block behind a tight condition so the animation stays a signal rather than noise. For example, only fire it when a deal reaches the closed-won stage.
+- **Migrated Confetti blocks now read as Ceiling drop.** In legacy workflows the animation was called Confetti. Attio maps that single legacy style onto the `Ceiling drop` type in the new engine. If a migrated workflow looks different from the original, check that `Ceiling drop` is the intended style. Switch to `Fireworks` or `Cannons` if you want a different effect.
+- **No one sees the animation unless you set `Target`.** `Target` is a required input. It names the specific members who should see the animation. Wire in the members you want to celebrate, such as the deal owner and their manager. Do not assume the whole workspace is included.
 
 ## Examples
 
 ### Celebrating a closed-won deal for the owner and their manager
 
-A revenue team wants the deal owner and their sales manager to see a celebration the moment a deal is marked won, paired with a Slack post for the wider channel.
+A revenue team wants the deal owner and their sales manager to see a celebration the moment a deal is marked won. They pair it with a Slack post for the wider channel.
 
 | Field | Value |
 | --- | --- |
 | Type | `Ceiling drop` |
 | Target | Priya Sharma (owner), Jordan Lee (manager) |
 
-When a deal moves to the closed-won stage, Priya Sharma and Jordan Lee each see a ceiling-drop animation in Attio, and a separate Slack post announces the win to `#revenue`.
+When a deal moves to the closed-won stage, Priya Sharma and Jordan Lee each see a ceiling-drop animation in Attio. A separate Slack post announces the win to `#revenue`.
 
 ### Marking a quarterly revenue milestone for the whole revenue team
 
-A team celebrates crossing a quarterly bookings target by showing every member of the revenue group a more dramatic animation.
+A team celebrates crossing a quarterly bookings target. They show every member of the revenue group a more dramatic animation.
 
 | Field | Value |
 | --- | --- |
 | Type | `Fireworks` |
 | Target | Revenue team members |
 
-When the milestone workflow runs, every targeted member sees a fireworks animation in Attio, reinforcing the win across the whole revenue team at once.
+When the milestone workflow runs, every targeted member sees a fireworks animation in Attio. This reinforces the win across the whole revenue team at once.
 
 ## Source
 

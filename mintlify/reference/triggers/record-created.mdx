@@ -4,12 +4,12 @@ description: The Record created trigger (Records) starts a workflow whenever a n
 icon: square-plus
 ---
 
-The **Record created** trigger (Records) starts a workflow whenever a new record appears in an object, however it was created. It fires for manual entry, CSV import, an API call, a form integration, and Attio's own email-sync auto-creation alike, so a single import can fire it thousands of times. Treat it as your raw intake signal and filter it down before any block writes data or calls AI.
+The **Record created** trigger (Records) starts a workflow whenever a new record appears in an object, however it was created. It fires the same way no matter how the record was made: manual entry, a CSV import, an API call, a form integration, or Attio's own email-sync auto-creation. A single import can fire it thousands of times. Treat it as your raw intake signal. Filter that signal down before any block writes data or calls AI.
 
 | | |
 | --- | --- |
 | **Category** | Triggers |
-| **Credit cost** | Free — triggers consume no credits |
+| **Credit cost** | Free. Triggers consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | Fires once per record created, including once per row on import. None otherwise documented. |
@@ -28,27 +28,27 @@ The **Record created** trigger (Records) starts a workflow whenever a new record
 | Actor | Actor | Priya Sharma | Who or what created the record: a workspace member, an import, the API, or email sync. |
 | Timestamp | Datetime | `2026-06-11T14:32:00Z` | When the record was created. |
 
-Reference the created record's attributes downstream as `{{ steps.record_created.record }}`, the actor as `{{ steps.record_created.actor }}`, and the creation time as `{{ steps.record_created.timestamp }}`.
+To use these outputs in later blocks, reference the created record as `{{ steps.record_created.record }}`, the actor as `{{ steps.record_created.actor }}`, and the creation time as `{{ steps.record_created.timestamp }}`.
 
 ## Behavior
 
-The trigger runs once for every record that enters the selected object, with no deduplication and no batching. Source does not matter: a record typed into the grid, upserted through the API, captured by a connected form, or auto-created from an inbound email each produce one run.
+The trigger runs once for every record that enters the selected object. It does not remove duplicates, and it does not group records into batches. The source does not matter. Each of these creates one run: a record typed into the grid, a record upserted through the API, a record captured by a connected form, or a record auto-created from an inbound email. (Upsert means insert the record if it is new, or update it if a match already exists.)
 
-A CSV import is the case to watch. Importing a 5,000-row file fires the trigger 5,000 times, which queues 5,000 independent runs of the whole workflow. If those runs write data or call AI, the import becomes a large, mostly unintended bill.
+A CSV import is the case to watch. Importing a 5,000-row file fires the trigger 5,000 times. That queues 5,000 independent runs of the whole workflow. If those runs write data or call AI, the import becomes a large, mostly unintended bill.
 
-The record handed to the trigger reflects its state at the instant of creation, which is often nearly empty. Enrichment, a second API call, or a later edit frequently fills in the important attributes one beat afterward. When your logic depends on a specific value being present, the creation event may arrive too early to act on it. Use the [Filter](/reference/conditions/filter) block to drop runs that lack the data you need before any paid block executes.
+The record handed to the trigger reflects its state at the instant of creation. That state is often nearly empty. The important attributes usually fill in a moment later, through enrichment, a second API call, or a later edit. (Enrichment means filling in details like company size or industry from an outside data source.) So when your logic depends on a specific value being present, the creation event may arrive too early to act on it. Use the [Filter](/reference/conditions/filter) block to drop runs that lack the data you need. Do this before any paid block executes.
 
 ## Gotchas
 
-- **An import fires the trigger once per row.** Bulk imports treat every row as a separate creation, so a 5,000-row CSV queues 5,000 runs. Add a [Filter](/reference/conditions/filter) immediately after the trigger, and avoid pointing AI blocks at this trigger on a busy object.
+- **An import fires the trigger once per row.** Bulk imports treat every row as a separate creation, so a 5,000-row CSV queues 5,000 runs. Add a [Filter](/reference/conditions/filter) immediately after the trigger. Avoid pointing AI blocks at this trigger on a busy object.
 - **Email sync creates records too.** On workspaces with email auto-creation enabled, People and Companies records appear constantly with thin data. Filter on the attributes you actually need before any block acts on the record.
-- **The record is often empty at creation.** Attributes frequently land a moment later through enrichment or a follow-up write, so a value you expect may be missing. When a rule depends on a specific attribute, trigger on [Attribute value changed](/reference/triggers/attribute-value-changed) for that attribute instead, because it fires even when the value is set during creation.
+- **The record is often empty at creation.** Attributes frequently land a moment later through enrichment or a follow-up write, so a value you expect may be missing. When a rule depends on a specific attribute, trigger on [Attribute value changed](/reference/triggers/attribute-value-changed) for that attribute instead. That trigger fires even when the value is set during creation.
 
 ## Examples
 
 ### Routing inbound leads without a webhook
 
-Use **Record created** on People as a webhook-free intake for inbound leads, then enrich the company, list the lead, and assign an owner.
+Use **Record created** on People as a webhook-free intake for inbound leads. From there you can enrich the company, add the lead to a list, and assign an owner.
 
 | Field | Value |
 | --- | --- |
@@ -75,7 +75,7 @@ Use a [Filter](/reference/conditions/filter) as the first block to keep an impor
 }
 ```
 
-A 5,000-row import still fires the trigger 5,000 times, but only the rows that carry a domain pass the filter, so the [Find records](/reference/records/find-records) and AI blocks downstream never run on the thin rows that make up most of the bulk load.
+A 5,000-row import still fires the trigger 5,000 times. But only the rows that carry a domain pass the filter. So the [Find records](/reference/records/find-records) and AI blocks downstream never run on the thin rows that make up most of the bulk load.
 
 ## Source
 

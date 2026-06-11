@@ -1,55 +1,57 @@
 ---
-title: "Track 3 — Keep the pipeline honest"
+title: "Track 3: Keep the pipeline honest"
 description: Pipeline hygiene runs on a schedule that flags and tasks drifted records, never auto-closes, and stays cheap because it writes only on the true branch.
 icon: broom
 ---
 
-Pipeline hygiene runs on a schedule that flags and tasks drifted records, never auto-closes, and stays cheap because it writes only on the true branch. This track turns the polite fiction in your pipeline into a self-cleaning system: a workflow wakes on a clock, finds the deals that have gone quiet or are about to renew, and acts on them without a human opening a single view. You finish with five builds that surface aging deals, stop duplicates at creation, watch renewals, hand off closed-won deals, and report — and a clear mental model for why each one flags instead of closes.
+Pipeline hygiene runs on a schedule that flags and tasks drifted records, never auto-closes, and stays cheap because it writes only on the true branch. A drifted record is a deal that has gone quiet, or one that is about to renew without anyone touching it. The true branch is the path the workflow takes only when a deal really has drifted. This track turns the polite fiction in your pipeline into a system that cleans itself. A workflow wakes on a clock, finds those deals, and acts on them. No human has to open a single view.
+
+You finish with five builds. One surfaces aging deals. One stops duplicates at creation. One watches renewals. One hands off closed-won deals. One reports. You also leave with a clear mental model for why each build flags a deal instead of closing it.
 
 <Note>
-**Prerequisites:** finish [Track 1 — Capture and qualify](/learn/capture-and-qualify), and skim [Loops & processing many records](/explanation/loops) and [Runs, debugging & publishing](/explanation/runs-and-debugging) so per-record cost and run history already make sense.
+**Prerequisites:** finish [Track 1: Capture and qualify](/learn/capture-and-qualify). Then skim [Loops & processing many records](/explanation/loops) and [Runs, debugging & publishing](/explanation/runs-and-debugging), so per-record cost and run history already make sense.
 
 **By the end you can:** stand up a scheduled sweep that flags and tasks drifted deals on its own, with no false positives and no manual cleanup.
 </Note>
 
 ## The mental model
 
-Hygiene runs on a clock, not on a click. A scheduled workflow fires on its own, finds the records that have drifted, and acts on them — but it flags and tasks; it never auto-closes a deal. Holding that line keeps a false positive cheap: a deal flagged in error costs an owner one glance, not a lost record.
+Hygiene runs on a clock, not on a click. A scheduled workflow fires on its own, finds the records that have drifted, and acts on them. But it only flags the deal and creates a task. It never auto-closes a deal. Holding that line keeps a false positive cheap. A deal flagged in error costs an owner one glance, not a lost record.
 
-Two failure modes work against you, and each has a specific fix. False positives make people stop trusting the system, so you tune the threshold per stage instead of applying one global age. Runaway loop cost makes finance stop trusting you, so you keep the [Find records](/reference/records/find-records) filter tight and cap the test run before you let the sweep loose on the whole pipeline.
+Two things can go wrong, and each has a specific fix. The first is false positives, where the system flags deals that are actually fine. When that happens, people stop trusting it. So you tune the age threshold per stage instead of applying one global age to every deal. The second is runaway loop cost, where a sweep does far more work than expected. When that happens, finance stops trusting you. To prevent it, keep the [Find records](/reference/records/find-records) filter tight. Then cap the test run before you let the sweep loose on the whole pipeline.
 
-The cost shape follows from where the writes live. Logic and lookup blocks — the [Recurring schedule](/reference/triggers/recurring-schedule) trigger, [Find records](/reference/records/find-records), the [Loop](/reference/utilities/loop), and an [If](/reference/conditions/if) condition — are free, so you spend nothing to find and walk the records. You pay only on the branch that writes: the [Update record](/reference/records/update-record) flag and the [Create task](/reference/tasks/create-task) for the owner. Gating those writes behind the condition is what keeps a quiet week cheap.
+The cost depends on where the writes happen. Logic and lookup blocks are free. You spend nothing to find the records and step through them. Those free blocks are the [Recurring schedule](/reference/triggers/recurring-schedule) trigger, [Find records](/reference/records/find-records), the [Loop](/reference/utilities/loop), and an [If](/reference/conditions/if) condition. You pay only on the branch that writes. That branch holds the [Update record](/reference/records/update-record) flag and the [Create task](/reference/tasks/create-task) for the owner. Putting those writes behind the condition is what keeps a quiet week cheap.
 
 ## Build the scheduled sweep
 
-These steps build the track's flagship sweep at lesson altitude — enough to grasp the shape and the credit math. The full configuration tables, variable mapping, and test plan live in the Challenge guide, [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep).
+These steps build the track's flagship sweep at lesson altitude. That is enough to grasp the shape and the credit math. The full configuration tables, variable mapping, and test plan live in the Challenge guide, [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep).
 
 <Steps>
   <Step title="Wake the workflow on a schedule">
-    Add the [Recurring schedule](/reference/triggers/recurring-schedule) trigger and set it to run weekly, early on Monday, in the time zone your reps actually work in. Picking the team's zone — `Europe/London` for a team in Europe, the Middle East, and Africa (EMEA) rather than the workspace default — means "Monday morning" lands the same for everyone, and the sweep finishes before the pipeline review.
+    Add the [Recurring schedule](/reference/triggers/recurring-schedule) trigger and set it to run weekly, early on Monday, in the time zone your reps actually work in. Pick the team's zone rather than the workspace default. For example, use `Europe/London` for a team in Europe, the Middle East, and Africa (EMEA). That way "Monday morning" lands the same for everyone, and the sweep finishes before the pipeline review.
   </Step>
   <Step title="Find only the open, owned deals">
-    Add a [Find records](/reference/records/find-records) block on the **Deals** object and filter hard. Restrict to open stages such as `Qualified`, `Proposal`, and `Negotiation`, require an **Owner**, and add a wide activity bound so you never pull the whole pipeline. A tight filter is your main defense against a loop credit blow-up, because every record it returns becomes one loop iteration.
+    Add a [Find records](/reference/records/find-records) block on the **Deals** object and filter hard. Restrict it to open stages such as `Qualified`, `Proposal`, and `Negotiation`. Require an **Owner**, and add a wide activity bound so you never pull the whole pipeline. A tight filter is your main defense against a loop credit blow-up. Every record it returns becomes one loop iteration.
   </Step>
   <Step title="Cap the test run at five records">
-    Set the [Find records](/reference/records/find-records) limit to `5` while you build. An untuned sweep over a four-thousand-deal pipeline can fire four thousand task writes in a single run, so you watch the credit math on five records first. Raise the limit only after a clean test, and keep the stage filter narrow.
+    Set the [Find records](/reference/records/find-records) limit to `5` while you build. An untuned sweep over a four-thousand-deal pipeline can fire four thousand task writes in a single run. So you watch the credit math on five records first. Raise the limit only after a clean test, and keep the stage filter narrow.
   </Step>
   <Step title="Loop over the matches">
-    Add a [Loop](/reference/utilities/loop) block and point it at the records from the find step. Inside the loop, each deal is exposed as the loop's `Current item`, which the nested blocks consume. The loop itself is free; what runs inside it is not, so every block that writes lives inside the loop and stays gated by the condition that precedes it.
+    Add a [Loop](/reference/utilities/loop) block and point it at the records from the find step. Inside the loop, the current deal appears as the loop's `Current item`, and the blocks inside the loop read from it. The loop itself is free, but what runs inside it is not. So every block that writes lives inside the loop, and the condition before it decides whether it runs.
   </Step>
   <Step title="Gate on a stage-specific age">
-    Inside the loop, compute a cutoff date that depends on the deal's stage, then add an [If](/reference/conditions/if) condition that continues only when the deal's last interaction falls before that cutoff. A `Qualified` deal idle for eight days is genuinely stale, but flagging a `Proposal` deal at the same age just trains reps to ignore the flag. Stage-specific thresholds are how you keep false positives near zero, and a condition that stops a run is free.
+    Inside the loop, work out a cutoff date that depends on the deal's stage. Then add an [If](/reference/conditions/if) condition that continues only when the deal's last interaction falls before that cutoff. A `Qualified` deal idle for eight days is genuinely stale. Flagging a `Proposal` deal at the same age just trains reps to ignore the flag. Stage-specific thresholds are how you keep false positives near zero. A condition that stops a run is free.
   </Step>
   <Step title="Flag the deal and task the owner">
-    On the true branch only, add an [Update record](/reference/records/update-record) block to set a **Needs review** flag, then a [Create task](/reference/tasks/create-task) block assigned to the deal owner and linked to the deal. Name the deal and stage in the task text — `Stale deal — review: Acme renewal (Proposal)` — so the owner, Priya Sharma, opens straight into context. The flag write is idempotent, so re-running the sweep on an already-flagged deal just re-sets the same value.
+    On the true branch only, add an [Update record](/reference/records/update-record) block to set a **Needs review** flag. Then add a [Create task](/reference/tasks/create-task) block assigned to the deal owner and linked to the deal. Name the deal and stage in the task text, such as `Stale deal review: Acme renewal (Proposal)`. That way the owner, Priya Sharma, opens straight into context. The flag write is idempotent, which means re-running it has no extra effect. Re-running the sweep on an already-flagged deal just re-sets the same value.
   </Step>
   <Step title="Publish and watch the first runs">
-    Use the **Run test** button to fire the trigger by hand instead of waiting for Monday, then read the run in history to confirm the writes happened only on the stale branch. I check this weekly for the first month: a sweep that flags the wrong deals erodes trust faster than no sweep at all.
+    Use the **Run test** button to fire the trigger by hand instead of waiting for Monday. Then read the run in history to confirm the writes happened only on the stale branch. I check this weekly for the first month. A sweep that flags the wrong deals erodes trust faster than no sweep at all.
   </Step>
 </Steps>
 
 <Note>
-Each stale deal costs only the two writes on the true branch — the flag and the task — while the schedule, find, loop, and condition stay free; fresh deals cost nothing. For per-block credit amounts and your plan's monthly allowance, see [Credits & pricing explained](/reference/credits-and-pricing) rather than assuming a number from another page. Per-workflow credit caps were removed in the new engine, so the only lever that matters is keeping the stale count honest with a tight filter and accurate per-stage thresholds.
+Each stale deal costs only the two writes on the true branch, the flag and the task. The schedule, find, loop, and condition stay free, and fresh deals cost nothing. For per-block credit amounts and your plan's monthly allowance, see [Credits & pricing explained](/reference/credits-and-pricing) rather than assuming a number from another page. Per-workflow credit caps were removed in the new engine. So the only lever that matters is keeping the stale count honest, with a tight filter and accurate per-stage thresholds.
 </Note>
 
 ## Modules
@@ -76,16 +78,16 @@ Work these in order, or jump to the one that hurts most. Each is a complete, fol
 
 ## Challenge
 
-Stand up the [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep) end to end. A Monday schedule finds open deals past a stage-specific age, loops them, flags each, and tasks the owner, then posts a single review digest — with the test run capped at five records so you watch the credit math before you let it loose on the whole pipeline.
+Stand up the [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep) end to end. A Monday schedule finds open deals past a stage-specific age, loops them, flags each, and tasks the owner. It then posts a single review digest. Cap the test run at five records so you watch the credit math before you let it loose on the whole pipeline.
 
 ## Where this goes next
 
-This track makes the pipeline tell the truth on its own. The next track hands a whole funnel segment to an AI agent that researches and routes — under the read-only, "Run as" permission model — in [Track 4 — Let AI own a stage](/learn/let-ai-own-a-stage).
+This track makes the pipeline tell the truth on its own. The next track hands a whole funnel segment to an AI agent that researches and routes. That agent works under the read-only, "Run as" permission model, in [Track 4: Let AI own a stage](/learn/let-ai-own-a-stage).
 
 ## See also
 
 - [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep)
-- [Track 4 — Let AI own a stage](/learn/let-ai-own-a-stage)
+- [Track 4: Let AI own a stage](/learn/let-ai-own-a-stage)
 - [Loops & processing many records](/explanation/loops)
 - [Credits & pricing explained](/reference/credits-and-pricing)
 

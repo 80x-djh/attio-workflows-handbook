@@ -4,7 +4,7 @@ description: The Create task block creates a new Attio task, optionally linked t
 icon: square-check
 ---
 
-The **Create task** block (Tasks) creates a new Attio task, optionally linked to records and assigned to teammates. The task text is the only required input; a due date, linked records, and assignees are all optional. Assignees are notified when the task is created, so use this block to put real follow-up work in a person's queue rather than as a silent log entry.
+The **Create task** block creates a new Attio task, optionally linked to records and assigned to teammates. It belongs to the Tasks category. A task is a piece of follow-up work in Attio, like a to-do item. The task text is the only required input. A due date, linked records, and assignees are all optional. Assignees are notified when the task is created. Use this block to put real follow-up work in a person's queue, not as a silent log entry.
 
 | | |
 | --- | --- |
@@ -29,40 +29,40 @@ The **Create task** block (Tasks) creates a new Attio task, optionally linked to
 | --- | --- | --- | --- |
 | Created task | Task | `Follow up on Acme renewal` | The full task that was created, including its generated ID and the values you set. |
 
-Reference the created task downstream as `{{ steps.create_task.task }}`, for example to pass it into a later [Complete task](/reference/tasks/complete-task) step.
+A variable is a value you can reuse in a later block. Reference the created task downstream as `{{ steps.create_task.task }}`. For example, pass it into a later [Complete task](/reference/tasks/complete-task) step.
 
 ## Behavior
 
-**Create task** runs once per execution and always inserts a new task. It does not check whether a similar task already exists, so two runs on the same input produce two tasks.
+**Create task** runs once per execution and always inserts a new task. It does not check whether a similar task already exists. So two runs on the same input produce two tasks.
 
-Empty optional inputs are simply omitted. If you leave **Due**, **Linked records**, or **Assignees** blank, or wire in a variable that resolves to no value, the block creates the task without that field rather than failing. A task with no assignee lands in the workspace unassigned and notifies no one.
+Empty optional inputs are simply omitted. Say you leave **Due**, **Linked records**, or **Assignees** blank, or wire in a variable that resolves to no value. The block then creates the task without that field rather than failing. A task with no assignee lands in the workspace unassigned and notifies no one.
 
-Each assignee is notified when the task is created. That notification is the point of the block for most follow-up automations, but it also means a workflow that fires more often than you expect turns into a stream of notifications for the assignee. Combine **Assignees** with a [Filter](/reference/conditions/filter) earlier in the workflow so only the runs that matter create a task.
+Each assignee is notified when the task is created. That notification is the point of the block for most follow-up automations. It also means that a workflow firing more often than you expect turns into a stream of notifications for the assignee. To prevent that, add a [Filter](/reference/conditions/filter) earlier in the workflow so only the runs that matter create a task. A filter is a step that stops the workflow unless a condition is met.
 
 ## Gotchas
 
-- **Duplicate tasks pile up on retries.** Because the block always inserts, a retried run or a trigger that fires more than once creates a second copy of the same task. Guard against this by filtering the trigger tightly, or by checking with [Find records](/reference/records/find-records) whether an open task already exists before this block runs.
-- **An empty assignee creates a silent task.** If the **Assignees** variable resolves to no value, the task is created unassigned and no one is notified, so the follow-up quietly never happens. Confirm the variable holds a workspace member before this block, or set a fixed fallback assignee.
-- **The Due input is a date, not a duration.** **Create task** expects an absolute due date, so wiring in "3 days" does not work. Compute the date first with an [Adjust time](/reference/calculations/adjust-time) step, then pass its output into **Due**.
+- **Duplicate tasks pile up on retries.** Because the block always inserts, a retried run or a trigger that fires more than once creates a second copy of the same task. Guard against this in one of two ways. Filter the trigger tightly, or use [Find records](/reference/records/find-records) to check whether an open task already exists before this block runs.
+- **An empty assignee creates a silent task.** If the **Assignees** variable resolves to no value, the task is created unassigned and no one is notified. The follow-up then quietly never happens. Confirm the variable holds a workspace member before this block, or set a fixed fallback assignee.
+- **The Due input is a date, not a duration.** **Create task** expects an absolute due date, so wiring in "3 days" does not work. Compute the date first with an [Adjust time](/reference/calculations/adjust-time) step. Then pass its output into **Due**.
 
 ## Examples
 
 ### Creating a follow-up task for a stale deal
 
-A pipeline-hygiene workflow finds deals with no activity for two weeks and creates a task for each deal's owner, due the next day.
+A pipeline-hygiene workflow finds deals with no activity for two weeks. It creates a task for each deal's owner, due the next day.
 
 | Field | Value |
 | --- | --- |
-| Task | `Follow up on {{ steps.find_records.record.name }} — no activity for 14 days` |
+| Task | `Follow up on {{ steps.find_records.record.name }}: no activity for 14 days` |
 | Due | `{{ steps.adjust_time.date }}` |
 | Linked records | `{{ steps.find_records.record }}` |
 | Assignees | `{{ steps.find_records.record.owner }}` |
 
-The block creates the task `Follow up on Acme renewal — no activity for 14 days`, links it to the Acme deal, assigns it to Priya Sharma, and notifies her that it is due tomorrow.
+The block creates the task `Follow up on Acme renewal: no activity for 14 days`. It links the task to the Acme deal, assigns it to Priya Sharma, and notifies her that it is due tomorrow.
 
 ### Creating an onboarding task on a closed-won deal
 
-A handoff workflow fires when a deal moves to Closed won and creates a kickoff task for the Customer Success owner.
+A handoff workflow fires when a deal moves to Closed won. It creates a kickoff task for the Customer Success owner.
 
 ```json
 {
@@ -73,11 +73,11 @@ A handoff workflow fires when a deal moves to Closed won and creates a kickoff t
 }
 ```
 
-The block creates the task `Schedule onboarding kickoff for Acme`, links it to the deal record, assigns it to Priya Sharma, and notifies her so the kickoff is scheduled before the deal goes cold.
+The block creates the task `Schedule onboarding kickoff for Acme`. It links the task to the deal record, assigns it to Priya Sharma, and notifies her so the kickoff is scheduled before the deal goes cold.
 
 ## Credit cost worked example
 
-**Create task** costs 1 credit per run. A stale-deal sweep that creates one follow-up task for every flagged deal, flagging 120 deals a month, spends 120 credits on this block. Compare that figure against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing); only the runs that actually reach this block count, because failed runs and untaken branches consume no credits.
+**Create task** costs 1 credit per run. Take a stale-deal sweep that creates one follow-up task for every flagged deal. If it flags 120 deals a month, it spends 120 credits on this block. Compare that figure against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing). Only the runs that actually reach this block count, because failed runs and untaken branches consume no credits.
 
 ## Source
 

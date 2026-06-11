@@ -4,12 +4,12 @@ description: The Manual run trigger (manual) starts a workflow on demand from th
 icon: play
 ---
 
-The **Manual run** trigger (manual) starts a workflow on demand from the workflow editor, with no record or list entry in context. It passes only the actor and a timestamp into the run, so any workflow that needs specific data must fetch it with a [Find records](/reference/records/find-records) or [Find list entries](/reference/lists/find-list-entries) block. Reach for it when you want to test a schedule or a webhook-style flow without waiting for the real trigger to fire.
+The **Manual run** trigger (manual) starts a workflow on demand from the workflow editor, with no record or list entry in context. It passes only two things into the run: who started it (the actor) and a timestamp. So any workflow that needs specific data has to fetch it first, using a [Find records](/reference/records/find-records) or [Find list entries](/reference/lists/find-list-entries) block. Reach for it when you want to test a schedule or a webhook-style flow without waiting for the real trigger to fire.
 
 | | |
 | --- | --- |
 | **Category** | Trigger (manual) |
-| **Credit cost** | Free — triggers consume no credits |
+| **Credit cost** | Free. Triggers consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
@@ -29,13 +29,13 @@ Reference the actor in a later block as `{{ steps.manual_run.actor }}` and the s
 
 ## Behavior
 
-**Manual run** fires once each time you start it from the editor, and each click produces exactly one run. The trigger carries no record or list entry, so the variable picker downstream exposes only the actor and the timestamp — nothing about a specific company, person, or deal.
+**Manual run** fires once each time you start it from the editor. Each click produces exactly one run. The trigger carries no record or list entry. As a result, later blocks can only read the actor and the timestamp. They get nothing about a specific company, person, or deal.
 
-Because the run begins with no working set, a useful workflow built on this trigger almost always opens with a [Find records](/reference/records/find-records) or [Find list entries](/reference/lists/find-list-entries) block that defines what to operate on. From there the run behaves like any other: blocks execute in order, and a [Loop](/reference/utilities/loop) block iterates over the records you fetched.
+The run begins with no working set, that is, no records to act on. So a useful workflow built on this trigger almost always opens with a [Find records](/reference/records/find-records) or [Find list entries](/reference/lists/find-list-entries) block that defines what to operate on. From there the run behaves like any other. Blocks execute in order, and a [Loop](/reference/utilities/loop) block iterates over the records you fetched.
 
 ## Gotchas
 
-- **No record reaches the workflow.** **Manual run** passes only the actor and timestamp, so a block that expects a record receives nothing and the run fails. Open the workflow with a [Find records](/reference/records/find-records) block, or switch to a trigger that carries a record.
+- **No record reaches the workflow.** **Manual run** passes only the actor and timestamp. A block that expects a record receives nothing, so the run fails. Open the workflow with a [Find records](/reference/records/find-records) block, or switch to a trigger that carries a record.
 - **The run cannot act on the record you are viewing.** **Manual run** has no record context, so it never targets the open record. Use [Record command](/reference/triggers/record-command) to add a *Run workflow* button to a record instead.
 - **The run cannot act on the list entry you are viewing.** **Manual run** has no list entry context either, so it never targets the open entry. Use [List entry command](/reference/triggers/list-entry-command) to run the workflow from a single entry.
 
@@ -50,9 +50,9 @@ Start a maintenance flow by hand to confirm it works before you move it onto a s
 | Trigger | Manual run |
 | First block | Find records (`renewal_date` within 30 days) |
 | Then | Loop over the results |
-| Loop body | Create task — `Confirm renewal for {{ steps.loop.current_item.name }}` |
+| Loop body | Create task: `Confirm renewal for {{ steps.loop.current_item.name }}` |
 
-Clicking the *Run test* button fetches the matching deals, then creates one task per deal so you can verify the logic before swapping in a [Recurring schedule](/reference/triggers/recurring-schedule) trigger.
+Clicking the *Run test* button fetches the matching deals. It then creates one task per deal, so you can verify the logic before swapping in a [Recurring schedule](/reference/triggers/recurring-schedule) trigger.
 
 ### Testing a webhook-style flow without an inbound call
 
@@ -62,9 +62,9 @@ Use a manual start to dry-run the processing half of a webhook workflow while yo
 | --- | --- |
 | Trigger | Manual run |
 | First block | Find records (`status` is `New`) |
-| Then | Update record — set `owner` to Priya Sharma |
+| Then | Update record: set `owner` to Priya Sharma |
 
-Running it on demand confirms the lookup and write behave as expected, so you can later replace **Manual run** with a [Webhook received](/reference/triggers/webhook-received) trigger and trust the downstream blocks.
+Running it on demand confirms the lookup and write behave as expected. You can later replace **Manual run** with a [Webhook received](/reference/triggers/webhook-received) trigger and trust the downstream blocks.
 
 ## Source
 

@@ -4,49 +4,51 @@ description: The Task created trigger starts a workflow whenever a new task is c
 icon: square-check
 ---
 
-The **Task created** trigger (Trigger) starts a workflow whenever a new task is created anywhere in the workspace. It fires for every task, regardless of who created it or which record the task is linked to, so most workflows pair it with a [Filter](/reference/conditions/filter) to narrow scope before doing any work. Because tasks created by a workflow also count as new tasks, this trigger is a common source of accidental loops.
+The **Task created** trigger starts a workflow whenever a new task is created anywhere in the workspace. A trigger is the event that kicks off a workflow. This one fires for every task, no matter who created it or which record the task is linked to. Most workflows pair it with a [Filter](/reference/conditions/filter) as the first step. The filter lets the workflow act only on the tasks you care about.
+
+One thing to watch: a task created by a workflow also counts as a new task. So this trigger is a common source of accidental loops.
 
 | | |
 | --- | --- |
 | **Category** | Trigger (automatic) |
-| **Credit cost** | Free — triggers consume no credits |
+| **Credit cost** | Free. Triggers consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
 
 ## Inputs
 
-None. The **Task created** trigger has no configurable inputs; it watches every task in the workspace and cannot be scoped to a single object, list, or assignee from the trigger itself. Narrow the scope with a [Filter](/reference/conditions/filter) as the first step instead.
+None. The **Task created** trigger has no configurable inputs. It watches every task in the workspace. You cannot scope it to a single object, list, or assignee from the trigger itself. To narrow the scope, add a [Filter](/reference/conditions/filter) as the first step instead.
 
 ## Outputs
 
 | Output | Type | Example | Notes |
 | --- | --- | --- | --- |
 | Task | Object | `{ "content": "Send renewal deck", "is_completed": false }` | The created task, including its text, due date, linked records, and assignees. |
-| Actor | Object | `Priya Sharma` | Who created the task — a workspace member, the API, or a workflow. |
+| Actor | Object | `Priya Sharma` | Who created the task. This is a workspace member, the API, or a workflow. |
 | Timestamp | Datetime | `2026-06-11T14:32:00Z` | When the task was created. |
 
-Reference the new task's text in a later block as `{{ steps.task_created.task.content }}`, the actor as `{{ steps.task_created.actor }}`, and the creation time as `{{ steps.task_created.timestamp }}`.
+You can reference these outputs in a later block. Use `{{ steps.task_created.task.content }}` for the new task's text, `{{ steps.task_created.actor }}` for the actor, and `{{ steps.task_created.timestamp }}` for the creation time.
 
 ## Behavior
 
-The trigger fires once per task, the moment the task is created. A workflow that creates several tasks in a single run therefore produces several separate **Task created** runs, one per task.
+The trigger fires once per task, the moment the task is created. So if a workflow creates several tasks in a single run, you get several separate **Task created** runs. There is one run for each task.
 
-The actor reflects the true origin of the task. A task a teammate adds by hand shows that person as the actor; a task created by another workflow shows the workflow as the actor. Use this distinction to keep automated tasks from re-triggering automated work by filtering on the actor.
+The actor tells you the true origin of the task. The actor is whoever or whatever created it. A task a teammate adds by hand shows that person as the actor. A task created by another workflow shows that workflow as the actor. You can filter on the actor to keep automated tasks from re-triggering automated work.
 
-The trigger carries the task's data as it exists at creation time. If a later step or person edits the task — changing its due date or assignee — those edits do not re-fire this trigger, because **Task created** responds only to creation, not to updates.
+The trigger carries the task's data as it exists at creation time. Later edits do not re-fire it. Suppose a step or a person changes the task's due date or assignee afterward. The trigger stays silent, because **Task created** responds only to creation, not to updates.
 
 ## Gotchas
 
-- **The trigger is workspace-wide.** It fires for every task in the workspace, including tasks unrelated to the process you care about. Add a [Filter](/reference/conditions/filter) as the first step to keep only the tasks you want, for example tasks whose text contains `handoff` or tasks linked to a deal.
-- **Creating tasks from this workflow can loop.** A workflow triggered by **Task created** that itself runs [Create task](/reference/tasks/create-task) will re-trigger itself, producing noisy task chains or an [infinite loop](/explanation/infinite-loops-and-safety). Filter the actor so the workflow ignores tasks created by a workflow, or branch with an [If](/reference/conditions/if) block before any [Create task](/reference/tasks/create-task) step.
-- **It does not fire on task completion.** Marking a task complete is an update, not a creation, so this trigger stays silent. **Task created** responds only to the moment a task is created; to mark a task done from inside a workflow, use [Complete task](/reference/tasks/complete-task) in a workflow driven by whatever signal you act on.
+- **The trigger is workspace-wide.** It fires for every task in the workspace, including tasks that have nothing to do with the process you care about. Add a [Filter](/reference/conditions/filter) as the first step to keep only the tasks you want. For example, keep tasks whose text contains `handoff`, or tasks linked to a deal.
+- **Creating tasks from this workflow can loop.** Suppose a workflow is triggered by **Task created** and itself runs [Create task](/reference/tasks/create-task). It re-triggers itself. The result is noisy task chains or an [infinite loop](/explanation/infinite-loops-and-safety). To prevent this, filter the actor so the workflow ignores tasks created by a workflow. You can also branch with an [If](/reference/conditions/if) block before any [Create task](/reference/tasks/create-task) step.
+- **It does not fire on task completion.** Marking a task complete is an update, not a creation, so this trigger stays silent. **Task created** responds only to the moment a task is created. To mark a task done from inside a workflow, use [Complete task](/reference/tasks/complete-task) in a workflow driven by whatever signal you act on.
 
 ## Examples
 
 ### Notifying an owner when a handoff task appears
 
-This workflow watches for handoff tasks and pings the linked account owner so nothing stalls in the queue.
+This workflow watches for handoff tasks and pings the linked account owner, so nothing stalls in the queue.
 
 | Field | Value |
 | --- | --- |
@@ -55,7 +57,7 @@ This workflow watches for handoff tasks and pings the linked account owner so no
 | Filter | Actor is not a workflow |
 | Action | [Broadcast message](/reference/workspace/broadcast-message) to the linked record's owner |
 
-When a member creates a task reading `Customer handoff: Acme renewal`, the account owner receives a message in `#revenue` naming the task, and tasks created by other workflows are ignored.
+When a member creates a task reading `Customer handoff: Acme renewal`, the account owner receives a message in `#revenue` naming the task. Tasks created by other workflows are ignored.
 
 ### Classifying new tasks by type
 
@@ -71,7 +73,7 @@ This workflow reads each new task's text and routes it down a branch based on wh
 }
 ```
 
-When a teammate creates the task `Renewal check-in: jane@acme.com`, [Classify text](/reference/ai/classify-text) labels it `renewal`, and the [If](/reference/conditions/if) branch adds the linked company to the `Renewals at risk` list.
+Suppose a teammate creates the task `Renewal check-in: jane@acme.com`. [Classify text](/reference/ai/classify-text) labels it `renewal`. The [If](/reference/conditions/if) branch then adds the linked company to the `Renewals at risk` list.
 
 ## Source
 

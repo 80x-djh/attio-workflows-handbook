@@ -4,7 +4,7 @@ description: The Complete task block (Task step) marks an existing Attio task as
 icon: square-check
 ---
 
-The **Complete task** block (Task step) marks an existing Attio task as complete. It takes a single task as input, usually one created earlier in the same workflow, and closes it without exposing a downstream output. Use it to auto-close work the workflow itself owns, and reserve it for tasks no human is expected to action by hand.
+The **Complete task** block (Task step) marks an existing Attio task as complete. It takes one task as input and closes it. That task is usually one the same workflow created earlier. The block does not return a downstream output. Use it to auto-close work the workflow itself owns. Reserve it for tasks no person is expected to handle by hand.
 
 | | |
 | --- | --- |
@@ -24,47 +24,47 @@ The **Complete task** block (Task step) marks an existing Attio task as complete
 
 None.
 
-The block does not expose a useful downstream output, so no later block can read a `{{ steps.complete_task.* }}` value from it. When a subsequent block needs the task, reference the task variable you passed into **Complete task** rather than waiting for this block to return one.
+This block does not expose a useful downstream output. No later block can read a `{{ steps.complete_task.* }}` value from it. If a later block needs the task, reference the task variable you passed into **Complete task**. Do not wait for this block to return one.
 
 ## Behavior
 
-**Complete task** changes the status of the referenced task to complete and ends. It acts on whichever task the input resolves to at run time, so a variable that points to a single task completes exactly that task.
+**Complete task** changes the status of the referenced task to complete, then ends. It acts on whichever task the input resolves to at run time. So a variable that points to a single task completes exactly that task.
 
-The block reads its target from a task reference. Pass it the task variable produced by [Create task](/reference/tasks/create-task) or carried from the [Task created](/reference/triggers/task-created) trigger. Passing a record or a linked record instead of a task fails the block, because the input is typed as a task and a record is a different object.
+The block reads its target from a task reference. Pass it the task variable from [Create task](/reference/tasks/create-task), or the one carried from the [Task created](/reference/triggers/task-created) trigger. A record and the task linked to it are different objects. The input is typed as a task. So passing a record or a linked record instead of a task fails the block.
 
-The action is a write, so it consumes 1 credit each time it runs. Only the executed path of a workflow consumes credits, so a **Complete task** block on a branch that does not run costs nothing for that run.
+The action is a write, so it consumes 1 credit each time it runs. Only the path a workflow actually runs consumes credits. A **Complete task** block on a branch that does not run costs nothing for that run.
 
 ## Gotchas
 
-- **The input must be a task, not a linked record.** A task and the record a task is linked to are different objects, so wiring a record variable into the input fails the block. Map the task variable from [Create task](/reference/tasks/create-task) or [Task created](/reference/triggers/task-created), not the record the task points at.
-- **There is no output to chain from.** The block returns no usable downstream value, so a later block that expects a completed-task result has nothing to read. Reference the original task variable you passed in instead of expecting one back from **Complete task**.
-- **Auto-completing human tasks hides operational problems.** Closing a task a person was meant to action removes the signal that the work is overdue or stuck. Complete only tasks the workflow created for itself, and leave human-owned tasks for a person to close.
+- **The input must be a task, not a linked record.** A task and the record it links to are different objects. Wiring a record variable into the input fails the block. Map the task variable from [Create task](/reference/tasks/create-task) or [Task created](/reference/triggers/task-created), not the record the task points at.
+- **There is no output to chain from.** The block returns no usable downstream value. A later block that expects a completed-task result has nothing to read. Reference the original task variable you passed in instead of expecting one back from **Complete task**.
+- **Auto-completing human tasks hides operational problems.** Closing a task a person was meant to action removes the signal that the work is overdue or stuck. Complete only tasks the workflow created for itself. Leave human-owned tasks for a person to close.
 
 ## Examples
 
 ### Closing a follow-up task once an external confirmation arrives
 
-A workflow creates a follow-up task, waits for an external system to confirm the work is done, then closes the task it created.
+A workflow creates a follow-up task. It waits for an external system to confirm the work is done, then closes the task it created.
 
 | Field | Value |
 | --- | --- |
 | Task | `{{ steps.create_task.task }}` |
 
-After the confirmation webhook resolves, the workflow marks the follow-up task complete, and the task no longer appears in the assignee's open list.
+After the confirmation webhook resolves, the workflow marks the follow-up task complete. The task no longer appears in the assignee's open list.
 
 ### Completing the triggering task after a sync succeeds
 
-A workflow starts from the [Task created](/reference/triggers/task-created) trigger, syncs the task to an external system, and closes the task once the sync returns success.
+A workflow starts from the [Task created](/reference/triggers/task-created) trigger. It syncs the task to an external system, then closes the task once the sync returns success.
 
 | Field | Value |
 | --- | --- |
 | Task | `{{ trigger.task }}` |
 
-When the sync succeeds, the triggering task is marked complete, which keeps the Attio task list in step with the external system of record.
+When the sync succeeds, the triggering task is marked complete. This keeps the Attio task list in step with the external system of record.
 
 ## Credit cost worked example
 
-**Complete task** costs 1 credit per run because it writes a change to a task. A workflow that completes 40 tasks a month spends 40 credits on this block, plus whatever the rest of the workflow consumes. Multiply 1 credit by your monthly task-completion volume to size the line item, then compare the total against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+**Complete task** costs 1 credit per run, because it writes a change to a task. A workflow that completes 40 tasks a month spends 40 credits on this block. That is on top of whatever the rest of the workflow consumes. Multiply 1 credit by your monthly task-completion volume to size the line item. Then compare the total against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing).
 
 ## Source
 

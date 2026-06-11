@@ -4,13 +4,13 @@ description: Variables pass a block's output into a later block's input, resolve
 icon: braces
 ---
 
-**Variables** pass a block's output into a later block's input, resolved fresh on every run from the trigger and the blocks that ran before. This page is the syntax companion to [Variables & data passing](/explanation/variables) — read that first for the mental model, then return for the mechanics of inserting a variable, reading what's available, and handling empty or mistyped values.
+**Variables** pass a block's output into a later block's input, resolved fresh on every run from the trigger and the blocks that ran before. In other words, a variable is a placeholder that fills with a real value when the workflow runs. This page is the syntax companion to [Variables & data passing](/explanation/variables). Read that page first for the mental model. Then come back here for the mechanics. This page covers how to insert a variable, how to see what is available, and how to handle empty or mistyped values.
 
 ## Inserting a variable
 
-Most block fields accept a variable in place of a static value. While editing a field, click the **`{x}` use variable** control to open the picker, or type to search the available outputs. The inserted variable renders as a token such as `{Deal name}`, and each token resolves to a single output from the trigger or an earlier block at run time.
+Most block fields accept a variable in place of a fixed value. While you edit a field, click the **`{x}` use variable** control to open the picker. You can also type to search the available outputs. The variable you choose appears as a token such as `{Deal name}`. Each token resolves to a single output from the trigger or an earlier block when the workflow runs.
 
-One rule explains the whole picker: a later block can reference only an output produced by a block that runs before it. If a variable you expect is missing from the picker, the block that produces it sits downstream of where you are editing, so move your block after it.
+One rule explains the whole picker. A later block can use only an output from a block that runs before it. So a variable you expect may be missing from the picker. If that happens, the block that produces it sits after the block you are editing. Move your block so it runs later in the path.
 
 To insert a variable into a field:
 
@@ -22,29 +22,29 @@ To insert a variable into a field:
     Click the **`{x}` use variable** control on the field. The picker lists every output reachable from this point in the path, grouped by the trigger and each upstream block.
   </Step>
   <Step title="Pick the output">
-    Type to filter — for example `Deal name` — then select the output. It drops into the field as a token like `{Deal name}`.
+    Type to filter the list, for example `Deal name`, then select the output. It drops into the field as a token like `{Deal name}`.
   </Step>
   <Step title="Mix with static text">
-    Type around the token to build a template. A message such as `{Deal name} moved to {New value}` interpolates the live values on each run, producing output like `Acme renewal moved to Negotiation`.
+    Type around the token to build a template. A message such as `{Deal name} moved to {New value}` fills in the live values on each run, producing output like `Acme renewal moved to Negotiation`.
   </Step>
 </Steps>
 
 ## Outputs you can reference
 
-The picker exposes three sources of variables, and each block's reference page documents the exact outputs it emits.
+The picker exposes three sources of variables. Each block's reference page documents the exact outputs that block emits.
 
-- **Trigger outputs** — the record or list entry that fired the workflow, plus event-specific fields such as the old and new value on [Attribute value changed](/reference/triggers/attribute-value-changed). A trigger's record data is a snapshot from trigger time, so after a write, reference the write's output instead.
-- **Block outputs** — each block documents its outputs on its reference page. For example, [Find records](/reference/records/find-records) returns the matched records, and [Parse JSON](/reference/utilities/parse-json) returns the parsed fields.
-- **Loop item** — inside a [Loop](/reference/utilities/loop), the current item, its position, and the item count are available to every block in the loop body.
+- **Trigger outputs.** These are the record or list entry that fired the workflow. They also include fields specific to the event, such as the old and new value on [Attribute value changed](/reference/triggers/attribute-value-changed). A trigger's record data is a snapshot from the moment it fired. So after a write, reference the write's output instead.
+- **Block outputs.** Each block documents its outputs on its reference page. For example, [Find records](/reference/records/find-records) returns the matched records, and [Parse JSON](/reference/utilities/parse-json) returns the parsed fields.
+- **Loop item.** Inside a [Loop](/reference/utilities/loop), the current item, its position, and the item count are available to every block in the loop body.
 
 ## Expressions and formulas
 
-A single variable token carries one value; it does not do arithmetic, concatenation, conditionals, or date math on its own. For anything beyond inserting a value, use a dedicated calculation block rather than trying to express logic inline.
+A single variable token carries one value. On its own, it cannot do math, join text together, make a decision, or work out a date. To do anything beyond inserting a value, use a calculation block. Do not try to express logic inside the token itself.
 
-- [Formula](/reference/calculations/formula) — computes a value from other variables, such as a score or a concatenated label. The supported function set is documented on that block's page.
-- [Adjust time](/reference/calculations/adjust-time) — adds to or subtracts from a date, which is how you build renewal windows and staleness thresholds.
-- [Aggregate values](/reference/calculations/aggregate-values) — sums, counts, or averages across many records.
-- [Execute code](/reference/calculations/execute-code) — runs JavaScript for transformations the other blocks can't express. Its cost is Variable (complexity-based); see [Credits & pricing explained](/reference/credits-and-pricing).
+- [Formula](/reference/calculations/formula) computes a value from other variables, such as a score or a joined-together label. The supported function set is documented on that block's page.
+- [Adjust time](/reference/calculations/adjust-time) adds to or subtracts from a date. This is how you build renewal windows and staleness thresholds.
+- [Aggregate values](/reference/calculations/aggregate-values) sums, counts, or averages across many records.
+- [Execute code](/reference/calculations/execute-code) runs JavaScript for transformations the other blocks can't express. Its cost is Variable (complexity-based); see [Credits & pricing explained](/reference/credits-and-pricing).
 
 <Note>
   The exact function names and operators a [Formula](/reference/calculations/formula) accepts are documented on that block's page and can change between engine versions. Treat the Formula page as canonical, and verify a function in-product if it isn't listed.
@@ -52,14 +52,14 @@ A single variable token carries one value; it does not do arithmetic, concatenat
 
 ## Null-safety and types
 
-A variable inherits the type of the field it came from, and an empty source field produces an empty value rather than an error. The following rules keep an empty or mistyped value from breaking a later block.
+A variable takes the type of the field it came from. An empty source field produces an empty value, not an error. The following rules keep an empty or wrong-type value from breaking a later block.
 
-- **Empty inputs.** When a referenced output is empty, the downstream block receives an empty value. Guard a step that requires the value to be present with a [Filter](/reference/conditions/filter) or an [If](/reference/conditions/if) before it.
+- **Empty inputs.** When a referenced output is empty, the next block receives an empty value. If a step needs the value to be present, guard it first with a [Filter](/reference/conditions/filter) or an [If](/reference/conditions/if).
 - **Formula safety.** A [Formula](/reference/calculations/formula) with an empty variable fails the whole block with "Invalid formula". Set a fallback such as `0` on every numeric variable that could be empty.
-- **Type mismatches.** A variable carries the type of its source field. Writing a text value into a number or select attribute can fail or coerce, so check the target attribute's type on its [Update record](/reference/records/update-record) step before you map the variable.
-- **Multi-value fields.** Multi-select and relationship attributes carry several values at once. Handle them with a [Loop](/reference/utilities/loop) rather than assuming a single value.
+- **Type mismatches.** A variable carries the type of its source field. Writing text into a number or select attribute can fail, or it can force the value into the wrong shape. Check the target attribute's type on its [Update record](/reference/records/update-record) step before you map the variable.
+- **Multi-value fields.** Multi-select and relationship attributes hold several values at once. Process them with a [Loop](/reference/utilities/loop) rather than assuming a single value.
 
-A variable highlighted yellow in the editor is the builder warning you it may be empty at run time. Hover the token for the details, then add a data source or a fallback.
+A variable highlighted yellow in the editor is a warning. It means the builder thinks the value may be empty when the workflow runs. Hover the token to see the details. Then add a data source or a fallback.
 
 ## Source
 

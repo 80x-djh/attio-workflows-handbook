@@ -4,7 +4,7 @@ description: Round-robin routing assigns each new qualified lead to the next rep
 icon: users
 ---
 
-Round-robin routing assigns each new qualified lead to the next rep in a fair rotation, sets the owner, and books a first-touch task. It fires on [Record created](/reference/triggers/record-created), gates on a free [Filter](/reference/conditions/filter) so only qualified leads route, picks the next rep with the [Round robin](/reference/workspace/round-robin) block, stamps that rep with [Update record](/reference/records/update-record), schedules a 24-hour first touch with [Create task](/reference/tasks/create-task), and notifies the rep through a Slack [third-party block](/reference/integrations). The outcome for a sales team is plain: no inbound goes cold, no rep hoards the easy leads, and the right person owns each lead within minutes of it landing.
+Round-robin routing assigns each new qualified lead to the next rep in a fair rotation, sets the owner, and books a first-touch task. Round-robin means each lead goes to the next rep in line, then the rotation starts over at the top. The workflow fires on [Record created](/reference/triggers/record-created). A free [Filter](/reference/conditions/filter) lets only qualified leads through. The [Round robin](/reference/workspace/round-robin) block picks the next rep. [Update record](/reference/records/update-record) then writes that rep onto the lead. [Create task](/reference/tasks/create-task) schedules a first touch within 24 hours, and a Slack [third-party block](/reference/integrations) tells the rep. The result is simple. No inbound goes cold. No rep hoards the easy leads. And the right person owns each lead within minutes of it landing.
 
 | | |
 | --- | --- |
@@ -26,7 +26,9 @@ Round-robin routing assigns each new qualified lead to the next rep in a fair ro
 
 ## How it works
 
-The trigger fires once for each new lead. A free [Filter](/reference/conditions/filter) drops anything that is not qualified or that already has an owner, so the rotation only advances on real work. [Round robin](/reference/workspace/round-robin) returns the next rep from your pool and remembers its position across runs. [Update record](/reference/records/update-record) writes that rep onto the lead's `owner` attribute. [Create task](/reference/tasks/create-task) gives the rep a dated first touch, and a Slack message tells them to go work it. The three logic blocks at the front are free, so the only paid steps are the two record writes and the Slack send.
+The trigger fires once for each new lead. A free [Filter](/reference/conditions/filter) drops anything that is not qualified or that already has an owner. That way the rotation only advances on real work. [Round robin](/reference/workspace/round-robin) returns the next rep from your pool and remembers its position across runs.
+
+[Update record](/reference/records/update-record) writes that rep onto the lead's `owner` attribute. [Create task](/reference/tasks/create-task) gives the rep a dated first touch, and a Slack message tells them to go work it. The three logic blocks at the front are free. The only paid steps are the two record writes and the Slack send.
 
 The blocks run in this order:
 
@@ -41,7 +43,7 @@ The blocks run in this order:
 
 <Steps>
   <Step title="Add the trigger">
-    Open a new workflow, click the **Add trigger** button, and choose **Record created**. Set the object to **People**. If you instead stage inbound on a list, choose [Record added to list](/reference/triggers/record-added-to-list) and select that list. The rest of the build is identical, except that you read fields from the list entry's parent record.
+    Open a new workflow, click the **Add trigger** button, and choose **Record created**. Set the object to **People**. If you instead stage inbound on a list, choose [Record added to list](/reference/triggers/record-added-to-list) and select that list. A list entry is the row that links a record to a list. The rest of the build is identical. The one difference is that you read fields from the list entry's parent record.
 
     | Field | Value |
     | --- | --- |
@@ -51,7 +53,7 @@ The blocks run in this order:
   </Step>
 
   <Step title="Filter to qualified, unowned leads">
-    Click the **Add block** button, choose **Filter**, and add two conditions joined with **And**. This is a free condition: when it does not pass, the run stops and costs nothing. Stopping at the filter also keeps the rotation fair, because [Round robin](/reference/workspace/round-robin) only advances on leads you actually route.
+    Click the **Add block** button, choose **Filter**, and add two conditions joined with **And**. This is a free condition. When it does not pass, the run stops and costs nothing. Stopping here also keeps the rotation fair. [Round robin](/reference/workspace/round-robin) only advances on leads you actually route.
 
     | Field | Value |
     | --- | --- |
@@ -61,7 +63,7 @@ The blocks run in this order:
   </Step>
 
   <Step title="Pick the next rep">
-    Add a **Round robin** block. Add each rep in the pool as an entry. The block hands out the next member in sequence and persists its cursor between runs, so assignment stays even over time.
+    Add a **Round robin** block. Add each rep in the pool as an entry. The block hands out the next member in sequence and remembers its place between runs, so assignment stays even over time.
 
     | Field | Value |
     | --- | --- |
@@ -81,7 +83,7 @@ The blocks run in this order:
   </Step>
 
   <Step title="Create the first-touch task">
-    Add a **Create task** block. Assign it to the same rep and date it 24 hours out, so first touch is enforced rather than hoped for.
+    Add a **Create task** block. Assign it to the same rep and date it 24 hours out. That way first touch is enforced rather than hoped for.
 
     | Field | Value |
     | --- | --- |
@@ -112,7 +114,7 @@ The blocks run in this order:
 
 ## Credit cost worked example
 
-The trigger, [Filter](/reference/conditions/filter), and [Round robin](/reference/workspace/round-robin) are free logic blocks, so a run that is filtered out costs 0 credits. A lead that routes costs 3 credits: 1 for [Update record](/reference/records/update-record), 1 for [Create task](/reference/tasks/create-task), and 1 for the Slack message.
+The trigger, [Filter](/reference/conditions/filter), and [Round robin](/reference/workspace/round-robin) are free logic blocks. So a run that is filtered out costs 0 credits. A lead that routes costs 3 credits: 1 for [Update record](/reference/records/update-record), 1 for [Create task](/reference/tasks/create-task), and 1 for the Slack message.
 
 At 400 new leads a month with a 50% qualification rate, 200 leads route:
 
@@ -147,11 +149,11 @@ This workflow has no AI blocks, so the cost is fixed and predictable. Check your
 
 ### Route by territory or segment first
 
-Add a [Switch](/reference/conditions/switch) on a `region` or `segment` attribute before Round robin, then keep a separate pool per branch. EMEA (Europe, Middle East, and Africa) leads rotate through the EMEA reps, and SMB (small and medium business) leads rotate through the SMB reps. The downstream writes are unchanged. For a full territory build, see [Inbound routing by territory and seniority](/guides/route-and-sequence/territory-routing).
+Add a [Switch](/reference/conditions/switch) on a `region` or `segment` attribute before Round robin. A Switch sends each lead down a different branch based on its value. Keep a separate pool per branch. EMEA (Europe, Middle East, and Africa) leads rotate through the EMEA reps. SMB (small and medium business) leads rotate through the SMB reps. The writes after Round robin are unchanged. For a full territory build, see [Inbound routing by territory and seniority](/guides/route-and-sequence/territory-routing).
 
 ### Weighted pools
 
-If one rep should carry more volume, list them more than once in the pool. Alternatively, split into tiers and route a [Filter](/reference/conditions/filter)-defined slice, such as enterprise leads, to a smaller senior pool. Round robin stays free, so only the writes after it cost credits.
+If one rep should carry more volume, list them more than once in the pool. You can also split into tiers. Use a [Filter](/reference/conditions/filter) to send one slice, such as enterprise leads, to a smaller senior pool. Round robin stays free, so only the writes after it cost credits.
 
 ### Enroll routed leads into a sequence
 
@@ -165,4 +167,4 @@ Replace or follow the [Create task](/reference/tasks/create-task) step with [Enr
 - [Round robin](/reference/workspace/round-robin)
 - [Assign records and tasks in Attio](https://attio.com/help/workflows)
 
-_Source: [Attio Help Center — Workflows](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026._
+_Source: [Attio Help Center: Workflows](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026._

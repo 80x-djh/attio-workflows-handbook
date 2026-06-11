@@ -4,7 +4,7 @@ description: The Summarize record block (AI step) uses AI to write a text summar
 icon: text
 ---
 
-The **Summarize record** block (AI step) uses AI to write a text summary of a record from its attributes. The block returns the summary as a run variable only; it never writes the text back to the record on its own. Pair it with [Update record](/reference/records/update-record) when you want the summary stored on an attribute.
+The **Summarize record** block (AI step) uses AI to write a text summary of a record from its attributes. It reads the values stored on a record and returns a short write-up. The block returns that summary as a run variable only. It never writes the text back to the record on its own. To store the summary, pair this block with [Update record](/reference/records/update-record).
 
 | | |
 | --- | --- |
@@ -18,8 +18,8 @@ The **Summarize record** block (AI step) uses AI to write a text summary of a re
 
 | Input | Type | Required | Default | Notes |
 | --- | --- | --- | --- | --- |
-| Record | Record | Yes | — | The record to summarize. The block reads its attributes as the source material. |
-| Instructions | Text | Yes | — | What to include, omit, and emphasize, plus the target length. |
+| Record | Record | Yes | None | The record to summarize. The block reads its attributes as the source material. |
+| Instructions | Text | Yes | None | What to include, omit, and emphasize, plus the target length. |
 
 ## Outputs
 
@@ -31,34 +31,34 @@ Reference the generated text downstream as `{{ steps.summarize_record.record_sum
 
 ## Behavior
 
-The block sends the record's attributes and your instructions to the configured model, then returns the model's text response as the `record_summary` output. It reads from the record but does not write to it, so the summary exists only as a run variable until a following block saves it.
+The block sends the record's attributes and your instructions to the model. It then returns the model's text response as the `record_summary` output. The block reads from the record but does not write to it. So the summary exists only as a run variable until a later block saves it.
 
-Token cost scales with how much the block sends and receives. A record with long notes and many populated attributes costs more than a sparse one, and a request for three paragraphs costs more than a request for one sentence.
+Token cost scales with how much the block sends and receives. A token is a small chunk of text, and you pay for the tokens that go in and the tokens that come back. A record with long notes and many populated attributes costs more than a sparse one. A request for three paragraphs costs more than a request for one sentence.
 
-The block is non-deterministic. The same record and instructions can produce slightly different wording on each run. Output length and tone depend almost entirely on how precise your instructions are; vague instructions drift in length and emphasis from run to run.
+The block is non-deterministic. That means the same record and instructions can produce slightly different wording on each run. Output length and tone depend almost entirely on how precise your instructions are. Vague instructions drift in length and emphasis from run to run.
 
 ## Gotchas
 
-- **The summary is never saved automatically.** The block only emits a run variable, so the text disappears when the run ends unless something consumes it. Create a long-text attribute first, then follow Summarize record with [Update record](/reference/records/update-record) and map `{{ steps.summarize_record.record_summary }}` into it.
-- **Summaries drift in length and focus.** When instructions leave length, audience, or source priority unstated, the model picks them itself and changes its mind between runs. State the target length, the reader, and which attributes matter ("Two sentences for an account executive; lead with renewal date and open opportunities").
-- **The model can only summarize what the record holds.** The block sees attribute values, not external context, so it cannot invent figures the record lacks and may pad with generic phrasing when fields are empty. Enrich or populate the record before summarizing, or tell the model to omit anything it cannot ground in an attribute.
+- **The summary is never saved automatically.** The block only emits a run variable, so the text disappears when the run ends unless something consumes it. First, create a long-text attribute to hold the summary. Then follow Summarize record with [Update record](/reference/records/update-record) and map `{{ steps.summarize_record.record_summary }}` into it.
+- **Summaries drift in length and focus.** When instructions leave length, audience, or source priority unstated, the model picks them itself. It then changes its mind between runs. State the target length, the reader, and which attributes matter. For example: "Two sentences for an account executive; lead with renewal date and open opportunities".
+- **The model can only summarize what the record holds.** The block sees attribute values, not external context. It cannot invent figures the record lacks, and it may pad with generic phrasing when fields are empty. Enrich or populate the record before summarizing. (Enrich means filling in missing data, such as company size or industry, from another source.) You can also tell the model to omit anything it cannot ground in an attribute.
 
 ## Examples
 
 ### Drafting a sales brief before a call
 
-A revenue operations team wants a one-line brief on each company so account executives walk into calls prepared. The workflow runs from a [Record command](/reference/triggers/record-command) on the company, summarizes the record, and stores the result on a `Sales brief` long-text attribute.
+A revenue operations team wants a one-line brief on each company so account executives walk into calls prepared. The workflow runs from a [Record command](/reference/triggers/record-command) on the company. A Record command lets a user start the workflow from a button on the record. The workflow summarizes the record, then stores the result on a `Sales brief` long-text attribute.
 
 | Field | Value |
 | --- | --- |
 | Record | `{{ trigger.record }}` |
 | Instructions | `Write a two-sentence brief for an account executive. Lead with renewal date and ARR, then the primary contact and last touch.` |
 
-The block returns `Acme Corp renews 2026-09-30 at $48k ARR; one open expansion opportunity. Primary contact Priya Sharma at priya@acme.com, last touched 14 days ago.`, which a following [Update record](/reference/records/update-record) block writes to `Sales brief`.
+The block returns `Acme Corp renews 2026-09-30 at $48k ARR; one open expansion opportunity. Primary contact Priya Sharma at priya@acme.com, last touched 14 days ago.`. A following [Update record](/reference/records/update-record) block then writes that text to `Sales brief`.
 
 ### Producing a structured deal recap
 
-A team wants a fixed-shape recap on every deal so the format stays consistent across reps. Constraining the output with an explicit template keeps the summary scannable.
+A team wants a fixed-shape recap on every deal so the format stays consistent across reps. Giving the model an explicit template constrains the output. That keeps the summary short and scannable.
 
 ```text
 Summarize this deal in exactly three labeled lines, each under 15 words:
@@ -68,13 +68,13 @@ Next: <the single next action>
 Omit any line you cannot ground in a record attribute.
 ```
 
-The block returns a three-line recap such as `Stage: Negotiation, 11 days. Risk: No economic buyer identified. Next: Confirm signer before Friday.`, ready for a later [Update record](/reference/records/update-record) block to store.
+The block returns a three-line recap such as `Stage: Negotiation, 11 days. Risk: No economic buyer identified. Next: Confirm signer before Friday.`. A later [Update record](/reference/records/update-record) block can then store it.
 
 ## Credit cost worked example
 
-Summarize record is token-priced, so each run costs in proportion to the record's size and the requested summary length. Suppose a team runs it on 400 new companies a month with short, well-scoped instructions. Each run reads a modest set of attributes and returns two sentences, so the per-run token cost is small but non-zero, and 400 runs accumulate against the workspace's monthly credit allowance.
+Summarize record is token-priced. Each run costs in proportion to the record's size and the requested summary length. Suppose a team runs it on 400 new companies a month with short, well-scoped instructions. Each run reads a modest set of attributes and returns two sentences. So the per-run token cost is small but not zero. Across 400 runs it adds up against the workspace's monthly credit allowance.
 
-Because the price is token-based rather than a flat per-run charge, the lever you control is prompt size: trimming the instructions and limiting which attributes the model needs to read lowers the cost of every run. For the exact token-to-credit conversion and your plan's monthly allowance, see [Credits & pricing explained](/reference/credits-and-pricing).
+The price is token-based, not a flat per-run charge. So the lever you control is prompt size. Trimming the instructions and limiting which attributes the model reads lowers the cost of every run. For the exact token-to-credit conversion and your plan's monthly allowance, see [Credits & pricing explained](/reference/credits-and-pricing).
 
 ## Source
 

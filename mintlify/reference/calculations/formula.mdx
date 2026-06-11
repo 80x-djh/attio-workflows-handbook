@@ -4,12 +4,14 @@ description: The Formula block (Calculations) evaluates a math expression over n
 icon: calculator
 ---
 
-The **Formula** block (Calculations) evaluates a math expression over number or currency variables and returns one numeric result. It is a logic block that runs inside the workflow, so it consumes no credits. It supports only the four arithmetic operators `+`, `-`, `/`, and `*`, which makes it the right tool for ratios, multipliers, and running totals, and a poor fit for anything that needs exponents or modulo.
+The **Formula** block (Calculations) evaluates a math expression over number or currency variables and returns one numeric result. A variable is a value the workflow has already produced, such as a field from the record that started the run.
+
+**Formula** is a logic block. A logic block runs inside the workflow without calling any outside service, so it consumes no credits. It supports only the four arithmetic operators `+`, `-`, `/`, and `*`. That makes it the right tool for ratios, multipliers, and running totals. It is a poor fit for anything that needs powers (exponents) or remainders (modulo).
 
 | | |
 | --- | --- |
 | **Category** | Calculations |
-| **Credit cost** | Free — logic blocks consume no credits |
+| **Credit cost** | Free. Logic blocks consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | Operators limited to `+`, `-`, `/`, and `*`. Operates on number and currency values only. |
@@ -20,7 +22,7 @@ The **Formula** block (Calculations) evaluates a math expression over number or 
 | --- | --- | --- | --- | --- |
 | Formula | Expression | Yes | None | A math expression built from `+`, `-`, `/`, and `*` over number or currency variables and literals, such as `{{ trigger.record.mrr }} * 12`. |
 
-The block reads each variable as a number. A currency value contributes its numeric amount, so multiplying a currency by a plain number returns a number in the same currency scale.
+The block reads each variable as a number. A currency value contributes its numeric amount. So when you multiply a currency by a plain number, you get a number in the same currency scale.
 
 ## Outputs
 
@@ -32,18 +34,18 @@ Reference the result in a later block as `{{ steps.formula.result }}`.
 
 ## Behavior
 
-The block evaluates the expression once per run and returns a single number. It does not write the result anywhere on its own. To store the result on a record, pass `{{ steps.formula.result }}` into an [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) block downstream.
+The block evaluates the expression once per run and returns a single number. It does not write the result anywhere on its own. To store the result on a record, pass `{{ steps.formula.result }}` into an [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) block later in the workflow.
 
-An empty or null variable has no numeric value, so an expression that references one can fail the run rather than treating the variable as zero. Give each variable a fallback to keep that from happening.
+An empty or null variable has no numeric value. So an expression that references one can fail the run instead of treating the variable as zero. Give each variable a fallback to keep that from happening.
 
-Because the operator set is limited to `+`, `-`, `/`, and `*`, multi-step math is best split across more than one **Formula** block: compute an intermediate result in the first block, then feed `{{ steps.formula.result }}` into the next.
+The operator set is limited to `+`, `-`, `/`, and `*`. Because of this, multi-step math is best split across more than one **Formula** block. Compute an intermediate result in the first block, then feed `{{ steps.formula.result }}` into the next.
 
 ## Gotchas
 
-- **An empty variable fails the run.** When a referenced variable is null — a `mrr` attribute that was never filled in, for example — the expression has no number to operate on and the block errors. Wrap the variable in a fallback so it resolves to a number, such as `{{ trigger.record.mrr | default: 0 }}`, before it reaches the formula.
-- **The result vanishes unless you save it.** **Formula** returns `{{ steps.formula.result }}` as a run variable only; it never writes to a record by itself. Add an [Update record](/reference/records/update-record) block after it to persist the value to an attribute.
+- **An empty variable fails the run.** A referenced variable can be null, for example an `mrr` attribute that was never filled in. When that happens, the expression has no number to operate on and the block errors. Wrap the variable in a fallback so it resolves to a number, such as `{{ trigger.record.mrr | default: 0 }}`, before it reaches the formula.
+- **The result vanishes unless you save it.** **Formula** returns `{{ steps.formula.result }}` as a run variable only. It never writes to a record by itself. Add an [Update record](/reference/records/update-record) block after it to persist the value to an attribute.
 - **Unsupported operators are rejected.** The block accepts only `+`, `-`, `/`, and `*`. Operators outside that set, such as exponentiation (`^`) or modulo (`%`), are not available. For a power, a remainder, or any expression the four operators cannot express, use the [Execute code](/reference/calculations/execute-code) block instead.
-- **A long chained expression breaks silently on edit.** Packing several operations into one expression makes it hard to audit and easy to mis-edit. Keep each **Formula** block to one readable calculation, and split multi-step math across several blocks so a teammate can follow it.
+- **A long chained expression breaks silently on edit.** Packing several operations into one expression makes it hard to audit and easy to mis-edit. Keep each **Formula** block to one readable calculation. Split multi-step math across several blocks so a teammate can follow it.
 
 ## Examples
 
@@ -65,7 +67,7 @@ This formula divides closed-won deals by total deals to produce a win rate, guar
 | --- | --- |
 | Formula | `{{ steps.won_count.result }} / {{ steps.total_count.result \| default: 1 }}` |
 
-For `30` won deals out of `120` total, the block returns `0.25`. The `default: 1` fallback keeps an empty total from failing the run, and a downstream [Update record](/reference/records/update-record) block writes the rate onto the company.
+For `30` won deals out of `120` total, the block returns `0.25`. The `default: 1` fallback keeps an empty total from failing the run. A downstream [Update record](/reference/records/update-record) block then writes the rate onto the company.
 
 ### Applying a discount multiplier to a quote
 

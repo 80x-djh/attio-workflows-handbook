@@ -4,67 +4,67 @@ description: The glossary defines the Attio Workflows engine terms and go-to-mar
 icon: book-a
 ---
 
-**The glossary** defines the Attio Workflows engine terms and go-to-market vocabulary this handbook uses, from fit and intent to Run as. Concept and guide pages link to these definitions on first mention instead of re-explaining a term in place. Definitions appear in one alphabetical list: the engine terms describe how the workflow runtime behaves, and the go-to-market terms name the language the builds are written in.
+**The glossary** defines the Attio Workflows engine terms and go-to-market vocabulary this handbook uses, from fit and intent to Run as. Concept and guide pages link here on first mention instead of re-explaining a term in place. Every definition appears in one alphabetical list. The engine terms describe how the workflow runtime behaves. The go-to-market terms name the language the builds are written in.
 
 ### Block
 
-A **block** is a single step in a workflow: a trigger, a logic or condition block, a data block, an artificial-intelligence (AI) block, or an integration block. The full catalog of blocks is the [block reference overview](/reference).
+A **block** is a single step in a workflow. A block can be a trigger, a logic or condition block, a data block, an artificial-intelligence (AI) block, or an integration block. The full catalog of blocks is the [block reference overview](/reference).
 
 ### Credit
 
-A **credit** is the unit a workflow consumes when it runs, charged per block according to the work that block does. The canonical [Credits & pricing explained](/reference/credits-and-pricing) page lists every block's cost.
+A **credit** is the unit a workflow consumes when it runs. Each block is charged separately, based on the work that block does. The canonical [Credits & pricing explained](/reference/credits-and-pricing) page lists every block's cost.
 
 ### Engagement
 
-**Engagement** is one of the three scoring dimensions and measures your own touches with a record, such as email opens, replies, and product usage. Keeping engagement separable from fit and intent is what makes a lead score explainable, as shown in [Score leads into explainable bands](/guides/capture-and-qualify/signal-scoring).
+**Engagement** is one of the three scoring dimensions. It measures your own touches with a record, such as email opens, replies, and product usage. Keeping engagement separate from fit and intent is what makes a lead score explainable. See [Score leads into explainable bands](/guides/capture-and-qualify/signal-scoring).
 
 ### Fit
 
-**Fit** is one of the three scoring dimensions and measures firmographics — the static traits of an account such as industry and company size. Fit answers "is this the kind of company we sell to?" and stays distinct from intent and engagement in a good [lead score](/guides/capture-and-qualify/signal-scoring).
+**Fit** is one of the three scoring dimensions. It measures firmographics, the fixed traits of an account such as industry and company size. Fit answers one question: is this the kind of company we sell to? In a good [lead score](/guides/capture-and-qualify/signal-scoring), fit stays distinct from intent and engagement.
 
 ### GTM engineer
 
-A **GTM engineer** (go-to-market engineer) is the technical go-to-market operator who builds these systems, and is the reader this handbook is written for. The role blends RevOps, data, and automation work that once lived across several teams.
+A **GTM engineer** (go-to-market engineer) is the technical operator who builds these systems. This handbook is written for that reader. The role blends RevOps, data, and automation work that once lived across several teams.
 
 ### ICP / ECP
 
-**ICP** (ideal customer profile) describes the company you sell to, and **ECP** (engaged or ideal customer profile) describes the same idea at the persona level. Most qualification logic reduces to a single question: does this record match the ICP?
+**ICP** (ideal customer profile) describes the company you sell to. **ECP** (engaged or ideal customer profile) describes the same idea at the person level. Most qualification logic comes down to one question: does this record match the ICP?
 
 ### Intent
 
-**Intent** is one of the three scoring dimensions and measures buying signals, such as research activity or a fresh funding round. Intent answers "is this account in-market right now?" and stays distinct from fit and engagement in a good [lead score](/guides/capture-and-qualify/signal-scoring).
+**Intent** is one of the three scoring dimensions. It measures buying signals, such as research activity or a fresh funding round. Intent answers one question: is this account in-market right now? In a good [lead score](/guides/capture-and-qualify/signal-scoring), intent stays distinct from fit and engagement.
 
 ### Legacy workflows
 
-**Legacy workflows** are the previous automation engine that the June 2026 release replaces. You can no longer create new legacy workflows; existing ones keep running, and Attio says sunset notice will come "well in advance"; see [Migrate legacy workflows](/guides/migrating-from-legacy).
+**Legacy workflows** are the previous automation engine that the June 2026 release replaces. You can no longer create new legacy workflows; existing ones keep running, and Attio says sunset notice will come "well in advance." See [Migrate legacy workflows](/guides/migrating-from-legacy).
 
 ### NRR / expansion
 
-**NRR** (net revenue retention) measures how much revenue an existing customer base grows or shrinks over a period, and **expansion** is the set of upsell motions that drive it. Usage thresholds, renewal watches, and health scores are the signals workflows act on to protect NRR.
+**NRR** (net revenue retention) measures how much revenue an existing customer base grows or shrinks over a period. **Expansion** is the set of upsell motions that drive it. Usage thresholds, renewal watches, and health scores are the signals workflows act on to protect NRR.
 
 ### Pipeline hygiene
 
-**Pipeline hygiene** is the practice of keeping the pipeline honest — flagging stale deals, deduping records, and handing off ownership — usually on a schedule. The [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep) is a representative build.
+**Pipeline hygiene** is the practice of keeping the pipeline honest. That means flagging stale deals, deduping records, and handing off ownership, usually on a schedule. The [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep) is a representative build.
 
 ### PQL / SQL / MQL
 
-A **PQL** (product-qualified lead), **SQL** (sales-qualified lead), or **MQL** (marketing-qualified lead) is a record that has crossed the threshold to deserve a sales touch. The threshold itself is just a [Filter](/reference/conditions/filter) condition.
+A **PQL** (product-qualified lead), **SQL** (sales-qualified lead), or **MQL** (marketing-qualified lead) is a record that has crossed the bar to deserve a sales touch. That bar is just a [Filter](/reference/conditions/filter) condition.
 
 ### Record vs list entry
 
-A **record** is the underlying object — a company, a person, or a deal — while a **list entry** is that record's membership of a list, carrying its own list-specific attributes. Blocks are strict about which of the two they accept; see [Records vs list entries](/explanation/records-vs-list-entries).
+A **record** is the underlying object, such as a company, a person, or a deal. A **list entry** is that record's membership of a list. It carries its own list-specific attributes. Blocks are strict about which of the two they accept. See [Records vs list entries](/explanation/records-vs-list-entries).
 
 ### Routing
 
-**Routing** is the act of assigning a record to the right owner, whether by territory, segment, round-robin, or score. A worked example is [Inbound routing by territory and seniority](/guides/route-and-sequence/territory-routing).
+**Routing** is the act of assigning a record to the right owner. You can route by territory, segment, round-robin, or score. A worked example is [Inbound routing by territory and seniority](/guides/route-and-sequence/territory-routing).
 
 ### Run
 
-A **run** is one execution of a workflow against one trigger event. You inspect runs in run history; see [Runs, debugging & publishing](/explanation/runs-and-debugging).
+A **run** is one execution of a workflow against one trigger event. You inspect runs in run history. See [Runs, debugging & publishing](/explanation/runs-and-debugging).
 
 ### Run as
 
-**Run as** is the permission model that decides whose access a workflow — and any AI agent block inside it — runs with. Agent blocks access workspace data read-only via the "Run as" model; see [Permissions & workflow access](/explanation/permissions-and-access).
+**Run as** is the permission model that decides whose access a workflow runs with. That includes any AI agent block inside it. Agent blocks access workspace data read-only via the "Run as" model. See [Permissions & workflow access](/explanation/permissions-and-access).
 
 ### Sequence
 
@@ -72,23 +72,23 @@ A **sequence** is Attio's outbound email cadence that contacts a record over a s
 
 ### Signal
 
-A **signal** is an external event worth reacting to, such as a funding round, a job change, a product action, or a form fill. Signal-based outbound — sometimes called "warm" outbound — triggers a play off a signal instead of working a cold list.
+A **signal** is an external event worth reacting to, such as a funding round, a job change, a product action, or a form fill. Signal-based outbound is sometimes called "warm" outbound. It triggers a play off a signal instead of working a cold list.
 
 ### Trigger
 
-A **trigger** is the event that starts a run: a record change, a schedule, a webhook, or a manual command. The trigger you choose shapes everything downstream; see [Choosing the right trigger](/explanation/triggers).
+A **trigger** is the event that starts a run: a record change, a schedule, a webhook, or a manual command. The trigger you choose shapes everything that follows. See [Choosing the right trigger](/explanation/triggers).
 
 ### Variable
 
-A **variable** is an output from an earlier block that a later block references, often written as `{Field name}`. Variables are how data flows between blocks; see [Variables & data passing](/explanation/variables).
+A **variable** is an output from an earlier block that a later block references, often written as `{Field name}`. Variables are how data flows between blocks. See [Variables & data passing](/explanation/variables).
 
 ### Waterfall enrichment
 
-**Waterfall enrichment** calls data providers cheapest-first and stops at the first hit, so you never pay two vendors for the same field. The pattern is built end to end in [Cheapest-first enrichment waterfall](/guides/capture-and-qualify/enrichment-waterfall).
+**Waterfall enrichment** calls data providers cheapest-first and stops at the first hit. That way you never pay two vendors for the same field. The pattern is built end to end in [Cheapest-first enrichment waterfall](/guides/capture-and-qualify/enrichment-waterfall).
 
 ### Workflow
 
-A **workflow** is an event-driven automation that runs inside Attio: a trigger starts it, and step blocks do the work. Workflows are the subject of this whole handbook; see [What are Attio Workflows?](/explanation/what-are-workflows).
+A **workflow** is an event-driven automation that runs inside Attio. A trigger starts it, and step blocks do the work. Workflows are the subject of this whole handbook. See [What are Attio Workflows?](/explanation/what-are-workflows).
 
 ## See also
 
@@ -99,4 +99,4 @@ A **workflow** is an event-driven automation that runs inside Attio: a trigger s
 
 ---
 
-_Sources: [Attio Help Center — Overview of workflows](https://attio.com/help/reference/automations/workflows/overview-of-workflows), [Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026._
+_Sources: [Attio Help Center: Overview of workflows](https://attio.com/help/reference/automations/workflows/overview-of-workflows), [Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026._

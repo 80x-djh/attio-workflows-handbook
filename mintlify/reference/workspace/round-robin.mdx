@@ -4,12 +4,12 @@ description: The Round robin block picks one workspace member from a configured 
 icon: users
 ---
 
-The **Round robin** block (Workspace) picks one workspace member from a configured set, cycling through the set across workflow runs. It only selects a user; it never writes that selection anywhere, so you pair it with a write block such as [Update record](/reference/records/update-record) or [Create task](/reference/tasks/create-task) to act on the pick. Its rotation state persists across runs, which is what gives each successive run the next member in turn rather than a random repeat.
+The **Round robin** block picks one workspace member from a configured set, cycling through the set across workflow runs. A round robin is a rotation: it hands out the next item in turn, then starts over once it reaches the end. This block only selects a user. It never writes that selection anywhere. So you pair it with a write block, such as [Update record](/reference/records/update-record) or [Create task](/reference/tasks/create-task), to act on the pick. The block remembers where it left off between runs. That memory is what gives each run the next member in turn, instead of a random repeat.
 
 | | |
 | --- | --- |
 | **Category** | Workspace |
-| **Credit cost** | Free — logic blocks consume no credits |
+| **Credit cost** | Free. Logic blocks consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
@@ -31,23 +31,25 @@ Reference the selected member downstream as `{{ steps.round_robin.picked_user }}
 
 ## Behavior
 
-The block advances a rotation pointer each time it runs. On the first run it returns the first member in the configured set; on the next run it returns the second; and so on, wrapping back to the start after the last member. Because this pointer persists across workflow runs rather than resetting per run, two consecutive inbound leads route to two different members, which is the entire point of round-robin assignment.
+The block keeps a pointer that marks whose turn is next. It advances that pointer each time it runs. On the first run it returns the first member in the configured set. On the next run it returns the second, and so on. After the last member, it wraps back to the start.
 
-The block selects exactly one member per run and produces no record write of its own. Wire the picked user into a following block to assign an owner, set a task assignee, or address a notification.
+This pointer persists across workflow runs. It does not reset on each run. That is why two leads that arrive one after another route to two different members. Spreading the work this way is the whole point of round-robin assignment.
 
-The configured set is a fixed list of members. The block does not check whether a member is out of office, over capacity, or otherwise eligible — it simply returns the next entry. Filter the run before the block reaches it if you need to route only qualifying leads.
+The block selects exactly one member per run, and it writes no record of its own. Wire the picked user into a following block to assign an owner, set a task assignee, or address a notification.
+
+The configured set is a fixed list of members. The block does not check whether a member is out of office, over capacity, or otherwise eligible. It simply returns the next entry. If you need to route only qualifying leads, filter the run before it reaches the block.
 
 ## Gotchas
 
-- **The assignment never lands.** The block picks a member but writes nothing, so the owner field stays empty if you stop here. Follow it with [Update record](/reference/records/update-record), [Update list entry](/reference/lists/update-list-entry), or [Create task](/reference/tasks/create-task) and map the picked user into the relevant field.
-- **A departed member still gets leads.** The set is a static list, so a member who has left the team keeps their turn in the rotation until you remove them. Audit the configured set whenever the team changes.
-- **Unqualified leads consume a turn.** Every run that reaches the block advances the rotation, even for spam or out-of-territory leads, which silently skews the balance. Put a [Filter](/reference/conditions/filter) before the block so only qualified records reach it.
+- **The assignment never lands.** The block picks a member but writes nothing. If you stop here, the owner field stays empty. Follow the block with [Update record](/reference/records/update-record), [Update list entry](/reference/lists/update-list-entry), or [Create task](/reference/tasks/create-task), then map the picked user into the relevant field.
+- **A departed member still gets leads.** The set is a static list. A member who has left the team keeps their turn in the rotation until you remove them. Audit the configured set whenever the team changes.
+- **Unqualified leads consume a turn.** Every run that reaches the block advances the rotation, even for spam or out-of-territory leads. This silently skews the balance. Put a [Filter](/reference/conditions/filter) before the block so only qualified records reach it.
 
 ## Examples
 
 ### Assigning new leads to a sales-development pod
 
-A [Record created](/reference/triggers/record-created) trigger on the People object reaches the block, which rotates through the sales-development representative (SDR) pod and hands the pick to [Update record](/reference/records/update-record).
+A [Record created](/reference/triggers/record-created) trigger on the People object reaches the block. The block rotates through the sales-development representative (SDR) pod and hands the pick to [Update record](/reference/records/update-record).
 
 | Field | Value |
 | --- | --- |
@@ -60,7 +62,7 @@ Result: the first new lead is assigned to Priya Sharma, the next to Marcus Lee, 
 
 ### Rotating a follow-up task across an account team
 
-After a [Filter](/reference/conditions/filter) keeps only deals above $50,000, the block selects the next account executive and a [Create task](/reference/tasks/create-task) block assigns the follow-up to that person.
+First, a [Filter](/reference/conditions/filter) keeps only deals above $50,000. The block then selects the next account executive. A [Create task](/reference/tasks/create-task) block assigns the follow-up to that person.
 
 ```json
 {

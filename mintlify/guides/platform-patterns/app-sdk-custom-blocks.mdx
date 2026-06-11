@@ -4,13 +4,13 @@ description: App SDK custom blocks package a repeatable integration as a first-c
 icon: blocks
 ---
 
-App SDK custom blocks package a repeatable integration as a first-class workflow block instead of a hand-wired [Send HTTP request](/reference/utilities/send-http-request) call. The App SDK is Attio's developer toolkit for building your own blocks, and a custom block carries its own configuration form, its own authentication, and typed inputs and outputs. Reach for one when the same external call appears across many workflows and you want operators to drop it in without touching headers or JSON.
+App SDK custom blocks package a repeatable integration as a first-class workflow block instead of a hand-wired [Send HTTP request](/reference/utilities/send-http-request) call. The App SDK is Attio's developer toolkit for building your own blocks. A custom block carries its own configuration form, its own authentication, and typed inputs and outputs. Reach for one when the same external call shows up across many workflows. The block lets operators drop it in without touching headers or JSON.
 
-This guide covers when a custom block earns its keep, when plain [HTTP and JSON patterns](/guides/platform-patterns/http-json-patterns) are the better answer, and how to take a proven HTTP pattern through to a reusable block.
+This guide covers three things. It shows when a custom block earns its keep, when plain [HTTP and JSON patterns](/guides/platform-patterns/http-json-patterns) are the better answer, and how to take a proven HTTP pattern through to a reusable block.
 
 ## Choosing a custom block over raw HTTP
 
-A custom block is worth building when the integration has outgrown a single workflow. Each of the signals below points toward packaging the call once rather than re-creating it by hand:
+A custom block is worth building when the integration has outgrown a single workflow. Each signal below points toward packaging the call once rather than re-creating it by hand:
 
 - The same HTTP action is reused across many workflows.
 - Non-technical operators need a friendly configuration form, not a raw URL and headers field.
@@ -18,7 +18,7 @@ A custom block is worth building when the integration has outgrown a single work
 - The block needs typed inputs and outputs so downstream blocks can consume its results reliably.
 - The integration could become a reusable product you ship to more than one workspace.
 
-When two or three of these are true at once, the cost of building a block pays back quickly. A revenue operations engineer who maintains the same enrichment call in eight workflows replaces eight copies with one block, and a label change ships to all eight at once.
+When two or three of these are true at once, the cost of building a block pays back quickly. Picture a revenue operations engineer who maintains the same enrichment call in eight workflows. Enrichment means filling in missing details about a company or person from an outside provider. With a custom block, those eight copies become one, and a label change ships to all eight at once.
 
 ## Staying with HTTP requests
 
@@ -29,28 +29,28 @@ Most integrations never need a custom block. The [Send HTTP request](/reference/
 - The operator configuring it is technical and comfortable with headers and JSON.
 - You are still validating demand before investing in an app.
 
-Pair the request with [Parse JSON](/reference/utilities/parse-json) to read the response and [Execute code](/reference/calculations/execute-code) to reshape the payload, and you can run a complete integration with no custom block at all. Build the block only after the manual pattern proves itself in real workspaces.
+Pair the request with [Parse JSON](/reference/utilities/parse-json) to read the response. Add [Execute code](/reference/calculations/execute-code) to reshape the payload. Together, these run a complete integration with no custom block at all. Build the block only after the manual pattern proves itself in real workspaces.
 
 <Note>
-Send HTTP request enforces a two-minute timeout, and Execute code enforces a 100-second timeout. A custom block does not turn a slow integration into a fast one, so design around these limits rather than expecting an SDK wrapper to escape them.
+Send HTTP request enforces a two-minute timeout, and Execute code enforces a 100-second timeout. A custom block does not turn a slow integration into a fast one. Design around these limits rather than expecting an SDK wrapper to escape them.
 </Note>
 
 ## Promoting a proven pattern to a block
 
-Build the manual version first, watch it survive contact with real data, and only then turn it into a custom block. The steps below take a working HTTP integration through to a reusable block.
+Build the manual version first. Watch it survive contact with real data. Only then turn it into a custom block. The steps below take a working HTTP integration through to a reusable block.
 
 <Steps>
   <Step title="Ship the manual HTTP pattern">
     Build the integration with [Send HTTP request](/reference/utilities/send-http-request), [Parse JSON](/reference/utilities/parse-json), and [Execute code](/reference/calculations/execute-code) inside a normal workflow. For an enrichment call triggered by [Webhook received](/reference/triggers/webhook-received), this is the full pattern you would otherwise wire by hand for every customer.
   </Step>
   <Step title="Confirm the pattern recurs">
-    Watch for the same call across workspaces. When the identical request — say, the enrichment lookup you run for `acme.com` and a dozen other domains — appears in several customer workspaces with only the URL or API key changing, you have a candidate worth packaging.
+    Watch for the same call across workspaces. Say you run an enrichment lookup for `acme.com` and a dozen other domains. When that identical request appears in several customer workspaces with only the URL or API key changing, you have a candidate worth packaging.
   </Step>
   <Step title="Define the block's typed inputs and outputs">
-    Decide what the operator supplies and what the block returns. An enrichment block might take a `domain` input such as `acme.com` and return typed outputs like `company_name`, `employee_count`, and `enriched_at`, so downstream blocks consume named fields instead of re-parsing raw JSON.
+    Decide what the operator supplies and what the block returns. An enrichment block might take a `domain` input such as `acme.com` and return typed outputs like `company_name`, `employee_count`, and `enriched_at`. Downstream blocks then consume named fields instead of re-parsing raw JSON.
   </Step>
   <Step title="Move authentication into the block">
-    Store the credential once at the block level rather than in a workflow header. The operator who adds the block — Priya Sharma in revenue operations, for example — selects a connection instead of pasting an API key, and the secret never appears in a workflow configuration.
+    Store the credential once at the block level rather than in a workflow header. Picture Priya Sharma in revenue operations adding the block. She selects a connection instead of pasting an API key, and the secret never appears in a workflow configuration.
   </Step>
   <Step title="Hand the result downstream">
     Feed the block's typed outputs into the same blocks the manual pattern used, such as [Create or update record](/reference/records/create-or-update-record). Because the outputs are typed, the mapping stays stable even as you revise the block's internals.
@@ -67,7 +67,7 @@ Several recurring go-to-market (GTM) jobs are good first candidates once the man
 - Lead-scoring blocks that wrap a fixed model behind a simple input.
 - Data-hygiene blocks that normalize fields on write.
 
-The discipline is the same in every case: document the manual HTTP pattern first, prove it across more than one workspace, and only then promote it to a custom block.
+The discipline is the same in every case. Document the manual HTTP pattern first. Prove it across more than one workspace. Only then promote it to a custom block.
 
 <Tip>
 **Validate before you build.** A custom block is a product, not a config change. If a pattern has only ever run in one workspace, keep it as an HTTP-and-JSON workflow until a second workspace asks for the same thing.
@@ -81,4 +81,4 @@ The discipline is the same in every case: document the manual HTTP pattern first
 - [Execute code](/reference/calculations/execute-code)
 - [Credits & pricing explained](/reference/credits-and-pricing)
 
-_Source: [Attio Help Center — Migrate your legacy workflows](https://attio.com/help/reference/automations/workflows/migrate-your-legacy-workflows). Last reviewed against the Attio Help Center, June 2026._
+_Source: [Attio Help Center: Migrate your legacy workflows](https://attio.com/help/reference/automations/workflows/migrate-your-legacy-workflows). Last reviewed against the Attio Help Center, June 2026._

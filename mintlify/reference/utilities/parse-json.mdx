@@ -4,12 +4,12 @@ description: The Parse JSON block converts a JSON string into typed variables th
 icon: braces
 ---
 
-The **Parse JSON** block (Utilities) converts a JSON string into typed variables that later workflow blocks can read. It turns the raw text body of a webhook or HTTP response into named fields you can map into records, conditions, and messages. Define a schema that matches the payload you expect, because a field whose type does not match the schema fails the block.
+The **Parse JSON** block (Utilities) converts a JSON string into typed variables that later workflow blocks can read. JSON is the plain-text format that webhooks and HTTP responses use to send data. This block turns that raw text into named fields you can map into records, conditions, and messages. You define a schema, which is the shape of the data you expect. A field whose type does not match the schema fails the block.
 
 | | |
 | --- | --- |
 | **Category** | Utilities |
-| **Credit cost** | Free — logic blocks consume no credits |
+| **Credit cost** | Free. Logic blocks consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
@@ -18,10 +18,10 @@ The **Parse JSON** block (Utilities) converts a JSON string into typed variables
 
 | Input | Type | Required | Default | Notes |
 | --- | --- | --- | --- | --- |
-| Input | String | Yes | — | The JSON string to parse, usually `{{ steps.webhook_received.body }}` from [Webhook received](/reference/triggers/webhook-received) or the response body from [Send HTTP request](/reference/utilities/send-http-request). |
-| Schema | Schema | Yes | — | The shape of the expected payload. Generate it from a sample JSON string or build it by hand. |
-| Root type | Selection | Yes | — | The top-level JSON structure, such as an object or an array. |
-| Properties | Field list | Yes | — | The fields to extract and the type of each one. Parse only the fields the workflow actually uses. |
+| Input | String | Yes | None | The JSON string to parse, usually `{{ steps.webhook_received.body }}` from [Webhook received](/reference/triggers/webhook-received) or the response body from [Send HTTP request](/reference/utilities/send-http-request). |
+| Schema | Schema | Yes | None | The shape of the expected payload. Generate it from a sample JSON string or build it by hand. |
+| Root type | Selection | Yes | None | The top-level JSON structure, such as an object or an array. |
+| Properties | Field list | Yes | None | The fields to extract and the type of each one. Parse only the fields the workflow actually uses. |
 
 ## Outputs
 
@@ -29,23 +29,29 @@ The **Parse JSON** block (Utilities) converts a JSON string into typed variables
 | --- | --- | --- | --- |
 | Parsed values | Typed (per schema) | `jane@acme.com` | One output per property in the schema, each carrying the type you declared. |
 
-Each property becomes its own variable. Reference a parsed `email` field downstream as `{{ steps.parse_json.email }}`, and a nested or array field by the path you defined in the schema.
+Each property becomes its own variable. Reference a parsed `email` field downstream as `{{ steps.parse_json.email }}`. Reference a nested or array field by the path you defined in the schema.
 
 ## Behavior
 
-Parse JSON reads the **Input** string, validates it against the **Schema**, and exposes one typed variable per property. A property you mark as optional and that is missing from the payload returns empty rather than failing the run, so downstream blocks must handle the empty case. A property whose value does not match its declared type fails the block and stops the run on that path; the parser does not silently coerce a string into a number or a number into a boolean. Only the properties you declare in the schema become outputs, so adding a field to the source payload has no effect until you add it to the schema as well.
+Parse JSON reads the **Input** string, checks it against the **Schema**, and exposes one typed variable per property.
+
+Mark a property as optional if it might be missing from the payload. When an optional property is absent, it returns empty instead of failing the run. Downstream blocks then have to handle that empty case.
+
+A property whose value does not match its declared type fails the block and stops the run on that path. The parser does not silently convert one type into another. It will not turn a string into a number, or a number into a boolean.
+
+Only the properties you declare in the schema become outputs. Adding a field to the source payload has no effect on its own. You also have to add that field to the schema.
 
 ## Gotchas
 
-- **Type mismatch fails the block.** When a payload field arrives as a different type than the schema declares — a number where you expect a string, or a string where you expect a boolean — the block fails and the run stops on that path. Treat external payloads as untrusted: declare the type the source actually sends, and widen a field to string when a provider is inconsistent.
-- **Missing optional values return empty, not an error.** An optional property that is absent from the payload resolves to empty instead of failing. A downstream [Create or update record](/reference/records/create-or-update-record) block can then write an empty value over good data, so guard it with a [Filter](/reference/conditions/filter) or an [If](/reference/conditions/if) check before the write.
-- **Unparsed fields are invisible downstream.** Only properties in the schema appear as variables. If a field you need is missing from the variable picker, add it to the schema rather than assuming the block dropped it.
+- **Type mismatch fails the block.** A field can arrive as a different type than the schema declares. For example, a number where you expect a string, or a string where you expect a boolean. When that happens, the block fails and the run stops on that path. Treat external payloads as untrusted. Declare the type the source actually sends. When a provider is inconsistent, widen that field to a string.
+- **Missing optional values return empty, not an error.** An optional property that is absent from the payload resolves to empty instead of failing. A downstream [Create or update record](/reference/records/create-or-update-record) block can then write an empty value over good data. Guard it with a [Filter](/reference/conditions/filter) or an [If](/reference/conditions/if) check before the write.
+- **Unparsed fields are invisible downstream.** Only properties in the schema appear as variables. If a field you need is missing from the variable picker, add it to the schema. Do not assume the block dropped it.
 
 ## Examples
 
 ### Parsing a webhook lead payload
 
-A form provider posts a lead to your webhook URL, and Parse JSON extracts the three fields the intake workflow needs.
+A form provider posts a lead to your webhook URL. Parse JSON extracts the three fields the intake workflow needs.
 
 ```json
 {
@@ -63,11 +69,11 @@ A form provider posts a lead to your webhook URL, and Parse JSON extracts the th
 | `company_domain` | String |
 | `source` | String |
 
-The block exposes `{{ steps.parse_json.email }}`, `{{ steps.parse_json.company_domain }}`, and `{{ steps.parse_json.source }}` for the next [Create or update record](/reference/records/create-or-update-record) block to map onto a person.
+The block exposes `{{ steps.parse_json.email }}`, `{{ steps.parse_json.company_domain }}`, and `{{ steps.parse_json.source }}`. The next [Create or update record](/reference/records/create-or-update-record) block maps these onto a person.
 
 ### Parsing an enrichment API response
 
-A [Send HTTP request](/reference/utilities/send-http-request) block calls an enrichment API, and Parse JSON reads the typed fields out of the response body.
+A [Send HTTP request](/reference/utilities/send-http-request) block calls an enrichment API. Parse JSON reads the typed fields out of the response body.
 
 ```json
 {
@@ -85,7 +91,7 @@ A [Send HTTP request](/reference/utilities/send-http-request) block calls an enr
 | `in_business` | Boolean |
 | `industry` | String |
 
-The block exposes `{{ steps.parse_json.headcount }}` as a number, so a downstream [Filter](/reference/conditions/filter) can compare it numerically before the workflow writes the company record.
+The block exposes `{{ steps.parse_json.headcount }}` as a number. A downstream [Filter](/reference/conditions/filter) can then compare it numerically before the workflow writes the company record.
 
 ## Source
 

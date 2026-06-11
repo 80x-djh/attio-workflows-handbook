@@ -1,19 +1,19 @@
 ---
 title: Variables & data passing
-description: Data moves through an Attio workflow as variables — a block produces outputs during a run, and later blocks read them as inputs.
+description: Data moves through an Attio workflow as variables. A block produces outputs during a run, and later blocks read them as inputs.
 ---
 
-Data moves through an Attio workflow as **variables** — a block produces outputs during a run, and later blocks read them as inputs. Blocks do not share memory, so this output-to-input chain is the only path data can travel: a trigger or earlier block emits values, you point a downstream input at one of them, and the engine resolves it fresh on every run.
+Data moves through an Attio workflow as **variables**. A block produces outputs during a run, and later blocks read them as inputs. Blocks do not share memory, so this output-to-input chain is the only path data can travel. A trigger or earlier block emits values. You point a downstream input at one of those values, and the engine resolves it fresh on every run.
 
-For a RevOps engineer, this is where most "my workflow is broken" tickets actually live. The trigger fires, the blocks run, and the data quietly arrives empty or in the wrong shape because one input was wired to the wrong source. Understanding the wiring model — what produces outputs, how to combine sources, and how strict the type system is — turns those silent failures into a five-minute fix in the [run viewer](/explanation/runs-and-debugging).
+For a RevOps engineer, this is where most "my workflow is broken" tickets actually live. The trigger fires and the blocks run, but the data arrives empty or in the wrong shape. The cause is usually one input wired to the wrong source. Once you understand the wiring model, those silent failures turn into a five-minute fix in the [run viewer](/explanation/runs-and-debugging). The wiring model has three parts: what produces outputs, how to combine sources, and how strict the type system is.
 
-After this page you can wire any input to a static value or a variable, build inputs that try several sources with a fallback, persist artificial-intelligence (AI) output onto a record, and recognize the type and freshness mistakes that break otherwise-correct workflows. The exact token syntax for advanced expressions lives in [Variables and expressions reference](/reference/variable-syntax).
+After this page you can wire any input to a static value or a variable. You can also build inputs that try several sources with a fallback, persist artificial-intelligence (AI) output onto a record, and recognize the type and freshness mistakes that break otherwise-correct workflows. The exact token syntax for advanced expressions lives in [Variables and expressions reference](/reference/variable-syntax).
 
 ## Setting an input to a static value or a variable
 
-Every input on a block accepts one of two things, and you choose per input. A **static value** is fixed at build time and identical on every run — a country name like `Canada`, a specific list, or a hardcoded URL. A **variable** is a reference to an earlier block's output, resolved fresh on each run; you set one by clicking **`{x}` use variable** on the input and picking an output from any block earlier in the path.
+Every input on a block accepts one of two things, and you choose per input. A **static value** is fixed at build time and identical on every run. It can be a country name like `Canada`, a specific list, or a hardcoded URL. A **variable** is a reference to an earlier block's output, resolved fresh on each run. You set one by clicking **`{x}` use variable** on the input and picking an output from any block earlier in the path.
 
-Variables also mix with static text, so one field can be a template. A Slack message body of `🎉 {Deal name} moved to {New value}` interpolates the live deal name and stage into the sentence at run time, and a URL inside a [Send HTTP request](/reference/utilities/send-http-request) block works the same way.
+Variables also mix with static text, so one field can be a template. A Slack message body of `🎉 {Deal name} moved to {New value}` interpolates the live deal name and stage into the sentence at run time. A URL inside a [Send HTTP request](/reference/utilities/send-http-request) block works the same way.
 
 As a result, a `Deal name` of `Acme renewal` moving to a `Stage` of `Closed won` produces the message `🎉 Acme renewal moved to Closed won`, rebuilt from current values every time the workflow runs.
 
@@ -21,18 +21,18 @@ As a result, a `Deal name` of `Acme renewal` moving to a `Stage` of `Closed won`
 
 Only certain blocks emit outputs, and you can reference an output only from a block that sits earlier in the same path. Knowing which block emits what saves you from hunting for a variable that was never produced.
 
-- **Triggers** emit the triggering record or list entry, the actor who caused it, the timestamp, and — for attribute-scoped triggers like [Attribute value changed](/reference/triggers/attribute-value-changed) — the new and previous values.
+- **Triggers** emit the triggering record or list entry, the actor who caused it, and the timestamp. Attribute-scoped triggers like [Attribute value changed](/reference/triggers/attribute-value-changed) also emit the new and previous values.
 - **Find blocks** such as [Find records](/reference/records/find-records) emit the matching records or entries plus a match count.
 - **Create and update blocks** such as [Update record](/reference/records/update-record) emit the resulting record or entry. Reference this output, not the trigger's copy, whenever a later block needs post-update values.
-- **Calculation blocks** emit their result — a [Formula](/reference/calculations/formula) result, an [Adjust time](/reference/calculations/adjust-time) timestamp, or a [Random number](/reference/calculations/random-number).
-- **Agent and AI blocks** such as [Classify record](/reference/ai/classify-record) emit text — answers, classifications, and summaries. These are not saved anywhere automatically.
+- **Calculation blocks** emit their result. That result is a [Formula](/reference/calculations/formula) result, an [Adjust time](/reference/calculations/adjust-time) timestamp, or a [Random number](/reference/calculations/random-number).
+- **Agent and AI blocks** such as [Classify record](/reference/ai/classify-record) emit text: answers, classifications, and summaries. These are not saved anywhere automatically.
 - **[Loop](/reference/utilities/loop)** exposes outputs only *inside* the loop body: the current item, its position, and the total count.
 
 When a variable does not resolve the way you expect, the [run viewer](/explanation/runs-and-debugging) shows every block's actual inputs and outputs for that run. Reading the real run data beats reasoning about the wiring in the abstract.
 
 ## Combining data sources with a fallback
 
-The new Workflows engine adds **advanced variables**, which let a single input try several sources in order and then settle on a fixed fallback. **Data sources** are an ordered list of variables — the input uses the first one that has a value. The **fallback** is a static value used only when every data source is empty.
+The new Workflows engine adds **advanced variables**, which let a single input try several sources in order and then settle on a fixed fallback. **Data sources** are an ordered list of variables. The input uses the first one that has a value. The **fallback** is a static value used only when every data source is empty.
 
 A common shape is "use the email from the webhook payload; if that is empty, use the email on the trigger record; if both are empty, use `sales@acme.com`." The input walks the list top to bottom and stops at the first non-empty value.
 
@@ -46,29 +46,29 @@ With this configuration, a run whose webhook payload carries `jane@acme.com` res
 
 Advanced variables earn their place in three situations:
 
-1. **Multi-trigger workflows** — a downstream block reads from whichever trigger fired by listing both triggers' outputs as data sources.
-2. **Patchy data** — route to the deal owner, then fall back to the team lead when the owner field is empty.
-3. **Formula safety** — a [Formula](/reference/calculations/formula) with an empty variable fails the whole block with `Invalid formula`. Set a fallback of `0` on every numeric variable that could be empty. This is the documented fix, and it belongs on essentially every formula you write.
+1. **Multi-trigger workflows.** A downstream block reads from whichever trigger fired by listing both triggers' outputs as data sources.
+2. **Patchy data.** Route to the deal owner, then fall back to the team lead when the owner field is empty.
+3. **Formula safety.** A [Formula](/reference/calculations/formula) with an empty variable fails the whole block with `Invalid formula`. Set a fallback of `0` on every numeric variable that could be empty. This is the documented fix, and it belongs on essentially every formula you write.
 
 A variable highlighted **yellow** in the editor is the builder warning you that it may be empty at run time. Hover the variable for the details, then add a data source or a fallback to clear it.
 
 ## Persisting AI output onto a record
 
-The AI blocks — [Classify record](/reference/ai/classify-record), [Summarize record](/reference/ai/summarize-record), and the [Custom agent](/reference/agents/custom-agent) block — return their text into the run and stop there. The classification or summary exists as a variable for the rest of that run, but nothing reaches the record unless you write it.
+The AI blocks return their text into the run and stop there. Those blocks are [Classify record](/reference/ai/classify-record), [Summarize record](/reference/ai/summarize-record), and the [Custom agent](/reference/agents/custom-agent) block. The classification or summary exists as a variable for the rest of that run, but nothing reaches the record unless you write it.
 
 Persisting the result takes two steps. First, create an attribute to hold it: a select or multi-select attribute for classifications, with options that match the tags the block can return, or a text attribute for summaries and agent answers. Second, follow the AI block with [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry), mapping the AI output into that attribute.
 
-For example, a [Classify record](/reference/ai/classify-record) block that returns `Enterprise` can feed an [Update record](/reference/records/update-record) block whose `Segment` input is the classification variable, which writes `Enterprise` onto the company record. Skip the second step and the AI ran but nothing changed on the record — the single most common cause of "the AI worked but nothing happened."
+For example, a [Classify record](/reference/ai/classify-record) block that returns `Enterprise` can feed an [Update record](/reference/records/update-record) block whose `Segment` input is the classification variable, which writes `Enterprise` onto the company record. Skip the second step and the AI ran but nothing changed on the record. That is the single most common cause of "the AI worked but nothing happened."
 
 ## Avoiding the wiring mistakes that break workflows
 
 A handful of wiring rules cause most of the debugging sessions, and each has a clear symptom in the run viewer.
 
-- **Mismatched types fail loudly.** An input expecting a list entry rejects a record, and the reverse — the error reads `Please provide a List Entry, not a Record`. The conversion patterns are in [Records vs list entries](/explanation/records-vs-list-entries).
-- **Person-typed inputs are strict.** [Enroll in sequence](/reference/sequences/enroll-in-sequence) takes a *person* record — not a company, not a list entry. Reach the person through a relationship attribute on the triggering record.
+- **Mismatched types fail loudly.** An input expecting a list entry rejects a record, and the reverse is also true. The error reads `Please provide a List Entry, not a Record`. The conversion patterns are in [Records vs list entries](/explanation/records-vs-list-entries).
+- **Person-typed inputs are strict.** [Enroll in sequence](/reference/sequences/enroll-in-sequence) takes a *person* record, not a company and not a list entry. Reach the person through a relationship attribute on the triggering record.
 - **Find blocks hand over only the first match** unless you wrap them in a loop. A warning icon on the downstream block is the builder telling you so; the fix is in [Loops & processing many records](/explanation/loops).
-- **After a write, reference the write's output.** The trigger's record data is a snapshot from trigger time, so a later block that reads it misses anything an [Update record](/reference/records/update-record) block changed mid-run. Reference the update block's output instead.
-- **Migrated workflows need a variable audit.** Re-verify every variable reference block by block after a migration — rewiring is the main thing the [Migrate legacy workflows](/guides/migrating-from-legacy) assistant gets subtly wrong.
+- **After a write, reference the write's output.** The trigger's record data is a snapshot from trigger time. A later block that reads it misses anything an [Update record](/reference/records/update-record) block changed mid-run. Reference the update block's output instead.
+- **Migrated workflows need a variable audit.** Re-verify every variable reference block by block after a migration. Rewiring is the main thing the [Migrate legacy workflows](/guides/migrating-from-legacy) assistant gets subtly wrong.
 
 Wiring each input to its correct source, then confirming it in the [run viewer](/explanation/runs-and-debugging), removes nearly every data-passing failure before it reaches production.
 

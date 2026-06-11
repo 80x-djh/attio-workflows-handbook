@@ -4,7 +4,7 @@ description: The Custom agent block (Agents) runs a configurable AI agent inside
 icon: bot
 ---
 
-The **Custom agent** block (Agents) runs a configurable AI agent inside a workflow, with optional read-only Attio data, web access, and app tools. You give it a prompt, a model, and a tool budget, and it returns one free-text response you wire into later blocks. The agent starts with no context, so it sees only what you pass in through variables and the tools you grant.
+The **Custom agent** block (Agents) runs a configurable AI agent inside a workflow, with optional read-only Attio data, web access, and app tools. You give it a prompt, a model, and a tool budget. It returns one free-text answer that you wire into later blocks. The agent starts with no context. It sees only what you pass in through variables and the tools you grant.
 
 | | |
 | --- | --- |
@@ -12,7 +12,7 @@ The **Custom agent** block (Agents) runs a configurable AI agent inside a workfl
 | **Credit cost** | Variable (token-based) |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | Plans that include workflow automation |
-| **Limits** | No documented rate, payload, or timeout caps. Tool access is read-only and gated by the "Run as" permission model, and output is not saved unless a later block writes it. |
+| **Limits** | No documented rate, payload, or timeout caps. Tool access is read-only and gated by the "Run as" permission model. Output is not saved unless a later block writes it. |
 
 ## Inputs
 
@@ -28,33 +28,33 @@ The **Custom agent** block (Agents) runs a configurable AI agent inside a workfl
 
 | Output | Type | Example | Notes |
 | --- | --- | --- | --- |
-| Response | Text | `Acme is a strong fit: enterprise SaaS, 400 employees, recent Series B.` | The agent's free-text answer. There is no structured field; parse it downstream if you need fields. |
+| Response | Text | `Acme is a strong fit: enterprise SaaS, 400 employees, recent Series B.` | The agent's free-text answer. There is no structured field, so parse it downstream if you need fields. |
 
 Reference the agent's answer in a later block as `{{ steps.custom_agent.response }}`.
 
 ## Behavior
 
-The agent runs once per workflow run and returns a single text response. It does not retain memory between runs, and it does not see any record, list entry, or note unless you pass that data in through variables or grant a read-only tool.
+The agent runs once per workflow run and returns a single text response. It does not remember anything between runs. By default it cannot see any record, list entry, or note. It sees that data only when you pass it in through variables or grant a read-only tool.
 
-Tool access is read-only and gated by the **"Run as"** permission model. The agent reads only what the chosen member can see, and it never writes to your workspace on its own. To use Attio data tools, web access, or MCP-connected app tools, the member named in **Run as** must first approve sharing through *Share access* in their Ask Attio settings, and they must connect their own apps for any MCP tools.
+Tool access is read-only and gated by the **"Run as"** permission model. The agent reads only what the chosen member can see, and it never writes to your workspace on its own. To turn on Attio data tools, web access, or MCP-connected app tools, the member named in **Run as** must first approve sharing. They do this through *Share access* in their Ask Attio settings. For any MCP tools, that member must also connect their own apps.
 
-The response is not saved automatically. It lives only as a run variable, so it disappears after the run unless a later block persists it. Follow the agent with [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) to write the answer to a field.
+The response is not saved automatically. It lives only as a run variable, so it disappears after the run unless a later block stores it. To keep the answer, follow the agent with [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) and write it to a field.
 
-Cost scales with tokens, not with a flat per-run fee. A long system prompt, a large block of passed-in context, and a verbose answer all raise the token count and the credit cost of a single run.
+Cost scales with tokens, not with a flat per-run fee. A long system prompt, a large block of passed-in context, and a verbose answer all raise the token count. More tokens mean a higher credit cost for a single run.
 
 ## Gotchas
 
-- **The agent answers with nothing useful.** The agent starts with no context, so an empty or vague answer usually means you passed no variables and granted no tools. Fix it by interpolating the records you need into the prompt, or by granting a read-only Attio tool through **Run as**.
-- **The response vanishes after the run.** The output is a run variable, not a saved field, so it is gone once the run ends. Add an [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) block and map `{{ steps.custom_agent.response }}` into a field.
-- **The agent sees more of the workspace than you intended.** Granting Attio data tools exposes everything the **Run as** member can read, which can be the whole workspace. Choose the **Run as** member deliberately, and grant only the tools the task needs.
-- **The run costs more than expected.** Token-based pricing means large context and long answers cost more per run. Filter and trim what you pass in, and use [Filter](/reference/conditions/filter) earlier in the workflow so the agent runs only when it should.
-- **The answer is hard to act on.** The output is free text, not structured data, so branching on it is fragile. For a fixed set of categories, use [Classify text](/reference/ai/classify-text) or [Classify record](/reference/ai/classify-record) instead, or instruct the agent to answer with one exact word and branch with [Switch](/reference/conditions/switch).
+- **The agent answers with nothing useful.** The agent starts with no context. An empty or vague answer usually means you passed in no variables and granted no tools. Fix it by adding the records you need to the prompt, or by granting a read-only Attio tool through **Run as**.
+- **The response vanishes after the run.** The output is a run variable, not a saved field. It is gone once the run ends. Add an [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) block and map `{{ steps.custom_agent.response }}` into a field.
+- **The agent sees more of the workspace than you intended.** Granting Attio data tools exposes everything the **Run as** member can read, which can be the whole workspace. Choose the **Run as** member carefully, and grant only the tools the task needs.
+- **The run costs more than expected.** With token-based pricing, large context and long answers cost more per run. Filter and trim what you pass in. Use [Filter](/reference/conditions/filter) earlier in the workflow so the agent runs only when it should.
+- **The answer is hard to act on.** The output is free text, not structured data, so branching on it is fragile. For a fixed set of categories, use [Classify text](/reference/ai/classify-text) or [Classify record](/reference/ai/classify-record) instead. You can also instruct the agent to answer with one exact word and branch with [Switch](/reference/conditions/switch).
 
 ## Examples
 
 ### Writing an account brief from notes and calls
 
-A [Record command](/reference/triggers/record-command) on the Companies object passes the company into a **Custom agent** that reads its notes and call recordings, then writes the result back to a field.
+A [Record command](/reference/triggers/record-command) on the Companies object passes the company into a **Custom agent**. The agent reads its notes and call recordings, then writes the result back to a field.
 
 | Field | Value |
 | --- | --- |
@@ -64,11 +64,11 @@ A [Record command](/reference/triggers/record-command) on the Companies object p
 | System prompt | `You are a revenue analyst. Write a five-line account brief: status, key people, last touch, risks, next step.` |
 | Prompt | `Write an account brief for {{ trigger.record.name }} using its notes and recent call recordings.` |
 
-The agent returns a brief such as `Acme — active renewal; champion Jane Lee (VP Ops); last call 3 days ago; risk: budget freeze; next step: send ROI deck.`, which an [Update record](/reference/records/update-record) block stores in the `account_brief` field.
+The agent returns a brief such as `Acme: active renewal; champion Jane Lee (VP Ops); last call 3 days ago; risk: budget freeze; next step: send ROI deck.`. An [Update record](/reference/records/update-record) block then stores it in the `account_brief` field.
 
 ### Deciding the next action from mixed context
 
-A [Manual run](/reference/triggers/manual-run) feeds enriched lead data into a **Custom agent** that recommends one next action, which a [Switch](/reference/conditions/switch) block then routes on.
+A [Manual run](/reference/triggers/manual-run) feeds enriched lead data into a **Custom agent** that recommends one next action. A [Switch](/reference/conditions/switch) block then routes on that answer.
 
 ```json
 {
@@ -84,9 +84,9 @@ The agent returns `route`, and the downstream [Switch](/reference/conditions/swi
 
 ## Credit cost worked example
 
-The **Custom agent** block is priced on tokens, so cost per run depends on prompt size, passed-in context, granted tools, and answer length rather than a flat fee. A short brief over a few notes costs far less than a long synthesis over a full account history.
+The **Custom agent** block is priced on tokens. Cost per run depends on prompt size, passed-in context, granted tools, and answer length rather than on a flat fee. A short brief over a few notes costs far less than a long synthesis over a full account history.
 
-To estimate spend, multiply your realistic per-run token cost by monthly volume, then compare it against your plan's monthly credit allowance on [Credits & pricing explained](/reference/credits-and-pricing). Because logic and lookup blocks are free, you can run a [Filter](/reference/conditions/filter) before the agent so that only qualifying records reach it, which is the single biggest lever on token spend. Per-workflow credit caps were removed in the new engine, so monitor usage on the credits page rather than relying on a cap.
+To estimate spend, multiply your realistic per-run token cost by your monthly volume. Then compare that against your plan's monthly credit allowance on [Credits & pricing explained](/reference/credits-and-pricing). Logic and lookup blocks are free, so you can run a [Filter](/reference/conditions/filter) before the agent. That way only qualifying records reach the agent, which is the single biggest lever on token spend. Per-workflow credit caps were removed in the new engine, so monitor usage on the credits page rather than relying on a cap.
 
 ## Source
 

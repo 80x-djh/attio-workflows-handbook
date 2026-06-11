@@ -4,17 +4,17 @@ description: Legacy workflow blocks map to renamed or reworked blocks in the new
 icon: arrow-left-right
 ---
 
-Legacy workflow blocks map to renamed or reworked blocks in the new builder, so a migrated workflow can look correct yet behave differently. Reach for this page in two situations: a legacy block name no longer appears in the new builder, or a migrated workflow validates cleanly but produces the wrong result at run time. Each row in the mapping table names the legacy block, its new equivalent, and the one thing to re-check after migration.
+Legacy workflow blocks map to renamed or reworked blocks in the new builder, so a migrated workflow can look correct yet behave differently. Use this page in two situations. The first is when a legacy block name no longer appears in the new builder. The second is when a migrated workflow validates cleanly but produces the wrong result at run time. Each row in the mapping table names the legacy block, its new equivalent, and the one thing to re-check after migration.
 
-Migration is a one-time event for any given workflow. You can no longer create new legacy workflows; existing ones keep running, and Attio says sunset notice will come "well in advance." That means every legacy workflow eventually moves to the new engine, and these renames are the most common reason a moved workflow misfires.
+Migration happens once for any given workflow. You can no longer create new legacy workflows; existing ones keep running, and Attio says sunset notice will come "well in advance." So every legacy workflow eventually moves to the new engine. These renames are the most common reason a moved workflow misfires.
 
 ## Renamed and reworked blocks
 
-The new engine keeps the same building blocks but renames several and changes the behavior of a few. Read each migration note as a verification task, not just a label change.
+The new engine keeps the same building blocks. It renames several of them and changes how a few behave. Read each migration note as a task to verify, not just a label change.
 
 | Legacy block | New block | What to re-check |
 | --- | --- | --- |
-| Attribute changed | [Attribute value changed](/reference/triggers/attribute-value-changed) | Same core purpose, clearer name. It fires when a value is set at creation or changed later, so confirm the trigger still matches the moment you intended. |
+| Attribute changed | [Attribute value changed](/reference/triggers/attribute-value-changed) | Same core purpose, clearer name. It fires when a value is set at creation or changed later. Confirm the trigger still matches the moment you intended. |
 | If/else | [If](/reference/conditions/if) | Same decision pattern, updated naming. The two branches behave as before. |
 | Guidance on Summarize record | Instructions | Re-check prompts after migration. The [Summarize record](/reference/ai/summarize-record) block now takes its guidance through an Instructions field. |
 | Prompt completion | Custom agent subset | Move prompt-style generation into [Custom agent](/reference/agents/custom-agent) instructions, then re-test the output. |
@@ -27,7 +27,7 @@ The new engine keeps the same building blocks but renames several and changes th
 | Canvas notes | Not available | Move durable notes into the workflow description or external docs. The canvas no longer carries them. |
 
 <Note>
-The Attio URL variable replaces the legacy Record URL variable, and the mapping is not always automatic. If a migrated Slack alert links Priya Sharma to the wrong record, the URL variable is the first place to look. See [Variables & data passing](/explanation/variables) for how the new engine resolves variables.
+The Attio URL variable replaces the legacy Record URL variable, and the mapping is not always automatic. Say a migrated Slack alert links Priya Sharma to the wrong record. The URL variable is the first place to look. See [Variables & data passing](/explanation/variables) for how the new engine resolves variables.
 </Note>
 
 ## Manual review checklist
@@ -51,15 +51,15 @@ Run this checklist on every migrated workflow before you trust it in production.
     Confirm the sending user still has permission to enroll contacts. The [Enroll in sequence](/reference/sequences/enroll-in-sequence) block runs under a sender identity that migration does not always preserve.
   </Step>
   <Step title="Re-check self-referential writes">
-    Inspect any block that writes to the same object or list that triggered the workflow. These are the most likely to behave differently after a rename and the most likely to loop. Read [Runs, debugging & publishing](/explanation/runs-and-debugging) before you publish.
+    Inspect any block that writes to the same object or list that triggered the workflow. These are the most likely to behave differently after a rename, and the most likely to loop. Read [Runs, debugging & publishing](/explanation/runs-and-debugging) before you publish.
   </Step>
 </Steps>
 
 ## Where to look when something is wrong
 
-A migrated workflow that misbehaves almost always traces back to one of the renames in the table. Open the run history for the failing run, compare each block's output against the expected value, and check it against the matching checklist item. The renames around multi-select values, Slack formatting, and the Attio URL variable account for most silent failures.
+A migrated workflow that misbehaves almost always traces back to one of the renames in the table. Open the run history for the failing run. Compare each block's output against the expected value, then check it against the matching checklist item. The renames around multi-select values, Slack formatting, and the Attio URL variable account for most silent failures.
 
-Per-workflow credit caps were removed in the new engine, so a workflow that ran inside a cap before may now run without one. Re-check credit-consuming blocks such as [Web agent](/reference/agents/web-agent) after migration, and read [Pricing changes](/guides/migrating-from-legacy/pricing-changes) for how the new pricing differs from the legacy model.
+Per-workflow credit caps were removed in the new engine. A workflow that ran inside a cap before may now run without one. Re-check credit-consuming blocks such as [Web agent](/reference/agents/web-agent) after migration. Read [Pricing changes](/guides/migrating-from-legacy/pricing-changes) for how the new pricing differs from the legacy model.
 
 ## See also
 
@@ -71,4 +71,4 @@ Per-workflow credit caps were removed in the new engine, so a workflow that ran 
 
 ---
 
-_Source: [Attio Help Center — Migrate your legacy workflows](https://attio.com/help/reference/automations/workflows/migrate-your-legacy-workflows). Last reviewed against the Attio Help Center, June 2026._
+_Source: [Attio Help Center: Migrate your legacy workflows](https://attio.com/help/reference/automations/workflows/migrate-your-legacy-workflows). Last reviewed against the Attio Help Center, June 2026._

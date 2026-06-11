@@ -1,40 +1,46 @@
 ---
 title: AI agents playbook
-description: AI agent blocks make judgment calls inside a workflow, so use them only where deterministic logic fails and guard their token cost deliberately.
+description: AI agent blocks make judgment calls inside a workflow. Use them only where plain logic blocks cannot decide, and watch their token cost.
 icon: bot
 ---
 
-**AI agent blocks** make judgment calls inside a workflow, so use them only where deterministic logic fails and guard their token cost deliberately. Attio ships two of them: the [Web agent](/reference/agents/web-agent) block, which researches a record across the public web, and the [Custom agent](/reference/agents/custom-agent) block, which runs a configurable agent with optional read-only Attio data, web access, and tools connected over the Model Context Protocol (MCP). Both are powerful because they reason over messy input; both are risky for the same reason, because their cost is variable and their output is not deterministic.
+**AI agent blocks** make judgment calls inside a workflow. Use them only where plain logic blocks cannot decide, and watch their token cost. An agent block sends your data to a large language model and gets back a written answer. Attio ships two of them. The [Web agent](/reference/agents/web-agent) block researches a record across the public web. The [Custom agent](/reference/agents/custom-agent) block runs a configurable agent. It can read your Attio data (read-only), search the web, and call outside tools. Those tools connect over the Model Context Protocol (MCP), a standard way to plug tools into an agent.
 
-This playbook gives you the decision rule for reaching for an agent, the prompt structure that keeps answers usable, the step that saves an answer so it persists, and the cost discipline that keeps a high-volume trigger from quietly draining a credit balance. After reading it you can decide whether a given task belongs to an agent or a free logic block, write a prompt that returns structured fields you can map into attributes, and ship an agent workflow whose per-run cost you have already measured.
+Both blocks are powerful because they reason over messy input. Both are risky for the same reason. Their cost is variable, and their answer is not guaranteed to be the same every time.
+
+This playbook gives you four things. It gives you the rule for when to reach for an agent. It gives you a prompt structure that returns answers you can actually use. It gives you the step that saves an answer so it sticks to a record. And it gives you the cost discipline that stops a busy trigger from quietly draining your credit balance.
+
+After reading it, you can decide whether a task belongs to an agent or to a free logic block. You can write a prompt that returns clean fields you can map into attributes. And you can ship an agent workflow whose per-run cost you have already measured.
 
 ## When to reach for an agent
 
-An agent earns its variable token cost only when cheaper, deterministic blocks cannot produce the answer. Reach for the [Web agent](/reference/agents/web-agent) or [Custom agent](/reference/agents/custom-agent) block when every one of these holds:
+An agent costs tokens, and that cost varies from run to run. It earns that cost only when cheaper, predictable blocks cannot produce the answer. Reach for the [Web agent](/reference/agents/web-agent) or [Custom agent](/reference/agents/custom-agent) block when every one of these is true:
 
-- The input is unstructured text or public web context that no [Filter](/reference/conditions/filter) or [Formula](/reference/calculations/formula) can parse reliably.
-- A deterministic rule would be brittle, because the signal lives in nuance rather than a field value.
+- The input is unstructured text or public web context. No [Filter](/reference/conditions/filter) or [Formula](/reference/calculations/formula) block can read it reliably.
+- A fixed rule would be brittle. The signal lives in nuance, not in a single field value.
 - A correct answer is worth more than the tokens it costs to produce.
-- A human can tolerate the occasional uncertain or wrong answer downstream.
+- A human can live with the occasional uncertain or wrong answer downstream.
 
 ## When to use a cheaper block instead
 
-A logic, math, or lookup block is faster, free, and predictable, so prefer it whenever it can decide the answer. Skip the agent and reach for a deterministic block when any of these holds:
+A logic, math, or lookup block is faster, free, and predictable. Prefer it whenever it can decide the answer on its own. Skip the agent and reach for one of these deterministic blocks when any of these is true:
 
-- A [Filter](/reference/conditions/filter), [Formula](/reference/calculations/formula), or [Find records](/reference/records/find-records) block can produce the answer from existing data.
-- The workflow runs at high volume, where token cost multiplies across every run.
-- The result changes customer-facing communication without a human reviewing it first.
-- The source the agent would need is private, login-gated, or unreliable, because the [Web agent](/reference/agents/web-agent) block cannot read it.
+- A [Filter](/reference/conditions/filter), [Formula](/reference/calculations/formula), or [Find records](/reference/records/find-records) block can produce the answer from data you already have.
+- The workflow runs at high volume. Token cost adds up across every run.
+- The result changes a customer-facing message and no human reviews it first.
+- The source the agent would need is private, login-gated, or unreliable. The [Web agent](/reference/agents/web-agent) block cannot read it.
 
 <Note>
-The [Classify record](/reference/ai/classify-record), [Classify text](/reference/ai/classify-text), and [Summarize record](/reference/ai/summarize-record) blocks sit between these two extremes. They are AI blocks with variable token cost, but their scope is narrow and their output is constrained, so they are often the right middle choice before you reach for a full agent.
+The [Classify record](/reference/ai/classify-record), [Classify text](/reference/ai/classify-text), and [Summarize record](/reference/ai/summarize-record) blocks sit between these two extremes. They are AI blocks, so they too carry a variable token cost. But their job is narrow and their output is tightly constrained. They are often the right middle choice before you reach for a full agent.
 </Note>
 
 ## Writing a prompt that returns usable fields
 
-A good agent prompt names the role, restricts the evidence, and demands a fixed output shape, so the answer maps cleanly into attributes downstream. Ask for the specific fields you intend to save, and tell the agent to admit uncertainty rather than invent a value.
+A good agent prompt does three things. It names the role the agent plays, it limits the evidence the agent may use, and it demands a fixed output shape. That fixed shape is what lets you map each part of the answer into a separate attribute downstream.
 
-This prompt qualifies an inbound account. It returns four labeled parts you can map one-to-one into text attributes, and it instructs the agent to write `unknown` instead of guessing.
+Ask for the exact fields you plan to save. Tell the agent to admit uncertainty rather than invent a value.
+
+The prompt below qualifies an inbound account. It returns four labeled parts you can map one-to-one into text attributes. It also tells the agent to write `unknown` instead of guessing.
 
 ```text
 You are helping a B2B revenue team qualify an account.
@@ -49,15 +55,15 @@ Return:
 If you cannot verify a claim, say "unknown".
 ```
 
-For an account such as `acme.com` with owner `Priya Sharma`, the agent returns a short summary paragraph, a qualification signal such as `Strong fit`, an explicit note of what it could not verify, and a recommended next action. Each of those four parts becomes the value of a separate attribute in the next step.
+Run this on an account such as `acme.com` with owner `Priya Sharma`. The agent returns a short summary paragraph, a qualification signal such as `Strong fit`, a plain note of what it could not verify, and a recommended next action. Each of those four parts becomes the value of a separate attribute in the next step.
 
 ### Choosing a model
 
-The [Custom agent](/reference/agents/custom-agent) block lets you pick the model that runs the prompt. Attio offers OpenAI's GPT, Anthropic's Sonnet and Opus, and Google's Gemini Flash and Gemini Pro. A faster, cheaper model handles classification and short summaries; a stronger model earns its higher token cost only on synthesis tasks where reasoning quality changes the answer.
+The [Custom agent](/reference/agents/custom-agent) block lets you pick the model that runs the prompt. Attio offers OpenAI's GPT, Anthropic's Sonnet and Opus, and Google's Gemini Flash and Gemini Pro. A faster, cheaper model handles classification and short summaries well. A stronger model costs more per token. Use it only on synthesis tasks, where better reasoning changes the answer.
 
 ## Saving the output so it persists
 
-Agent output is not saved to any record automatically, so an agent step on its own changes nothing in your data. Follow the agent with a write block and map each returned field into an attribute, or the answer disappears when the run ends.
+An agent does not write to a record on its own. The answer it returns lives only inside the run. So an agent step by itself changes nothing in your data. To keep the answer, follow the agent with a write block and map each returned field into an attribute. Skip that step and the answer disappears when the run ends.
 
 <Steps>
   <Step title="Add the agent block">
@@ -71,29 +77,29 @@ Agent output is not saved to any record automatically, so an agent step on its o
   </Step>
 </Steps>
 
-After this, a run on `acme.com` writes the agent's summary and qualification signal onto the company record, where the rest of the team can read them. Without the write block, the same run produces an answer that no one ever sees.
+After this, a run on `acme.com` writes the agent's summary and qualification signal onto the company record. The rest of the team can then read them. Without the write block, the same run produces an answer that no one ever sees.
 
 <Warning>
-Granting an agent tool access can expose broad workspace context, because the agent reads as someone. Agent tool access is **read-only**, gated by the **"Run as"** permission model: an agent running as the workflow reads workspace-visible data and whatever the workflow can read, while an agent running as a member reads everything that member can access. Default to running as the workflow with the minimum tools enabled, and see [Permissions & workflow access](/explanation/permissions-and-access) for the full model.
+Giving an agent tool access can expose a lot of workspace data. The agent reads data as someone, so it sees whatever that identity can see. Agent tool access is **read-only**, controlled by the **"Run as"** permission model. An agent running as the workflow reads workspace-visible data plus whatever the workflow can read. An agent running as a member reads everything that member can access. Default to running as the workflow with the fewest tools enabled. For the full model, see [Permissions & workflow access](/explanation/permissions-and-access).
 </Warning>
 
 ## Controlling token cost before you publish
 
-Agent blocks carry a variable, token-based credit cost, so a careless trigger can spend far more than a fixed-cost block ever would. Three habits keep that cost bounded, in order of effect.
+Agent blocks carry a variable, token-based credit cost. A careless trigger can spend far more than a fixed-cost block ever would. Three habits keep that cost bounded. They are listed here from most effective to least.
 
 <Steps>
   <Step title="Filter before the agent, never after">
-    Put a free [Filter](/reference/conditions/filter) block ahead of the agent so only records that pass reach it. Every record that touches the agent costs tokens; the free filter does the gatekeeping for nothing.
+    Put a free [Filter](/reference/conditions/filter) block ahead of the agent. Only records that pass the filter reach it. Every record that touches the agent costs tokens, and the free filter does the gatekeeping for nothing.
   </Step>
   <Step title="Trim the prompt surface">
-    Ask the [Web agent](/reference/agents/web-agent) block fewer, sharper questions and give the [Custom agent](/reference/agents/custom-agent) block tighter instructions. Fewer questions and shorter context mean fewer tokens per run.
+    Ask the [Web agent](/reference/agents/web-agent) block fewer, sharper questions. Give the [Custom agent](/reference/agents/custom-agent) block tighter instructions. Fewer questions and shorter context mean fewer tokens per run.
   </Step>
   <Step title="Measure ten representative runs">
     Run the workflow on ten representative records and read the per-run credit cost in the run viewer. Use that figure to decide whether the agent triggers on every new record or only on a filtered subset.
   </Step>
 </Steps>
 
-Per-workflow credit caps were removed in the new engine, so there is no cap to fall back on when a trigger fires more often than you expected. Measuring before you publish is the only guard. For the full cost model and plan allowances, see [Credits & pricing explained](/reference/credits-and-pricing); the [AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research) recipe walks a complete agent build with these guards in place.
+Per-workflow credit caps were removed in the new engine. So there is no cap to fall back on when a trigger fires more often than you expected. Measuring before you publish is the only guard. For the full cost model and plan allowances, see [Credits & pricing explained](/reference/credits-and-pricing). The [AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research) recipe walks through a complete agent build with these guards in place.
 
 *Sources: [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library), [Manage workspace and seat credits](https://attio.com/help/reference/workspace-settings-billing/manage-workspace-and-seat-credits). Last reviewed against the Attio Help Center, June 2026.*
 
