@@ -1,6 +1,7 @@
 ---
 title: Infinite loops and safety
 description: An infinite loop happens when a workflow writes data that re-triggers itself, duplicating writes and burning credits on every pass.
+icon: shield-alert
 ---
 
 An infinite loop happens when a workflow writes data that re-triggers itself, duplicating writes and burning credits on every pass. The shape is almost always the same. A workflow listens for a change on an object, then makes a change to that same object, and that change satisfies its own trigger again. Nothing in the engine stops a workflow from feeding itself, so the loop runs until you notice the credit graph or disable the workflow.

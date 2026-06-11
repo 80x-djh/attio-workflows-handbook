@@ -1,7 +1,7 @@
 ---
 title: Find records
 description: The Find records block (Records) looks up records in an object that match filter conditions, so later steps can read or act on them.
-icon: "search"
+icon: search
 ---
 
 The **Find records** block (Records) looks up records in an object that match filter conditions, so later steps can read or act on them. Use it to pull a working set into a run that did not start from one record. A good example is a [Recurring schedule](/reference/triggers/recurring-schedule) sweep, which kicks off on a timer rather than on a single record. The block returns at most 100 records. If your filter matches more than that, the extra records are silently left out.

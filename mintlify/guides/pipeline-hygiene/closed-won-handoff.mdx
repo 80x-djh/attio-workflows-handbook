@@ -1,6 +1,7 @@
 ---
 title: Hand off closed-won deals to Customer Success
 description: When a deal reaches Closed won, this workflow summarizes it, creates an onboarding record and task, lists it, and pings Customer Success (CS) in Slack.
+icon: handshake
 ---
 
 When a deal reaches Closed won, this workflow summarizes it, creates an onboarding record and task, lists it, and pings Customer Success (CS) in Slack. The build starts with the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger. It fires when a deal's Stage becomes Closed won. An [If](/reference/conditions/if) condition then guards against re-fires. This stops the same won deal from being handed off twice. Next it drafts a handoff brief with [Summarize record](/reference/ai/summarize-record). Finally it chains four actions: [Create record](/reference/records/create-record), [Create task](/reference/tasks/create-task), [Add record to list](/reference/lists/add-record-to-list), and a [Slack](/reference/integrations) message. The result is that no won deal slips through the gap between Sales and CS.

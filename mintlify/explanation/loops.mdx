@@ -1,6 +1,7 @@
 ---
 title: Loops & processing many records
 description: A loop is how a workflow acts on every item in a multi-valued result instead of silently stopping at the first one.
+icon: repeat
 ---
 
 A **loop** is how a workflow acts on every item in a multi-valued result instead of silently stopping at the first one. A multi-valued result is any output that holds more than one thing at once. By default, Attio workflows process one thing at a time. So the moment a block hands you *many* things, a downstream block sees only the first of them. That happens with search results, a multi-reference relationship (one record linked to several others), or a multi-select value. To act on all of them, you wrap your work in a [Loop](/reference/utilities/loop) block.
