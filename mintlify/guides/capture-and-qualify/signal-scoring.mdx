@@ -1,6 +1,7 @@
 ---
 title: Score leads into explainable bands
 description: A visible Formula combines fit, intent, and engagement into one lead score, writes it back to Attio, and routes each band to the right action.
+icon: gauge
 ---
 
 A visible [Formula](/reference/calculations/formula) combines fit, intent, and engagement into one lead score, writes it back to Attio, and routes each band to the right action. Here is the flow in plain terms. A product or analytics event arrives on a [Webhook received](/reference/triggers/webhook-received) trigger. [Parse JSON](/reference/utilities/parse-json) unpacks the payload, the Formula reduces the three signals to a single number, and [Switch](/reference/conditions/switch) reads the band. [Update record](/reference/records/update-record) writes the result back to Attio, and the A band flows through [Round robin](/reference/workspace/round-robin) and [Enroll in sequence](/reference/sequences/enroll-in-sequence). The score is plain arithmetic, not an opaque model output. That means a sales development rep can open the run and read exactly why a lead is an A.

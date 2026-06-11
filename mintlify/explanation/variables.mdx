@@ -1,6 +1,7 @@
 ---
 title: Variables & data passing
 description: Data moves through an Attio workflow as variables. A block produces outputs during a run, and later blocks read them as inputs.
+icon: variable
 ---
 
 Data moves through an Attio workflow as **variables**. A block produces outputs during a run, and later blocks read them as inputs. Blocks do not share memory, so this output-to-input chain is the only path data can travel. A trigger or earlier block emits values. You point a downstream input at one of those values, and the engine resolves it fresh on every run.
