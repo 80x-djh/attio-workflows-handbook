@@ -1,0 +1,48 @@
+---
+title: Attio Workflows Handbook
+description: The open-source, definitive guide to Attio's new Workflows engine — every block documented, credit costs explained, and battle-tested GTM recipes.
+template: splash
+hero:
+  tagline: The missing manual for Attio's new Workflows engine. Every trigger and block documented, every credit cost explained, and GTM automation recipes proven in real workspaces.
+  actions:
+    - text: Start learning
+      link: /start/what-are-workflows/
+      icon: right-arrow
+    - text: Block reference
+      link: /reference/
+      variant: minimal
+    - text: Migrate from legacy
+      link: /migration/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why this handbook exists
+
+Attio shipped a new Workflows engine in June 2026: AI agent blocks, custom JavaScript, MCP tool access, multi-trigger support, and a dramatically cheaper credit model. The official docs tell you what each block does. This handbook tells you **how to actually build with them** — and what breaks when you don't.
+
+It's written by a consultant who builds Attio workspaces for VC funds and startups full-time, and it's open source: spot a gap, [open a PR](https://github.com/80x-djh/attio-workflows-handbook).
+
+<CardGrid stagger>
+	<Card title="Complete block reference" icon="open-book">
+		Every trigger and step block documented with inputs, outputs, credit cost, and the gotchas the official docs don't mention. [Browse the reference →](/reference/)
+	</Card>
+	<Card title="Legacy migration, demystified" icon="rocket">
+		Legacy workflows are deprecated — you can't create new ones. The new engine renames blocks and reprices everything. [Migrate safely →](/migration/)
+	</Card>
+	<Card title="Credits decoded" icon="seti:money">
+		Logic and lookups are now free; AI blocks are token-priced. Know what a run costs before you publish it. [Understand pricing →](/start/credits-and-pricing/)
+	</Card>
+	<Card title="GTM recipes" icon="puzzle">
+		Lead routing, signal-based outbound, pipeline hygiene, enrichment waterfalls — copy-paste patterns from production workspaces. [Steal these →](/recipes/)
+	</Card>
+</CardGrid>
+
+## Built for humans and AI
+
+Every page on this site is available as clean markdown for LLMs — see [/llms.txt](/llms.txt). Point your AI assistant at this handbook and it can build Attio workflows with you.
+
+---
+
+*This is a community resource, not affiliated with or endorsed by Attio Ltd. Block behavior is verified against the [official Attio Help Center](https://attio.com/help) — last full review: June 2026.*
