@@ -1,0 +1,96 @@
+---
+title: Web agent
+description: The Web agent block (Agents) researches a record across the web with AI and returns answers you can use later in the workflow.
+icon: globe
+---
+
+The **Web agent** block (Agents) researches a record across the web with AI and returns answers you can use later in the workflow. It reads the triggering record, runs web searches, and writes nothing back on its own, so you pair it with [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) when the answers need to persist. The block accepts a record only, not a list entry, which is the first thing to get right when you wire it.
+
+| | |
+| --- | --- |
+| **Category** | Agents |
+| **Credit cost** | Variable (token-based) |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | Paid plans |
+| **Limits** | Token-priced research; cost scales with the number and breadth of questions. None documented for result size. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Record | Record | Yes | None | Must be a record, not a list entry. Pass the parent record from a list-based trigger. |
+| Questions | Text (one or more) | Yes | None | One specific research question per entry. Narrow questions cost fewer tokens than broad ones. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Answers | Text (one per question) | `Acme raised a $40M Series B led by Sequoia in March 2026.` | One answer is returned for each configured question, in the order the questions were asked. |
+
+Reference an answer downstream as `{{ steps.web_agent.answers }}`, or address a single answer by its position when you configured more than one question. The Web agent does not save its answers to any record on its own; route each answer into an [Update record](/reference/records/update-record) block to make it stick.
+
+## Behavior
+
+The block runs once per triggering record. It reads the record you pass in, performs web searches to ground its answers, and returns one answer per question in the order you listed them.
+
+Cost is token-based, so it varies with every run. More questions, broader prompts, and longer answers all raise the token count and the credit cost. A tightly scoped question such as "What is Acme's current employee headcount?" costs less than an open prompt such as "Tell me everything about this company."
+
+The agent's tool access is read-only and governed by the **"Run as"** permission model, the same as every agent block. It can read public web pages and the record you pass in, and it cannot write to your workspace by itself.
+
+Answers are returned as run variables for the current run only. Nothing is written to the record, a list, or a note unless a later block writes it. If a downstream block does not consume an answer, that answer is discarded when the run ends.
+
+## Gotchas
+
+- **The block rejects a list entry.** The Web agent researches records, so wiring a list entry straight into the `Record` input fails. Pass the parent record instead — see [Records vs list entries](/explanation/records-vs-list-entries) for how to reach it from a list-based trigger.
+- **Login-gated and private pages return weak answers.** The agent reads the public web, so sources behind a paywall or a login cannot be read reliably. Expect thin or empty answers for facts that live only inside a private system, and verify anything business-critical.
+- **Broad prompts quietly inflate cost.** Because pricing is token-based, vague questions and many questions raise the credit cost on every run. Ask the fewest, most specific questions that answer your actual decision, and filter upstream so the agent only runs on records worth researching.
+- **Answers vanish if you do not save them.** The block returns answers as run variables, not record values. Follow it with [Update record](/reference/records/update-record) when the research needs to persist, or it disappears when the run ends.
+
+## Examples
+
+### Qualifying high-intent inbound leads
+
+A SaaS team researches every company that lands on a high-intent inbound list, then writes a short brief and pings the owner. The Web agent runs after a [Filter](/reference/conditions/filter) block has confirmed ideal-customer-profile fit, so tokens are spent only on records worth qualifying.
+
+| Field | Value |
+| --- | --- |
+| Record | `{{ trigger.record }}` (the parent Company) |
+| Question 1 | What does acme.com sell, and to which customer segment? |
+| Question 2 | Has Acme announced funding or hiring growth in the last 12 months? |
+| Question 3 | What is one specific reason this company might need our product now? |
+
+The agent returns three answers; an [Update record](/reference/records/update-record) block writes them into the company's `research_notes` attribute, and a Slack message alerts the account owner.
+
+### Preparing an account brief before a call
+
+A consultant builds a one-line context note before each discovery call. The workflow runs on a [Record command](/reference/triggers/record-command) so a rep can launch it on demand from a Company record.
+
+```json
+{
+  "record": "{{ trigger.record }}",
+  "questions": [
+    "What is Acme's current employee headcount and primary office location?",
+    "Who is Acme's CEO, and what did they say publicly in the last quarter?"
+  ]
+}
+```
+
+The agent returns two grounded answers; a following [Update record](/reference/records/update-record) block saves them to the record, and the rep opens the call already briefed on Priya Sharma's recent public remarks.
+
+## Credit cost worked example
+
+The Web agent is priced by tokens, so its cost depends on how many questions you ask and how much the agent reads and writes. Suppose a tightly scoped three-question brief averages roughly the cost of a small AI step, and the workflow runs on 200 qualified inbound companies a month. Filtering for ideal-customer-profile fit before the agent runs is the lever that keeps that number down: every record you exclude upstream is a run you never pay for. Compare your expected monthly volume against your plan's credit allowance on [Credits & pricing explained](/reference/credits-and-pricing) rather than estimating it here, because token cost varies per run.
+
+## Source
+
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Custom agent](/reference/agents/custom-agent)
+- [Summarize record](/reference/ai/summarize-record)
+- [Records vs list entries](/explanation/records-vs-list-entries)
+- [AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

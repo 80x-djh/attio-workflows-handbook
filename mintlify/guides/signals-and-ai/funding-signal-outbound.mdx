@@ -1,0 +1,213 @@
+---
+title: Funding-signal outbound that beats competitors to a fresh raise
+description: When a target account raises a round, parse the signal, gate a read-only Web agent behind an ICP Filter, research a funding-aware angle, and enroll contacts.
+---
+
+When a target account raises a round, parse the signal, gate a read-only [Web agent](/reference/agents/web-agent) behind an ICP Filter, research a funding-aware angle, and enroll contacts. You have a short window before every other vendor floods that account's inbox, so this recipe gets a non-generic, funding-aware first touch out the door fast. It fires on [Webhook received](/reference/triggers/webhook-received) from your funding-signal source, reads the event with [Parse JSON](/reference/utilities/parse-json), and gates the token-priced [Web agent](/reference/agents/web-agent) behind a free [Filter](/reference/conditions/filter) so only ideal-customer-profile (ICP) raises get researched. [Find records](/reference/records/find-records) pulls the right contacts, [Update record](/reference/records/update-record) saves the angle, [Enroll in sequence](/reference/sequences/enroll-in-sequence) starts the tailored outbound, and a [Slack](/reference/integrations) message tells the account owner to move first.
+
+| | |
+| --- | --- |
+| **Difficulty** | Advanced |
+| **Time to build** | About 25 minutes |
+| **Trigger** | [Webhook received](/reference/triggers/webhook-received) from a funding-signal source |
+| **Blocks used** | [Parse JSON](/reference/utilities/parse-json), [Filter](/reference/conditions/filter), [Find records](/reference/records/find-records), [Web agent](/reference/agents/web-agent), [Update record](/reference/records/update-record), [Enroll in sequence](/reference/sequences/enroll-in-sequence), [Slack](/reference/integrations) |
+| **Credit cost per run** | Variable — the Web agent is token-based; each write costs 1 credit. See [Credits & pricing explained](/reference/credits-and-pricing) |
+| **Plan required** | Pro recommended |
+
+## Prerequisites
+
+- A workspace plan that includes the new Workflows engine and its agent and AI blocks. Pro is recommended for the volume this recipe assumes. Plan allowances live on [Credits & pricing explained](/reference/credits-and-pricing).
+- A funding-signal source, such as a data provider or your own enrichment job, that can POST a JSON event to an Attio webhook when a company raises a round.
+- The Slack integration connected to your workspace, with the workflow authorized to post to your account-owner channel. See [Third-party blocks](/reference/integrations).
+- An existing sequence, for example `Funding congrats — outbound`, whose first email opens with a variable for the tailored angle.
+- On the Companies object: a long-text attribute for the angle (`funding_angle`), two attributes for the round (`last_round_stage` and `last_round_amount`), and an owner attribute (`owner`).
+- A read-only identity for the Web agent, assigned through the **Run as** permission model so the agent can read records and the public web but cannot write. See [Permissions & workflow access](/explanation/permissions-and-access).
+
+## How it works
+
+The webhook delivers the raw funding event, and the rest of the workflow turns that event into a tailored first touch without spending a token on a raise you would never sell into. [Parse JSON](/reference/utilities/parse-json) turns the payload into named variables, then a free [Filter](/reference/conditions/filter) checks the raised company against your ICP threshold and stops the run when it does not qualify. Only qualified accounts reach the token-priced [Web agent](/reference/agents/web-agent), so the Filter is the cost guard that keeps the agent off the raises you do not want. The agent reads the company and the round read-only and returns one funding-aware outreach angle, [Update record](/reference/records/update-record) saves that angle, [Enroll in sequence](/reference/sequences/enroll-in-sequence) starts the tailored outbound, and a [Slack](/reference/integrations) message tells the owner to get ahead of the competition.
+
+1. [Webhook received](/reference/triggers/webhook-received) fires when a funding-signal source POSTs a round event.
+2. [Parse JSON](/reference/utilities/parse-json) extracts the company, stage, and amount from the payload. Free.
+3. [Filter](/reference/conditions/filter) continues only when the company meets the ICP threshold, and stops the run otherwise. Free.
+4. [Find records](/reference/records/find-records) pulls the target contacts at the account. Free.
+5. [Web agent](/reference/agents/web-agent) researches one funding-aware angle, read-only.
+6. [Update record](/reference/records/update-record) saves the angle and round details to the company.
+7. [Enroll in sequence](/reference/sequences/enroll-in-sequence) starts the tailored outbound with the angle as the first line.
+8. [Slack](/reference/integrations) notifies the account owner.
+
+## Build steps
+
+<Steps>
+  <Step title="Add the webhook trigger">
+    Create a new workflow. Click the **Add trigger** button, choose [Webhook received](/reference/triggers/webhook-received), and copy the generated endpoint URL into your funding-signal source so it POSTs there on each round. Send one test event so Attio captures a sample payload to map against.
+
+    | Field | Value |
+    | --- | --- |
+    | Trigger | Webhook received |
+    | Source | Funding-signal provider |
+    | Sample payload | `{"company":"Acme Robotics","domain":"acme.com","stage":"Series B","amount_usd":40000000}` |
+  </Step>
+
+  <Step title="Parse the funding event">
+    Add a [Parse JSON](/reference/utilities/parse-json) block immediately after the trigger to turn the webhook body into named variables. This block is free.
+
+    | Field | Value |
+    | --- | --- |
+    | Input | `{{trigger.body}}` |
+    | Map `company` | `{{event.company}}` |
+    | Map `domain` | `{{event.domain}}`, for example `acme.com` |
+    | Map `stage` | `{{event.stage}}`, for example `Series B` |
+    | Map `amount_usd` | `{{event.amount}}`, for example `40000000` |
+  </Step>
+
+  <Step title="Gate the agent with an ICP Filter">
+    Add a [Filter](/reference/conditions/filter) after Parse JSON. This block is the cost guard: it is free, and it stops every below-threshold run before the [Web agent](/reference/agents/web-agent) can spend a token. Filter to ICP first rather than research every funding event.
+
+    | Field | Value |
+    | --- | --- |
+    | Condition 1 | `{{event.domain}}` is not empty |
+    | Condition 2 | `{{event.stage}}` is one of Seed, Series A, Series B |
+    | Condition 3 | `{{event.amount}}` is greater than `5000000` |
+    | Condition 4 | matched company `region` is one of EMEA, North America |
+    | Logic | Match all conditions |
+    | When no match | Stop the run |
+  </Step>
+
+  <Step title="Find the contacts at the account">
+    Add a [Find records](/reference/records/find-records) block to pull the people you will actually enroll. This block is free.
+
+    | Field | Value |
+    | --- | --- |
+    | Object | People |
+    | Filter | `company.domain` equals `{{event.domain}}` and `title` contains one of VP, Head, Director |
+    | Return | Up to 3 contacts |
+  </Step>
+
+  <Step title="Research the angle with a read-only Web agent">
+    Add a [Web agent](/reference/agents/web-agent) after Find records. Set its **Run as** identity to your read-only research user so it can read the record and the public web but cannot write back. Keep the prompt to one tightly scoped output: a funding-aware angle, not generic research.
+
+    | Field | Value |
+    | --- | --- |
+    | Run as | Research (read-only) |
+    | Input | `acme.com` (from `{{event.domain}}`), `Series B`, `$40M` |
+    | Output | `funding_angle` |
+
+    Use a prompt that forces a verifiable, funding-specific opening line:
+
+    ```text
+    This company just raised a {{event.stage}} round of {{event.amount}}.
+    Return one concise outreach angle (under 40 words) that ties our product to
+    what a company typically does with this stage of capital. Reference a real,
+    verifiable detail about the company. If you cannot verify a detail, say so and
+    keep the angle generic to the round stage.
+    ```
+  </Step>
+
+  <Step title="Save the angle">
+    Add an [Update record](/reference/records/update-record) block to write the angle and round details to the company. The [Web agent](/reference/agents/web-agent) does not save anything on its own.
+
+    | Field | Value |
+    | --- | --- |
+    | Record | Matched company |
+    | `funding_angle` | `{{web_agent.funding_angle}}` |
+    | `last_round_stage` | `{{event.stage}}` |
+    | `last_round_amount` | `{{event.amount}}` |
+  </Step>
+
+  <Step title="Enroll the contacts with the tailored first line">
+    Add an [Enroll in sequence](/reference/sequences/enroll-in-sequence) block. Loop over the contacts that Find records returned and enroll each into the funding sequence, passing the angle as the first-line variable.
+
+    | Field | Value |
+    | --- | --- |
+    | Sequence | `Funding congrats — outbound` |
+    | Enroll | `{{find_records.results}}`, for example Priya Sharma plus up to two more |
+    | First-line variable | `{{web_agent.funding_angle}}` |
+  </Step>
+
+  <Step title="Notify the owner over Slack">
+    Add a [Slack](/reference/integrations) block so the account owner knows to move now.
+
+    | Field | Value |
+    | --- | --- |
+    | Channel or user | `owner` |
+    | Message | `{{event.company}}` just raised `{{event.stage}}` (`{{event.amount}}`). Tailored outbound enrolled. Angle: `{{web_agent.funding_angle}}`. Get ahead of it. |
+  </Step>
+</Steps>
+
+<Warning>
+  The [Web agent](/reference/agents/web-agent) is the only token-priced step, so the [Filter](/reference/conditions/filter) must sit before it and must stop below-ICP runs. If the agent runs ahead of the Filter, or the Filter passes everything, you research every funding event and burn tokens on raises you would never sell into.
+</Warning>
+
+## Variable mapping
+
+| Variable | Source block | Field | Example value |
+| --- | --- | --- | --- |
+| `{{event.company}}` | Parse JSON | `company` | `Acme Robotics` |
+| `{{event.domain}}` | Parse JSON | `domain` | `acme.com` |
+| `{{event.stage}}` | Parse JSON | `stage` | `Series B` |
+| `{{event.amount}}` | Parse JSON | `amount_usd` | `40000000` |
+| `{{find_records.results}}` | Find records | People at the account | Priya Sharma, plus two more |
+| `{{web_agent.funding_angle}}` | Web agent | Angle output | Fresh Series B usually means scaling ops headcount — our routing cuts onboarding time as you ramp. |
+
+## Credit cost worked example
+
+The [Parse JSON](/reference/utilities/parse-json), [Filter](/reference/conditions/filter), and [Find records](/reference/records/find-records) blocks are free logic and lookups, so they never consume credits. The [Web agent](/reference/agents/web-agent) is the token-based cost, and each [Update record](/reference/records/update-record), [Enroll in sequence](/reference/sequences/enroll-in-sequence), and [Slack](/reference/integrations) call costs 1 credit. The whole point of the Filter is that the agent runs only on the small slice of raises you want.
+
+Assume 300 funding events hit the webhook a month and the ICP Filter passes about 20% of them, so 60 accounts.
+
+| Block | Runs | Cost per run | Credits |
+| --- | --- | --- | --- |
+| Parse JSON | 300 | Free | 0 |
+| Filter | 300 | Free | 0 |
+| Find records | 60 | Free | 0 |
+| Web agent | 60 | Variable (token-based) | Measure it |
+| Update record | 60 | 1 credit | 60 |
+| Enroll in sequence | 60 | 1 credit | 60 |
+| Slack | 60 | 1 credit | 60 |
+
+The fixed-rate floor is roughly **180 credits a month**: 60 writes, 60 enroll calls, and 60 Slack messages. The variable ceiling is the Web agent total. Do not assume a fixed number for it — sample about 10 representative raises, run them, and read the actual per-run credit cost in the run viewer before you scale. Gating with the Filter is what keeps that agent line off all 300 events. Compare the monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+
+## Test plan
+
+1. POST a real ICP-fit funding event to the webhook endpoint, for example a $40M Series B at a 200-person EMEA company with a populated `domain`.
+2. Open the run in run history and confirm [Parse JSON](/reference/utilities/parse-json) extracted `company`, `domain`, `stage`, and `amount`.
+3. Confirm the [Filter](/reference/conditions/filter) passed. Expect a green continue.
+4. Confirm [Find records](/reference/records/find-records) returned the expected contacts at the account, such as Priya Sharma.
+5. Confirm the [Web agent](/reference/agents/web-agent) returned a funding-aware angle keyed to the round, and that its **Run as** identity is read-only.
+6. Confirm [Update record](/reference/records/update-record) wrote `funding_angle`, `last_round_stage`, and `last_round_amount`; that [Enroll in sequence](/reference/sequences/enroll-in-sequence) enrolled the contacts with the angle as the first line; and that [Slack](/reference/integrations) posted to the owner.
+7. **Run a deliberately failing input.** POST an event with an empty `domain` and an `amount_usd` of `250000`. The Filter stops the run before the Web agent. Verify in run history that no agent, enroll, or write block executed and that no tokens were spent.
+
+## Failure modes
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Credit spend far higher than expected | The [Web agent](/reference/agents/web-agent) runs on every funding event | Tighten the [Filter](/reference/conditions/filter), confirm it sits before the agent, and re-sample 10 runs in the run viewer. |
+| Variables come through empty | The [Parse JSON](/reference/utilities/parse-json) mapping does not match the payload keys | Re-send a sample event and re-map fields to the actual JSON keys. |
+| Angle is blank in Attio | No [Update record](/reference/records/update-record) runs after the agent | Agent output is not saved automatically; add an Update record block mapping `{{web_agent.funding_angle}}` into `funding_angle`. |
+| Agent attempts to write, or errors on permissions | The **Run as** identity has write access or is the wrong user | Set the [Web agent](/reference/agents/web-agent) **Run as** to a read-only research user. |
+| No contacts enrolled | [Find records](/reference/records/find-records) returned nothing for the account | Loosen the People filter on title or domain, and confirm the account has people linked. |
+| Owner never pinged | The `owner` attribute is unset on the company | Backfill the owner attribute, or fall back to a shared channel in the [Slack](/reference/integrations) block. |
+| Webhook events never trigger | The endpoint URL or payload is not configured at the source | Re-copy the endpoint into the provider and POST one test event to capture the sample payload. |
+
+## Variations
+
+### Job-change signal instead of funding
+
+Point the [Webhook received](/reference/triggers/webhook-received) trigger at a job-change source, and have [Parse JSON](/reference/utilities/parse-json) extract the person's new title and company. Filter to ICP companies and seniority, then have the [Web agent](/reference/agents/web-agent) write an angle about the new role rather than the round. Everything downstream — [Update record](/reference/records/update-record), [Enroll in sequence](/reference/sequences/enroll-in-sequence), and [Slack](/reference/integrations) — stays the same; only the signal and the angle prompt change.
+
+### Summarize record for a cheaper tier
+
+For high volume or smaller raises where public-web research is not worth the cost, replace the [Web agent](/reference/agents/web-agent) with [Summarize record](/reference/ai/summarize-record). It is still token-based, but it works only from data already in Attio, with no web browsing, so it costs less per run. Keep Parse JSON, the Filter, Find records, and the routing unchanged; only the research block changes.
+
+## See also
+
+- [AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research)
+- [Permissions & workflow access](/explanation/permissions-and-access)
+- [Web agent](/reference/agents/web-agent)
+- [Enroll in sequence](/reference/sequences/enroll-in-sequence)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+
+---
+
+_Source: [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026._

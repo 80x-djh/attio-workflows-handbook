@@ -1,0 +1,93 @@
+---
+title: HTTP and JSON patterns
+description: HTTP and JSON blocks let an Attio workflow exchange data with any external system without leaving the workflow editor.
+icon: webhook
+---
+
+HTTP and JSON blocks let an Attio workflow exchange data with any external system without leaving the workflow editor. Two blocks and one trigger carry almost every integration: [Webhook received](/reference/triggers/webhook-received) accepts inbound data, [Send HTTP request](/reference/utilities/send-http-request) makes outbound calls, and [Parse JSON](/reference/utilities/parse-json) turns raw JSON text into typed variables you can map into records. This guide shows the two patterns that cover most cases — inbound capture and outbound enrichment — and the JSON and failure-handling discipline that keeps them safe.
+
+Reach for these blocks when the data or action you need lives in another product, but the workflow itself belongs in Attio. They keep forms, product events, partner feeds, and enrichment providers inside one editor instead of splitting the logic across Zapier, Make, or a custom backend.
+
+## Inbound pattern: receiving data into Attio
+
+The inbound pattern starts a workflow from an external HTTP request and writes the result into your CRM. Use it for form submissions, product events, partner leads, and enrichment callbacks — anything where another system pushes data to Attio.
+
+The flow runs in this order:
+
+1. [Webhook received](/reference/triggers/webhook-received) fires when the external system posts JSON to the workflow's webhook URL.
+2. [Parse JSON](/reference/utilities/parse-json) converts the raw payload body into typed variables.
+3. [Filter](/reference/conditions/filter) drops payloads that fail validation before any write happens.
+4. [Create or update record](/reference/records/create-or-update-record) upserts the person or company.
+5. [Add record to list](/reference/lists/add-record-to-list) places the new record on the inbound list its owner watches.
+
+Treat the webhook trigger and the parse step as a pair. The trigger hands you the payload body as a JSON string; you cannot reference individual fields like `email` or `domain` until Parse JSON has turned that string into structured outputs. Always run the filter before the first write, because the trigger fires on whatever the external system sends, including malformed or test payloads.
+
+For example, a marketing form posts `{ "email": "jane@acme.com", "company_domain": "acme.com", "source": "webinar" }`. Parse JSON exposes `email`, `company_domain`, and `source` as variables. The filter keeps only rows where `email` is not empty. Create or update record upserts a person on `jane@acme.com`, and Add record to list drops that person onto your inbound-leads list for routing.
+
+## Outbound pattern: calling external systems from Attio
+
+The outbound pattern reaches into another system when it holds the data or action a workflow needs. Use it to enrich a record from a provider, post to an internal service, or trigger a downstream job.
+
+The flow runs in this order:
+
+1. A trigger fires — often [Record created](/reference/triggers/record-created) or an [Attribute value changed](/reference/triggers/attribute-value-changed) event.
+2. [Filter](/reference/conditions/filter) confirms the call is worth making — for instance, that a company domain exists.
+3. [Send HTTP request](/reference/utilities/send-http-request) calls the external URL and returns a status code, a response body, and a success flag.
+4. [Parse JSON](/reference/utilities/parse-json) extracts the fields you need from the response body.
+5. [Update record](/reference/records/update-record) writes the returned values back to the record.
+
+Filter before you call, not after. Send HTTP request costs 1 credit per run, so a filter that skips records without a domain saves both credits and a guaranteed-to-fail request. Parse the response only after you confirm the call succeeded — see [Timeout and failure behavior](#timeout-and-failure-behavior) for why.
+
+For example, a new company record at `acme.com` triggers the workflow. The filter checks that the `domain` attribute is set. Send HTTP request calls your enrichment provider's API with that domain. Parse JSON reads `employee_count` and `industry` from the response, and Update record writes both onto the company.
+
+## JSON schema advice
+
+Parse JSON needs a schema before it can produce typed variables, and the schema is where most integrations succeed or fail. A few habits keep it predictable.
+
+<Steps>
+  <Step title="Generate the schema from a real payload">
+    Paste a representative payload into Parse JSON and let it generate the schema. A captured production sample — for instance, one real webhook delivery from `jane@acme.com`'s form submission — reflects the field names, casing, and nesting the provider actually sends, which a hand-written schema rarely does.
+  </Step>
+  <Step title="Mark optional fields as optional">
+    Flag any field that the source may omit as optional. Missing optional values return empty rather than failing the block, so a record that lacks a phone number still flows through.
+  </Step>
+  <Step title="Keep IDs as strings">
+    Use the string type for identifiers unless you genuinely need number math on them. A long numeric ID parsed as a number can lose precision or pick up unwanted formatting; as a string it round-trips intact.
+  </Step>
+  <Step title="Parse only the fields the workflow uses">
+    Extract just the fields a later block reads. A leaner schema is faster to reason about and less likely to break when the provider adds or renames fields you never touch.
+  </Step>
+  <Step title="Filter before any write">
+    Follow Parse JSON with a [Filter](/reference/conditions/filter) before writing anything. A type mismatch fails the parse block outright, but a present-and-wrong value — an empty email, a placeholder domain — passes parsing and only a filter will stop it from reaching a record.
+  </Step>
+</Steps>
+
+## Timeout and failure behavior
+
+Send HTTP request has a two-minute timeout, and any external call can fail, stall, or return a partial response. Design every outbound call as if the other system is unreliable, because eventually it is.
+
+Three checks keep a flaky integration from corrupting your data:
+
+- **Inspect the success flag first.** Send HTTP request returns whether the response was successful alongside the status code. Branch on that flag before you touch the response body.
+- **Parse only on success.** Run Parse JSON against the response body only when the call succeeded. Parsing an error page or an empty body fails the block or, worse, yields garbage values.
+- **Hold customer-visible writes until the response is complete.** If a response is partial, skip the write rather than stamping half-enriched data onto a record a rep is about to read.
+
+<Warning>
+  Send HTTP request consumes 1 credit on every run, including failed and timed-out calls. A retry loop or an unfiltered trigger can burn credits on requests that never succeed, so gate the block behind a [Filter](/reference/conditions/filter) and never wrap it in a retry without a guard. Per-workflow credit caps were removed in the new engine, so there is no built-in ceiling to catch a runaway. For the full credit model, see [Credits & pricing explained](/reference/credits-and-pricing).
+</Warning>
+
+## When to graduate to a custom block
+
+The HTTP pattern is the right tool for a one-off integration, a simple payload, or while you are still validating that a workflow is worth building. Once the same HTTP call appears across many workflows, or non-technical operators need to configure it, the manual pattern stops scaling. At that point, consider building a typed, reusable block instead — see [App SDK custom blocks](/guides/platform-patterns/app-sdk-custom-blocks) for the trade-off.
+
+## See also
+
+- [Webhook received](/reference/triggers/webhook-received)
+- [Send HTTP request](/reference/utilities/send-http-request)
+- [Parse JSON](/reference/utilities/parse-json)
+- [App SDK custom blocks](/guides/platform-patterns/app-sdk-custom-blocks)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+
+---
+
+_Source: [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026._

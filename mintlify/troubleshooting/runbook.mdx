@@ -1,0 +1,127 @@
+---
+title: Production runbook
+description: A production runbook gives you the ordered first moves for failed, runaway, or unsafe Attio workflow behavior in production.
+---
+
+A **production runbook** gives you the ordered first moves for failed, runaway, or unsafe Attio workflow behavior in production. Each section maps a symptom you see in the [Runs tab](/explanation/runs-and-debugging) to a sequence you can run under pressure, and a weekly review keeps small problems from becoming incidents. Reach for it when a live workflow is failing, writing the wrong data, or burning credits faster than you expected.
+
+The first rule holds across every scenario: a workflow that is writing data or spending credits the wrong way is an active incident, so stop the bleeding before you diagnose. Disabling is reversible; a thousand bad writes are not.
+
+<Warning>
+Before you investigate a runaway or a bad-data write, **disable the workflow first**. Disabling stops new runs while in-progress runs finish on the version they started on, which buys you time to read the evidence without the problem compounding.
+</Warning>
+
+## Triaging a failed run
+
+A failed run shows a red block in the run viewer, but the red block is rarely where the bug starts. Trace upstream from the failure to the first wrong value, fix the draft, then validate with a fresh run rather than a retry.
+
+<Steps>
+  <Step title="Open the workflow's Runs tab">
+    Go to the workflow and open the **Runs** tab. The list shows every execution with its status, runtime, and credits consumed.
+  </Step>
+  <Step title="Select the newest failed run">
+    Pick the most recent run with a failed status. The canvas becomes a frozen snapshot of that one execution, with green arrows on the path it took and a red marker at the failure point.
+  </Step>
+  <Step title="Read the failed block's inputs, outputs, and error">
+    Click the red block. The sidebar shows its **Inputs** (what it received), its **Outputs** (what it produced), and the error detail. Read all three before forming a theory.
+  </Step>
+  <Step title="Trace upstream to the first wrong value">
+    Ask whether the input is wrong or the block is misconfigured. If an input looks wrong, open the upstream block that produced it and inspect its **Outputs**. Repeat until expectation and reality first diverge — that block is the bug, regardless of where the red marker sits.
+  </Step>
+  <Step title="Fix the draft and publish">
+    Correct the misconfigured block in the draft, then click **Publish changes**. Edits to a live workflow do not apply until you publish.
+  </Step>
+  <Step title="Trigger a fresh test run">
+    Trigger a new run to confirm the fix. A retry replays the version that was published when the original run triggered, not your fixed version, so only a fresh run proves the repair.
+  </Step>
+</Steps>
+
+For the named failures you will hit most often — an empty variable, a list-entry mismatch, a failed formula — match the message against [common errors](/troubleshooting/common-errors).
+
+## Stopping runaway volume
+
+Runaway volume is a workflow firing far more often than its business event should justify, usually because the trigger is unscoped or the workflow re-triggers itself. Disable it the moment it is writing or spending, then scope and guard before you turn it back on.
+
+<Steps>
+  <Step title="Disable the workflow">
+    If the workflow is writing data or spending credits, disable it now. New runs stop immediately; runs already in flight finish on their original version.
+  </Step>
+  <Step title="Check whether the trigger is unscoped">
+    Open the trigger. A [Record updated](/reference/triggers/record-updated) trigger watching every attribute on an object fires on every edit, including edits the workflow itself makes. Scope it to the single attribute that should start the run.
+  </Step>
+  <Step title="Add an early Filter">
+    Place a [Filter](/reference/conditions/filter) block immediately after the trigger so runs that should not proceed stop before any write or AI block spends credits.
+  </Step>
+  <Step title="Add a self-trigger guard where the workflow writes back">
+    When the workflow writes to the same object it triggers on, add the condition `Updated by` is not `Workflow` to the early Filter. This stops the workflow from re-triggering on its own writes — the most common cause of an [infinite loop](/explanation/infinite-loops-and-safety).
+  </Step>
+  <Step title="Re-enable only after a one-record test">
+    Trigger the published workflow against a single record and confirm in the Runs tab that it fires once and stops. Re-enable only after that test passes.
+  </Step>
+</Steps>
+
+## Reversing a bad data write
+
+A bad data write is a workflow that ran successfully but wrote the wrong value to live records. The run is not red, so you find these by the data, not the error — disable, scope the damage, correct it, then add an idempotency guard so a republish cannot repeat it.
+
+<Steps>
+  <Step title="Disable the workflow">
+    Stop further writes before you assess the blast radius.
+  </Step>
+  <Step title="Export or list the affected records">
+    Build a view or export of the records the workflow touched so you have an exact, recoverable list of what changed. Work from that list, not from memory.
+  </Step>
+  <Step title="Identify the write block and its variable source">
+    Open a representative run and find the block that performed the write. Trace its input variable upstream to the value that was wrong, so your correction targets the cause rather than one symptom.
+  </Step>
+  <Step title="Correct the data manually or with a controlled script">
+    Fix the affected records by hand for a small set, or with a reviewed script for a large one. Verify a few records by eye before trusting a bulk correction.
+  </Step>
+  <Step title="Add an idempotency guard before republishing">
+    Switch a blind create to [Create or update record](/reference/records/create-or-update-record) with a matching attribute so a re-run updates the existing record instead of creating a duplicate. Stamp processed records with a timestamp, or filter on whether the target already exists, so running the workflow twice is safe.
+  </Step>
+</Steps>
+
+## Recovering from an external app failure
+
+An external app failure is a run that fails inside a block calling a connected app — a [Send HTTP request](/reference/utilities/send-http-request) call, a Slack message, or an [Enroll in sequence](/reference/sequences/enroll-in-sequence) step — rather than inside Attio's own logic. Confirm the credential and the payload first, because the fix differs from an internal data bug.
+
+<Steps>
+  <Step title="Check the connected app credential">
+    Confirm the connection the block uses is still valid. A revoked token, an expired key, or a disconnected Slack workspace surfaces as a failure in the calling block, not as a configuration error on the canvas.
+  </Step>
+  <Step title="Inspect the request payload or recipient">
+    Open the failed block's **Inputs** and read the exact payload it sent or the recipient it targeted. A sequence enrollment that targets a record which is not a person, or an HTTP request with a malformed body, fails inside this block.
+  </Step>
+  <Step title="Retry from failed when earlier writes must not repeat">
+    If the workflow already wrote data successfully before the failed external call, use **Retry from failed**. It resumes at the failed block and skips the completed ones, so it avoids double-writing the records that already succeeded.
+  </Step>
+  <Step title="Trigger a new run when the logic changed">
+    If you edited the workflow to fix the cause, a retry replays the old version. Trigger a fresh run instead to exercise your change.
+  </Step>
+</Steps>
+
+## Running the weekly review
+
+A short weekly review is the cheapest way to catch problems before they page you, and I run it every week for the first month after any new workflow goes live. Each item in this checklist is a place a silent failure hides.
+
+- **Failed runs** — anything red that nobody noticed, since there is no automatic retry and a failed run stays failed until a human acts.
+- **Expensive runs** — runs whose credits consumed sit well above the typical per-run cost, often the first sign of an unscoped trigger or a loop.
+- **Paused runs** — runs left paused mid-execution and never resumed or cancelled.
+- **High-volume triggers** — workflows firing far more often than their business event should warrant.
+- **Newly disconnected apps** — connected integrations whose credentials lapsed and now fail every run that calls them.
+- **Workflows edited but not published** — drafts with pending changes that the live version is not yet running.
+
+For naming, ownership, and review cadence beyond the first month, follow [workflow governance](/explanation/workflow-governance). For the per-run and monthly credit math behind the "expensive runs" check, see [credits & pricing explained](/reference/credits-and-pricing).
+
+## See also
+
+- [Runs, debugging & publishing](/explanation/runs-and-debugging)
+- [Common errors](/troubleshooting/common-errors)
+- [Infinite loops and safety](/explanation/infinite-loops-and-safety)
+- [Workflow governance](/explanation/workflow-governance)
+- [Attio Help Center — Troubleshooting workflows](https://attio.com/help/reference/automations/workflows/troubleshooting-workflows)
+
+---
+
+_Source: [Attio Help Center — Troubleshooting workflows](https://attio.com/help/reference/automations/workflows/troubleshooting-workflows). Last reviewed against the Attio Help Center, June 2026._

@@ -1,0 +1,87 @@
+---
+title: Classify record
+description: The Classify record block (AI step) assigns one or more tags to a record from a fixed list of options you provide.
+icon: tags
+---
+
+The **Classify record** block (AI step) assigns one or more tags to a record from a fixed list of options you provide. It reads the record's attributes, picks the best-matching tags, and returns them as a run value. The result is not written back to the record, so you pair it with an [Update record](/reference/records/update-record) block to persist the answer.
+
+| | |
+| --- | --- |
+| **Category** | AI step |
+| **Credit cost** | Variable (token-based) |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All paid plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| `Record` | Record | Yes | — | The record to classify. The block reads its attributes as context. |
+| `Tags` | List of text | Yes | — | The allowed tag options. AI may only return values from this list. |
+| `Allow multiple tags` | Boolean | No | Off | When on, AI can return more than one tag. When off, it returns a single tag. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| `Record classification` | Text or list of text | `Tier 1` | One tag when `Allow multiple tags` is off, a list of tags when it is on. |
+
+Reference the chosen tag downstream as `{{ steps.classify_record.classification }}`, and map it into the value field of a later [Update record](/reference/records/update-record) block.
+
+## Behavior
+
+The block sends the record's attribute values to the model and constrains the answer to the `Tags` list, so the output is always one of your options rather than free text. With `Allow multiple tags` off, it returns exactly one tag; with it on, it returns zero or more tags as a list.
+
+The output lives only in the run. Nothing is saved to the record until you add a write block, which means a workflow that ends at **Classify record** classifies silently and stores nothing. Each run sends fresh tokens to the model, so the cost scales with how much attribute context the record carries and how many tags you offer.
+
+## Gotchas
+
+- **The classification is never saved on its own.** The block returns a run value, not a record write, so the tag disappears when the run ends. Add an [Update record](/reference/records/update-record) block and map `{{ steps.classify_record.classification }}` into the target attribute.
+- **Writing to a select attribute fails when the option does not exist.** A select or multi-select attribute only accepts values that are already defined as options. Create the matching options first, spelled exactly as the tags you pass in, before the [Update record](/reference/records/update-record) block runs.
+- **Overlapping tags produce inconsistent single answers.** When two tags describe the same record and you need one answer, the model has no rule for breaking the tie. Keep tag names mutually exclusive whenever `Allow multiple tags` is off.
+
+## Examples
+
+### Sorting new companies into ICP tiers
+
+A workflow on a freshly created company classifies it into an ideal customer profile (ICP) tier, then writes the tier to a select attribute so reps can filter by it.
+
+| Field | Value |
+| --- | --- |
+| `Record` | `{{ trigger.record }}` |
+| `Tags` | `Tier 1`, `Tier 2`, `Tier 3`, `Out of ICP` |
+| `Allow multiple tags` | Off |
+
+The block returns `Tier 1`. A following [Update record](/reference/records/update-record) block maps `{{ steps.classify_record.classification }}` into the company's `ICP tier` select attribute.
+
+### Tagging an account with multiple product interests
+
+A workflow classifies an account against a set of product lines and keeps every match, so a multi-select attribute can hold all of them at once.
+
+| Field | Value |
+| --- | --- |
+| `Record` | `{{ trigger.record }}` |
+| `Tags` | `Billing`, `Analytics`, `Integrations`, `Security` |
+| `Allow multiple tags` | On |
+
+The block returns the list `["Analytics", "Integrations"]`. A following [Update record](/reference/records/update-record) block maps `{{ steps.classify_record.classification }}` into the account's `Product interest` multi-select attribute, whose options already include both values.
+
+## Credit cost worked example
+
+The block is token-priced, so each run costs a variable number of credits that depends on the record's attribute volume and the size of your `Tags` list. Suppose you classify every new company into four ICP tiers and you create 400 companies a month. That is 400 token-priced runs, plus 400 credits for the [Update record](/reference/records/update-record) write that persists each tier, since record writes cost 1 credit each. Compare that monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing), which holds the per-plan numbers.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Classify text](/reference/ai/classify-text)
+- [Summarize record](/reference/ai/summarize-record)
+- [Update record](/reference/records/update-record)
+- [AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research)
+- [Credits & pricing explained](/reference/credits-and-pricing)

@@ -1,0 +1,74 @@
+---
+title: Celebration
+description: The Celebration block plays an in-app animation for selected workspace users to mark a meaningful moment.
+icon: party-popper
+---
+
+The **Celebration** block (Workspace) plays an in-app animation for selected workspace users to mark a meaningful moment. It writes nothing to your data and consumes no credits, so its only job is to draw attention. Reserve it for genuine milestones such as a closed-won deal, not for every routine stage change.
+
+| | |
+| --- | --- |
+| **Category** | Workspace |
+| **Credit cost** | Free — logic blocks consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Type | Enum | Yes | None | The animation style: `Ceiling drop`, `Fireworks`, or `Cannons`. |
+| Target | Workspace members | Yes | None | The members who see the animation in Attio. |
+
+## Outputs
+
+None.
+
+The **Celebration** block produces no downstream value, so there is no `{{ steps.celebration.* }}` reference to consume in a later block. Treat it as a terminal action rather than a source of data.
+
+## Behavior
+
+The **Celebration** block fires once per run and shows the chosen animation only to the members listed in `Target`, not to everyone in the workspace. Because the block writes no records and calls no external service, it never affects credit usage. The block is the end of its own branch: it produces nothing for a later block to consume.
+
+## Gotchas
+
+- **The celebration loses its meaning when overused.** Firing it on every stage change trains members to ignore it. Gate the block behind a tight condition — for example, only when a deal reaches the closed-won stage — so the animation stays a signal rather than noise.
+- **Migrated Confetti blocks now read as Ceiling drop.** In legacy workflows the animation was called Confetti, and Attio maps that single legacy style onto the `Ceiling drop` type in the new engine. If a migrated workflow looks different from the original, check that `Ceiling drop` is the intended style, then switch to `Fireworks` or `Cannons` if you want a different effect.
+- **No one sees the animation unless you set `Target`.** `Target` is a required input that names the specific members who should see the animation. Wire in the members you want to celebrate — for example the deal owner and their manager — rather than assuming the whole workspace is included.
+
+## Examples
+
+### Celebrating a closed-won deal for the owner and their manager
+
+A revenue team wants the deal owner and their sales manager to see a celebration the moment a deal is marked won, paired with a Slack post for the wider channel.
+
+| Field | Value |
+| --- | --- |
+| Type | `Ceiling drop` |
+| Target | Priya Sharma (owner), Jordan Lee (manager) |
+
+When a deal moves to the closed-won stage, Priya Sharma and Jordan Lee each see a ceiling-drop animation in Attio, and a separate Slack post announces the win to `#revenue`.
+
+### Marking a quarterly revenue milestone for the whole revenue team
+
+A team celebrates crossing a quarterly bookings target by showing every member of the revenue group a more dramatic animation.
+
+| Field | Value |
+| --- | --- |
+| Type | `Fireworks` |
+| Target | Revenue team members |
+
+When the milestone workflow runs, every targeted member sees a fireworks animation in Attio, reinforcing the win across the whole revenue team at once.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Broadcast message](/reference/workspace/broadcast-message)
+- [Round robin](/reference/workspace/round-robin)
+- [Slack deal alerts on stage change](/guides/route-and-sequence/slack-deal-alerts)
+- [Hand off closed-won deals to Customer Success](/guides/pipeline-hygiene/closed-won-handoff)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

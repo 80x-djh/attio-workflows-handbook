@@ -1,0 +1,91 @@
+---
+title: Find records
+description: The Find records block (Records) looks up records in an object that match filter conditions, so later steps can read or act on them.
+icon: "search"
+---
+
+The **Find records** block (Records) looks up records in an object that match filter conditions, so later steps can read or act on them. It is the standard way to pull a working set into a run that did not start from a single record, such as a [Recurring schedule](/reference/triggers/recurring-schedule) sweep. The block returns at most 100 records, so a filter that matches more than that silently leaves the remainder behind.
+
+| | |
+| --- | --- |
+| **Category** | Records |
+| **Credit cost** | Free — lookups consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans that include Workflows |
+| **Limits** | Returns at most 100 records per run; `Limit` is required. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Object | Object | Yes | None | The object to search, such as `companies`, `people`, or `deals`. |
+| Limit | Number | Yes | None | Maximum number of records to return. Caps at 100; the field rejects a higher value. |
+| Filter | Filter | Yes | None | The conditions a record must match. See [Conditions & filters](/explanation/conditions-and-filters) for operator semantics. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Records | List of records | `[ { record_id: "rec_0a1b2c" }, … ]` | The matching records, up to the `Limit`. Empty when nothing matches. |
+| Number of matches | Number | `7` | The count of records returned, not the total that exist beyond the limit. |
+
+Reference the matched records downstream as `{{ steps.find_records.records }}`, and the count as `{{ steps.find_records.number_of_matches }}`.
+
+## Behavior
+
+The block evaluates the filter against the chosen object and returns the records that match, ordered as Attio returns them. When no record matches, the run continues with an empty list and a count of `0` rather than failing, so guard later steps with an [If](/reference/conditions/if) block when an empty result should change the path.
+
+The block returns a list, not a single record. Wiring that list directly into a block that expects one record, such as [Update record](/reference/records/update-record), uses only the first match and silently ignores the rest. To act on every match, pass the list into a [Loop](/reference/utilities/loop) and place the write inside the loop.
+
+The 100-record cap is a hard ceiling on what one run can see. A filter that matches 400 deals returns 100; the other 300 never enter the run. For larger working sets, narrow the filter so each run handles a slice, or schedule the workflow to run more often against a moving condition such as "last touched more than 30 days ago."
+
+## Gotchas
+
+- **Limit is required and rejects values over 100.** The block will not save without a `Limit`, and the field caps at 100. Set it to the largest batch one run should process, and design the filter so the working set fits, rather than assuming the block will page through everything.
+- **A multi-record result collapses into the first match.** Connecting `{{ steps.find_records.records }}` into a single-record input takes record one and drops the rest with no error. Wrap the write in a [Loop](/reference/utilities/loop) whenever the filter can return more than one record.
+- **An empty result does not stop the run.** A filter that matches nothing yields an empty list, and downstream blocks still execute against it. Branch on `{{ steps.find_records.number_of_matches }}` with an [If](/reference/conditions/if) block when "no matches" should take a different path.
+- **The count reflects only what was returned.** `Number of matches` reports the records inside the limit, not the true total in the object. Do not treat it as a complete population count when the filter can match more than 100 records.
+
+## Examples
+
+### Sweeping stale open deals on a schedule
+
+A nightly run finds open deals that have not moved recently, then creates a follow-up task for each.
+
+| Field | Value |
+| --- | --- |
+| Object | `deals` |
+| Limit | `100` |
+| Filter | `Status` is `Open` **and** `Last activity` is before `30 days ago` |
+
+The block returns up to 100 stale deals; a [Loop](/reference/utilities/loop) over `{{ steps.find_records.records }}` then runs [Create task](/reference/tasks/create-task) once per deal.
+
+### Finding a company by domain before creating a duplicate
+
+A webhook-triggered run looks for an existing company on the inbound domain so the workflow can update it instead of creating a second record.
+
+```json
+{
+  "object": "companies",
+  "limit": 1,
+  "filter": {
+    "domain": "acme.com"
+  }
+}
+```
+
+When one record matches, `{{ steps.find_records.number_of_matches }}` is `1` and the run routes to [Update record](/reference/records/update-record); when it is `0`, the run routes to [Create record](/reference/records/create-record) instead.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Find list entries](/reference/lists/find-list-entries)
+- [Loop](/reference/utilities/loop)
+- [Conditions & filters](/explanation/conditions-and-filters)
+- [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

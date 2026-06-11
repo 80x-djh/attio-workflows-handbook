@@ -1,0 +1,93 @@
+---
+title: Exit from sequence
+description: The Exit from sequence block (Sequences) stops all future emails for a person already enrolled in an Attio sequence.
+icon: user-minus
+---
+
+The **Exit from sequence** block (Sequences) stops all future emails for a person already enrolled in an Attio sequence. Use it the moment a contact replies, books a meeting, or becomes a customer, so your sequence stops emailing someone the rest of the funnel has already moved past. If the person is not currently enrolled, the block does nothing and the run still succeeds.
+
+| | |
+| --- | --- |
+| **Category** | Sequences |
+| **Credit cost** | 1 credit |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All paid plans with sequences enabled |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Sequence | Sequence | Yes | None | The sequence to remove the recipient from. |
+| Recipient | Person record | Yes | None | The person to unenroll. Must be a person record, not a company or list entry. |
+
+## Outputs
+
+None.
+
+The **Exit from sequence** block does not expose a useful downstream output, so no later block can reference a result from it. To branch on whether someone was actually enrolled, look the person up with [Find records](/reference/records/find-records) before this block instead of trying to read a result after it.
+
+## Behavior
+
+The block removes the recipient from the sequence's pending and scheduled emails. Emails Attio has already sent are not affected; exiting stops future sends only.
+
+If the recipient is not enrolled in the named sequence, the block is a no-op and the run does not fail. This makes **Exit from sequence** safe to place on a path that fires for both enrolled and never-enrolled people without guarding it behind an [If](/reference/conditions/if) condition first.
+
+Because removal is a write, it runs once per execution. Enrolling the same person again later, with [Enroll in sequence](/reference/sequences/enroll-in-sequence), starts a fresh enrollment rather than resuming the exited one.
+
+## Gotchas
+
+- **Exits the named sequence only.** The block removes the recipient from the one sequence you select, not from every sequence they are in. If a contact is enrolled in three sequences, add one **Exit from sequence** block per sequence, or loop over the sequences you want to clear.
+- **Already-sent emails still land.** Exiting cancels future sends, not messages already dispatched. To suppress a same-day send, exit before the next scheduled send time rather than after it.
+- **Recipient must be a person record.** Wiring a company record or a list entry into the recipient input fails the block. Resolve the person first with [Find records](/reference/records/find-records) when your trigger gives you a company or an entry.
+- **No output to branch on.** Because the block returns nothing useful downstream, you cannot test "was this person enrolled?" after it runs. Check enrollment with a lookup beforehand if a later step depends on it.
+
+## Examples
+
+### Exiting on reply
+
+Stop outbound the moment a prospect replies, so a rep takes over a live conversation instead of a sequence sending the next templated email.
+
+| Field | Value |
+| --- | --- |
+| Sequence | Q3 outbound — founders |
+| Recipient | `{{ trigger.record }}` (Priya Sharma) |
+
+Result: Priya Sharma is removed from the `Q3 outbound — founders` sequence, no further automated emails are scheduled for her, and the run completes with 1 credit consumed.
+
+### Exiting when a deal is created
+
+When a contact converts and a deal is created with them attached, pull them out of the nurture sequence so prospecting stops the instant they enter the pipeline.
+
+| Field | Value |
+| --- | --- |
+| Sequence | Inbound nurture |
+| Recipient | `jane@acme.com` (the contact on the new deal) |
+
+Result: `jane@acme.com` is unenrolled from the `Inbound nurture` sequence; if she was never enrolled, the block does nothing and the run still succeeds.
+
+## Credit cost worked example
+
+**Exit from sequence** costs 1 credit each time it runs, because it performs a write.
+
+Suppose a 12-rep team auto-exits sequences on every reply and every new deal, and that fires 600 times a month:
+
+```text
+600 exits × 1 credit = 600 credits / month
+```
+
+That sits well inside a single monthly plan allowance. Note that runs where the person was not enrolled still execute the block and bill the credit, so include them in your estimate. For the per-plan monthly allowances, see [Credits & pricing explained](/reference/credits-and-pricing).
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Enroll in sequence](/reference/sequences/enroll-in-sequence)
+- [Find records](/reference/records/find-records)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+- [Enroll and auto-exit sequences](/guides/route-and-sequence/sequence-enrollment)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

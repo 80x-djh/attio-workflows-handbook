@@ -1,0 +1,53 @@
+---
+title: How the engine works
+description: Reference pages tell you what a block does; these pages explain why the Attio Workflows engine behaves the way it does.
+icon: book-open
+---
+
+Reference pages tell you what a block does; these pages explain why the Attio Workflows engine behaves the way it does. Read them when a reference page raises a "but why?" — they cover the mental models that stop you building workflows that silently misfire, double-charge, or loop forever.
+
+## The engine
+
+<CardGroup cols={2}>
+  <Card title="What are Attio Workflows?" icon="workflow" href="/explanation/what-are-workflows">
+    The trigger-then-blocks-then-run model, and where workflows live in the workspace.
+  </Card>
+  <Card title="What's new in the 2026 Workflows engine" icon="sparkles" href="/explanation/whats-new">
+    Agents, code, multi-trigger workflows, and the repriced credit model.
+  </Card>
+  <Card title="Choosing the right trigger" icon="zap" href="/explanation/triggers">
+    Picking a record, attribute, schedule, webhook, or command trigger, and the one distinction that trips everyone.
+  </Card>
+  <Card title="Variables & data passing" icon="variable" href="/explanation/variables">
+    How an earlier block's output becomes a later block's input.
+  </Card>
+  <Card title="Conditions & filters" icon="filter" href="/explanation/conditions-and-filters">
+    If, switch, and filter, and why a condition that stops a run costs nothing.
+  </Card>
+  <Card title="Records vs list entries" icon="layers" href="/explanation/records-vs-list-entries">
+    The distinction that decides which trigger and which block you reach for.
+  </Card>
+</CardGroup>
+
+## Running, scaling, and governing
+
+<CardGroup cols={2}>
+  <Card title="Runs, debugging & publishing" icon="bug" href="/explanation/runs-and-debugging">
+    What a run is, and how to read one in the run viewer.
+  </Card>
+  <Card title="Loops & processing many records" icon="repeat" href="/explanation/loops">
+    Why loop contents dominate the cost of most expensive workflows.
+  </Card>
+  <Card title="Infinite loops and safety" icon="shield-alert" href="/explanation/infinite-loops-and-safety">
+    How a self-triggering workflow burns credits until someone notices, and how to prevent it.
+  </Card>
+  <Card title="Permissions & workflow access" icon="lock" href="/explanation/permissions-and-access">
+    What a workflow can read and write, and the "Run as" model.
+  </Card>
+  <Card title="Workflow governance" icon="git-branch" href="/explanation/workflow-governance">
+    Naming, ownership, and change control once you have more than a handful.
+  </Card>
+  <Card title="Credits & pricing explained" icon="coins" href="/reference/credits-and-pricing">
+    The canonical credit table, plan allowances, and timeout numbers for every block.
+  </Card>
+</CardGroup>

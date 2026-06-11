@@ -1,0 +1,189 @@
+---
+title: Daily renewal watch at 90, 60, and 30 days
+description: A daily renewal watch flags every account approaching renewal at 90, 60, and 30 days so no contract slips past its owner.
+icon: clock
+---
+
+A **daily renewal watch** flags every account approaching renewal at 90, 60, and 30 days so no contract slips past its owner. Customer success and account teams get a task on the right day and a single digest of what is at risk, instead of discovering a lapsed contract after the fact. A [Recurring schedule](/reference/triggers/recurring-schedule) fires once a day, [Find records](/reference/records/find-records) pulls accounts that have a renewal date, a [Loop](/reference/utilities/loop) walks each one, [Adjust time](/reference/calculations/adjust-time) computes the three window boundaries, an [If](/reference/conditions/if) condition gates the matches, and [Create task](/reference/tasks/create-task), [Update record](/reference/records/update-record), and a [Broadcast message](/reference/workspace/broadcast-message) digest do the work.
+
+| | |
+| --- | --- |
+| **Difficulty** | Intermediate |
+| **Time to build** | About 15 minutes |
+| **Trigger** | [Recurring schedule](/reference/triggers/recurring-schedule), set to daily |
+| **Blocks used** | [Find records](/reference/records/find-records), [Loop](/reference/utilities/loop), [Adjust time](/reference/calculations/adjust-time), [If](/reference/conditions/if), [Create task](/reference/tasks/create-task), [Update record](/reference/records/update-record), [Broadcast message](/reference/workspace/broadcast-message) |
+| **Credit cost per run** | 2 credits per matched window; every other block, including the digest, is free |
+| **Plan required** | Plus or higher |
+
+## Prerequisites
+
+- An Attio plan on the **Plus** tier or higher.
+- An **Accounts** object, or your equivalent customer object, with a `renewal_date` date attribute populated on active contracts.
+- An `owner` attribute on the account that resolves to a workspace member who can receive tasks, such as Priya Sharma.
+- A `renewal_notified_window` attribute on the account. Use a single-select or text attribute that records which window has already fired, for example `90`, `60`, or `30`. Create this attribute before you build, because the workflow reads and writes it on every match.
+- The Slack integration connected, if you want the digest posted to a channel. Otherwise the built-in [Broadcast message](/reference/workspace/broadcast-message) block notifies in-app.
+- No API keys or scopes are needed, because every block in this workflow runs inside Attio.
+
+## How it works
+
+The workflow runs once a day, loads every account that has a renewal date, and checks each account against three fixed windows. An account whose renewal lands in a window it has not been notified about gets a task for its owner, a stamp on the account so the window never fires twice, and a line in the daily digest. The flow runs in this order:
+
+1. [Recurring schedule](/reference/triggers/recurring-schedule) fires daily at a fixed time.
+2. [Find records](/reference/records/find-records) loads accounts where `renewal_date` is not empty.
+3. [Loop](/reference/utilities/loop) iterates each matched account.
+4. [Adjust time](/reference/calculations/adjust-time) computes the 90-, 60-, and 30-day boundary dates from today.
+5. [If](/reference/conditions/if) checks that the renewal falls inside a window and that the window has not been notified yet.
+6. [Create task](/reference/tasks/create-task) assigns a renewal task to the account owner.
+7. [Update record](/reference/records/update-record) sets `renewal_notified_window` so the window fires once.
+8. [Broadcast message](/reference/workspace/broadcast-message) posts the daily digest of flagged accounts.
+
+## Build steps
+
+<Steps>
+  <Step title="Add the recurring schedule trigger">
+    Add a [Recurring schedule](/reference/triggers/recurring-schedule) trigger and set it to run once per day, early enough that owners see tasks before their morning standup. Pick the team's primary timezone so the windows line up with how people read dates.
+
+    | Field | Value |
+    | --- | --- |
+    | Frequency | Daily |
+    | Time | 07:00 |
+    | Timezone | Europe/London, your team's primary zone |
+  </Step>
+
+  <Step title="Find accounts with a renewal date">
+    Add a [Find records](/reference/records/find-records) block on the **Accounts** object. Filter to accounts that actually have a renewal date so the loop never walks the whole book.
+
+    | Field | Value |
+    | --- | --- |
+    | Object | Accounts |
+    | Filter | `renewal_date` is not empty |
+    | Sort | `renewal_date` ascending |
+    | Limit | 100, the maximum, set to 5 while testing |
+  </Step>
+
+  <Step title="Loop the matched accounts">
+    Add a [Loop](/reference/utilities/loop) block over the output of the **Find records** block. Every step inside the loop runs once per account.
+
+    | Field | Value |
+    | --- | --- |
+    | Loop over | `{{find_records.records}}` |
+    | Item variable | `account` |
+    | Max iterations | 100, set to 5 while testing |
+  </Step>
+
+  <Step title="Compute the window boundaries">
+    Add an [Adjust time](/reference/calculations/adjust-time) block inside the loop to compute the 90-, 60-, and 30-day boundary dates from today. Add the block once per window, or compute all three and compare them in the next step. Each window is today plus N days, and an account matches when its `renewal_date` equals that boundary.
+
+    | Field | Value |
+    | --- | --- |
+    | Base time | Run date, today |
+    | Operation | Add |
+    | Amount, window A | 90 days |
+    | Amount, window B | 60 days |
+    | Amount, window C | 30 days |
+  </Step>
+
+  <Step title="Gate on the window and the notified flag">
+    Add an [If](/reference/conditions/if) block so the run continues only for an account whose renewal lands in a window it has not been notified about. This gate stops duplicate tasks across days, it is free, and it does the real hygiene work.
+
+    | Field | Value |
+    | --- | --- |
+    | Condition | `account.renewal_date` equals one of the 90, 60, or 30 boundary dates |
+    | And | `account.renewal_notified_window` does not already equal that window |
+    | If false | Continue the loop and skip this account today |
+  </Step>
+
+  <Step title="Create the renewal task">
+    Add a [Create task](/reference/tasks/create-task) block so the work is assigned to the account owner when the **If** block passes. Name the window in the task text so the owner reads the urgency at a glance.
+
+    | Field | Value |
+    | --- | --- |
+    | Task text | `Renewal in 60 days — {{account.name}} (renews {{account.renewal_date}})` |
+    | Assignee | `{{account.owner}}`, for example Priya Sharma |
+    | Linked record | `{{account.record_id}}` |
+    | Due date | Today |
+  </Step>
+
+  <Step title="Stamp the notified window">
+    Add an [Update record](/reference/records/update-record) block right after the task so the matched window cannot fire again tomorrow. This single write guarantees that each window fires once.
+
+    | Field | Value |
+    | --- | --- |
+    | Object | Accounts |
+    | Record | `{{account.record_id}}` |
+    | Attribute | `renewal_notified_window` |
+    | New value | `60`, the window that just matched |
+  </Step>
+
+  <Step title="Post the daily digest">
+    Add a [Broadcast message](/reference/workspace/broadcast-message) block after the loop to summarize the accounts flagged on this run. A Slack block works too, as shown in [Variations](#variations). Reference the loop's collected matches so the digest lists every account, not just the last one.
+
+    | Field | Value |
+    | --- | --- |
+    | Channel | `#customer-success` |
+    | Message | `Renewal watch — {{matched_count}} account(s) flagged today: {{matched_list}}` |
+  </Step>
+</Steps>
+
+## Variable mapping
+
+| Variable | Source block | Field | Example value |
+| --- | --- | --- | --- |
+| `account` | [Loop](/reference/utilities/loop) | Current item | The Acme Corp account record |
+| `account.name` | [Find records](/reference/records/find-records) | `name` | Acme Corp |
+| `account.renewal_date` | [Find records](/reference/records/find-records) | `renewal_date` | 2026-09-09 |
+| `account.owner` | [Find records](/reference/records/find-records) | `owner` | Priya Sharma |
+| `account.renewal_notified_window` | [Find records](/reference/records/find-records) | `renewal_notified_window` | empty |
+| Window boundary | [Adjust time](/reference/calculations/adjust-time) | Computed date | 2026-09-09, today plus 90 |
+| `matched_count` | [Loop](/reference/utilities/loop) | Total count | 7 |
+| `matched_list` | [Broadcast message](/reference/workspace/broadcast-message) | Digest message assembled across matches | Acme Corp, Globex, Initech |
+
+## Credit cost worked example
+
+The schedule, [Find records](/reference/records/find-records), [Loop](/reference/utilities/loop), [Adjust time](/reference/calculations/adjust-time), and the [If](/reference/conditions/if) condition are all free logic and lookup blocks. They consume no credits, even across hundreds of loop iterations. A condition that stops a run is free, so accounts that do not match cost nothing.
+
+Cost is incurred only on a matched window. Two writes run per account there: one [Create task](/reference/tasks/create-task) and one [Update record](/reference/records/update-record), at 1 credit each, for 2 credits per matched window. The [Broadcast message](/reference/workspace/broadcast-message) digest is free, so the daily post adds nothing.
+
+Suppose 25 accounts cross a window in a typical month. The writes cost 25 × 2 = 50 credits. The daily schedule, the lookups, the loop, and the digest all add nothing, so the workflow costs about 50 credits a month. Check your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing) before you scale the volume of accounts you watch.
+
+## Test plan
+
+1. Set the **Find records** limit and the **Loop** max iterations to 5 so a test run stays small.
+2. Pick one account, set its `renewal_date` to exactly today plus 90 days, and clear its `renewal_notified_window`.
+3. Open the workflow and click the **Run test** button to fire the schedule manually.
+4. Confirm the output of each block. **Find records** returns your test account. **Loop** iterates it. **Adjust time** produces a 90-day boundary equal to the account's renewal date. **If** passes. **Create task** creates one task for the owner. **Update record** sets `renewal_notified_window` to `90`. **Broadcast message** posts a digest naming the account.
+5. Open run history to confirm the task was created and the flag was stamped. Run the test again on the same day and confirm no second task appears, because the **If** block now skips the account.
+6. Send a deliberately failing input. Set the account's `renewal_date` to 45 days out, which falls between windows, and run the test. The **If** block fails, the loop skips the account with zero credits spent, and no task is created.
+
+## Failure modes
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| The same account gets a task every day | The `renewal_notified_window` flag is not being set, or it is not part of the **If** condition | Confirm step 7 runs after the task, and that step 5 reads the same window value it writes |
+| No tasks ever appear | The **Find records** filter excludes everything, or `renewal_date` is empty on accounts | Check that the filter is `is not empty` and that renewal dates are populated |
+| Windows are off by a day | The schedule timezone differs from how dates are stored | Align the **Recurring schedule** timezone with the team's primary zone |
+| Tasks go to no one | `owner` is empty on the account | Add `owner is not empty` to the **Find records** filter, or default the assignee |
+| The digest lists only one account | The message reads a single loop item instead of the collected matches | Reference the loop's collected list, not the current item, in the **Broadcast message** block |
+| The run is slow or hits limits | The loop runs over the entire account book | Tighten the **Find records** filter and keep the renewal-date sort |
+
+## Variations
+
+### Per-window message
+
+Branch the task text and digest copy by window so a 30-day renewal reads more urgently than a 90-day one. Add a [Switch](/reference/conditions/switch) block after the **If** block to route to three [Create task](/reference/tasks/create-task) configurations, each with its own wording and due date. Everything else stays the same, and the **Switch** block is free.
+
+### Customer success versus account executive owner
+
+Route the task to a customer success manager for existing-customer renewals and to an account executive for expansion-eligible accounts. Add a [Filter](/reference/conditions/filter) or [Switch](/reference/conditions/switch) block on an account segment attribute, then set the [Create task](/reference/tasks/create-task) assignee accordingly. Only the assignee mapping changes; the windows and the notified flag are untouched.
+
+## See also
+
+- [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep)
+- [Loops & processing many records](/explanation/loops)
+- [Adjust time](/reference/calculations/adjust-time)
+- [Create task](/reference/tasks/create-task)
+- [Attio Help Center: Workflows](https://attio.com/help/workflows)
+
+---
+
+*Source: [Attio Help Center: Workflows](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026.*

@@ -1,0 +1,85 @@
+---
+title: List entry command
+description: The List entry command trigger adds a Run workflow button to a list so a person can run the workflow on selected entries.
+icon: list-checks
+---
+
+The **List entry command** trigger (Triggers) adds a *Run workflow* button to a list so a person can run the workflow on selected entries. It is the [Record command](/reference/triggers/record-command) trigger's sibling for lists: where Record command starts a run from a record, this trigger starts a run from one or more **list entries** and makes the entry's list attributes — stage, priority, next step — available in the run. Reach for it whenever an operator needs to launch pipeline work by hand and the workflow depends on those list attributes.
+
+| | |
+| --- | --- |
+| **Category** | Triggers |
+| **Credit cost** | Free — triggers consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All paid plans |
+| **Limits** | Batch selection starts one run per entry; the runs that follow bill normally. See [Credits & pricing explained](/reference/credits-and-pricing) for the credit allowance. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| List | List | Yes | None | The list whose entries get the *Run workflow* button. The button appears on this list's entries only. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| List entry | List entry | `Acme Corp` in `Sales pipeline` | The triggering entry, including its list attributes and parent record. |
+| Actor | Actor | `priya.sharma@acme.com` | The member who clicked *Run workflow*. |
+| Timestamp | Timestamp | `2026-06-11T14:30:00Z` | When the run was triggered. |
+
+Reference the triggering entry's data in a later block as `{{ steps.list_entry_command.list_entry }}`.
+
+## Behavior
+
+The trigger fires once per click and passes the selected list entry into the run. It outputs a list *entry*, not a plain record, so the entry's list attributes — the per-list stage, owner, priority, and next step — are available downstream alongside the parent record. This is the reason to choose it over [Record command](/reference/triggers/record-command): a Record command run sees only the record's object attributes and cannot read list attributes without a separate [Find list entries](/reference/lists/find-list-entries) lookup.
+
+Selecting several entries at once enrolls each one as a separate run. The runs are independent, so a workflow that writes data or calls AI bills once per selected entry rather than once for the whole batch. The button is visible to members who can see the workflow, so name the workflow for the operator who clicks it, not for the builder who made it.
+
+## Gotchas
+
+- **The trigger outputs a list entry, not a record.** Entry-typed blocks such as [Update list entry](/reference/lists/update-list-entry) take the output directly, but record-typed blocks need the entry's parent record from the variable picker, and passing the entry where a record belongs fails the run. The type rules live in [Records vs list entries](/explanation/records-vs-list-entries).
+- **Record command runs cannot see list attributes.** When the workflow branches on stage, priority, or another list attribute, choose this trigger over [Record command](/reference/triggers/record-command) — a Record command run can read those values only after a [Find list entries](/reference/lists/find-list-entries) detour. Start from the entry and skip the lookup.
+- **Batch selection multiplies credits.** Selecting 50 entries starts 50 runs, so a 2-credit path costs 100 credits, the same credit multiplication as [Record command](/reference/triggers/record-command). The trigger itself is free, but check the per-run cost on [Credits & pricing explained](/reference/credits-and-pricing) before you select-all.
+
+## Examples
+
+### Filling review notes before a pipeline meeting
+
+A pipeline-review prep workflow lets an operator generate review notes on the deals due for Monday's meeting. **List entry command** runs on the chosen `Sales pipeline` entries, [Summarize record](/reference/ai/summarize-record) summarizes each parent deal, and [Update list entry](/reference/lists/update-list-entry) writes the summary into a `Review notes` list attribute.
+
+| Field | Value |
+| --- | --- |
+| List | Sales pipeline |
+| Run from | List view — select the entries due for review, then *Run workflow* |
+
+The operator selects the entries due for Monday's review, and the `Review notes` column fills itself with a summary of each deal.
+
+### Reassigning an owner on a single entry
+
+A routing fix lets a manager hand one stuck inbound entry to a different rep without touching the company record. **List entry command** runs on the single selected entry, and [Update list entry](/reference/lists/update-list-entry) writes the new owner straight onto the entry.
+
+```json
+{
+  "trigger": "list_entry_command",
+  "list": "Inbound pipeline",
+  "selected_entry": "Acme Corp",
+  "new_owner": "priya.sharma@acme.com"
+}
+```
+
+The Acme Corp entry on the `Inbound pipeline` list is reassigned to `priya.sharma@acme.com`, while the underlying company record stays untouched.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Record command](/reference/triggers/record-command)
+- [Record added to list](/reference/triggers/record-added-to-list)
+- [Update list entry](/reference/lists/update-list-entry)
+- [Records vs list entries](/explanation/records-vs-list-entries)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

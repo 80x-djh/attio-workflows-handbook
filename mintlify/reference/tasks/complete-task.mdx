@@ -1,0 +1,81 @@
+---
+title: Complete task
+description: The Complete task block (Task step) marks an existing Attio task as complete.
+icon: square-check
+---
+
+The **Complete task** block (Task step) marks an existing Attio task as complete. It takes a single task as input, usually one created earlier in the same workflow, and closes it without exposing a downstream output. Use it to auto-close work the workflow itself owns, and reserve it for tasks no human is expected to action by hand.
+
+| | |
+| --- | --- |
+| **Category** | Task step |
+| **Credit cost** | 1 credit |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All paid plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Task | Task reference | Yes | None | The task to complete. Usually a variable from an earlier [Create task](/reference/tasks/create-task) block or the [Task created](/reference/triggers/task-created) trigger. Must be a task, not a linked record. |
+
+## Outputs
+
+None.
+
+The block does not expose a useful downstream output, so no later block can read a `{{ steps.complete_task.* }}` value from it. When a subsequent block needs the task, reference the task variable you passed into **Complete task** rather than waiting for this block to return one.
+
+## Behavior
+
+**Complete task** changes the status of the referenced task to complete and ends. It acts on whichever task the input resolves to at run time, so a variable that points to a single task completes exactly that task.
+
+The block reads its target from a task reference. Pass it the task variable produced by [Create task](/reference/tasks/create-task) or carried from the [Task created](/reference/triggers/task-created) trigger. Passing a record or a linked record instead of a task fails the block, because the input is typed as a task and a record is a different object.
+
+The action is a write, so it consumes 1 credit each time it runs. Only the executed path of a workflow consumes credits, so a **Complete task** block on a branch that does not run costs nothing for that run.
+
+## Gotchas
+
+- **The input must be a task, not a linked record.** A task and the record a task is linked to are different objects, so wiring a record variable into the input fails the block. Map the task variable from [Create task](/reference/tasks/create-task) or [Task created](/reference/triggers/task-created), not the record the task points at.
+- **There is no output to chain from.** The block returns no usable downstream value, so a later block that expects a completed-task result has nothing to read. Reference the original task variable you passed in instead of expecting one back from **Complete task**.
+- **Auto-completing human tasks hides operational problems.** Closing a task a person was meant to action removes the signal that the work is overdue or stuck. Complete only tasks the workflow created for itself, and leave human-owned tasks for a person to close.
+
+## Examples
+
+### Closing a follow-up task once an external confirmation arrives
+
+A workflow creates a follow-up task, waits for an external system to confirm the work is done, then closes the task it created.
+
+| Field | Value |
+| --- | --- |
+| Task | `{{ steps.create_task.task }}` |
+
+After the confirmation webhook resolves, the workflow marks the follow-up task complete, and the task no longer appears in the assignee's open list.
+
+### Completing the triggering task after a sync succeeds
+
+A workflow starts from the [Task created](/reference/triggers/task-created) trigger, syncs the task to an external system, and closes the task once the sync returns success.
+
+| Field | Value |
+| --- | --- |
+| Task | `{{ trigger.task }}` |
+
+When the sync succeeds, the triggering task is marked complete, which keeps the Attio task list in step with the external system of record.
+
+## Credit cost worked example
+
+**Complete task** costs 1 credit per run because it writes a change to a task. A workflow that completes 40 tasks a month spends 40 credits on this block, plus whatever the rest of the workflow consumes. Multiply 1 credit by your monthly task-completion volume to size the line item, then compare the total against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Create task](/reference/tasks/create-task)
+- [Task created](/reference/triggers/task-created)
+- [Variables & data passing](/explanation/variables)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

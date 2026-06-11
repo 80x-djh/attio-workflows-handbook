@@ -1,0 +1,104 @@
+---
+title: AI-search optimization
+description: AI-search optimization is the set of structural choices that let AI assistants find, cite, and reuse this handbook's Attio Workflows guidance.
+---
+
+AI-search optimization is the set of structural choices that let AI assistants find, cite, and reuse this handbook's Attio Workflows guidance. An AI assistant reads a documentation page the way a hurried engineer does: it scans the title, the first sentence, and the nearest table, then either trusts the answer or moves on. This handbook is written for humans first, but every page is also shaped so a model can lift an accurate, attributed answer out of it without hallucinating a credit cost or inventing a block name.
+
+The payoff is practical for a go-to-market (GTM) engineer. When a teammate asks an in-house assistant "does the [Create record](/reference/records/create-record) block cost a credit?" the model should return the real number and a link to the source page, not a confident guess. Structure is what makes that possible. A page that answers the exact question in its first screen, names blocks with their stable Attio labels, and carries an official source link gives the model a clean span to quote and a citation to attach.
+
+This page explains the conventions the handbook follows and how to apply them when you contribute. After reading, you can write a page that an assistant can summarize correctly, audit an existing page for the patterns that break AI retrieval, and keep the machine-readable layer in sync as Attio ships changes.
+
+## Answering the question first
+
+The single highest-leverage move is to answer the exact question in the first screen, before any setup or background. Models weight the opening sentence heavily, and the handbook makes that sentence carry the answer by reusing it as the page `description`. The description is the meta tag, the search snippet, and the first line of body prose all at once, so it has to read as a complete answer on its own.
+
+The [Create record](/reference/records/create-record) reference page shows the pattern in one line.
+
+```yaml
+title: Create record
+description: The Create record block creates a new record in an object, such as a new company or person.
+```
+
+A model that retrieves only this frontmatter still answers "what does Create record do?" correctly, because the answer never depended on the reader scrolling.
+
+## Naming blocks with stable labels
+
+AI assistants match on names, so the handbook uses the exact label Attio renders and never a paraphrase. Write **Attribute value changed**, not "the changed-field trigger"; write [Send HTTP request](/reference/utilities/send-http-request), not "the HTTP block." Stable names also let the model resolve a cross-reference: when two pages both call the trigger [Record created](/reference/triggers/record-created), an assistant can link the build guide to the reference without guessing they are the same thing.
+
+The discipline extends to acronyms. Expand each one on first use — GTM (go-to-market), ICP (ideal customer profile), MCP (Model Context Protocol) — so a model that ingests a single page mid-document still has the definition in context.
+
+Compare the two phrasings a contributor might write for the same trigger.
+
+| Avoid | Use |
+| --- | --- |
+| the field-change trigger | [Attribute value changed](/reference/triggers/attribute-value-changed) |
+| the upsert block | [Create or update record](/reference/records/create-or-update-record) |
+| the AI summarizer | [Summarize record](/reference/ai/summarize-record) |
+
+A page written with the right-hand column lets an assistant map every reference back to a real Attio block, which is the difference between a citable answer and a plausible-sounding one.
+
+## Front-loading cost and failure behavior
+
+Cost and failure behavior belong near the top of a page, because those are the facts a model is most likely to be asked for and most likely to get wrong. The handbook keeps one canonical fact layer: the full credit table lives only on [Credits & pricing explained](/reference/credits-and-pricing), and every other page links there rather than restating it. A single block's cost is fine to state inline, so a contributor writes "1 credit" on a reference page but never reproduces the whole table.
+
+Two costs need their exact wording so a model never rounds them off. The [Execute code](/reference/calculations/execute-code) block costs **Variable (complexity-based)** — not "free," not "1 credit." Logic blocks such as [If](/reference/conditions/if) and [Filter](/reference/conditions/filter) consume no credits at all.
+
+A short inline cost note reads like this.
+
+```text
+Credit cost: 1 credit per run. See Credits & pricing explained for plan allowances.
+```
+
+Because the number sits beside the block name and the link points at the one page that owns the table, an assistant can quote the cost and still send the reader to the authoritative source for plan-level math.
+
+## Including "when not to use this"
+
+A page that documents only the happy path teaches a model to recommend a block in cases where it will burn credits or overwrite data. The handbook adds a "when not to use this" note wherever a block is risky, so the assistant inherits the caveat alongside the capability. Calling out the boundary is also the honest thing to do for a human reader skimming for a decision.
+
+The clearest example is the boundary between workflows and the API. Bulk backfills across tens of thousands of records belong in a script against the Attio REST API, not a workflow, because [Find records](/reference/records/find-records) returns at most 100 results.
+
+```text
+When not to use this: one-time backfills over 10,000+ records.
+Use the REST API instead. Find records returns at most 100 results.
+```
+
+A model that retrieves this note will steer a user toward the API for a migration, which is exactly the guidance a workflow page should carry rather than silently encouraging a 50,000-record loop.
+
+## Linking concepts, references, and recipes
+
+Internal links are how an assistant assembles a multi-page answer, so the handbook connects every concept, reference, and recipe with root-relative links that have no trailing slash. A reference page for [Round robin](/reference/workspace/round-robin) links to the recipe that uses it; the recipe links back to the block and out to the relevant concept. Following those edges, a model can answer "how do I route inbound leads evenly?" by stitching the block reference to the [Round-robin lead routing](/guides/route-and-sequence/round-robin-routing) build.
+
+The handbook also ships a machine-readable layer alongside the prose. A `/llms.txt` file gives assistants a single curated index of every route and its purpose.
+
+```text
+GET /llms.txt
+# A flat, linkable map of the handbook for AI assistants.
+```
+
+An assistant that fetches `/llms.txt` gets the whole site map in one request, which lets it pick the right page to cite instead of guessing a URL.
+
+## Keeping pages source-backed
+
+Every page that describes product behavior carries an official Attio source link, because a sourced claim is one an assistant can attribute and a reader can verify. AI-optimized does not mean confident-sounding; it means structured, source-backed, and easy to update when Attio ships a change. The handbook tracks the new June 2026 Workflows engine, where per-workflow credit caps were removed and you can no longer create new legacy workflows, so a page that cites its source ages gracefully as those details move.
+
+The honest source line at the foot of this page models the convention every page follows.
+
+```text
+Source: Attio Help Center — Overview of workflows.
+Last reviewed against the Attio Help Center, June 2026.
+```
+
+A model that quotes a behavior from a page can carry this line through as the citation, so the answer arrives with its provenance attached rather than presented as the assistant's own assertion.
+
+## See also
+
+- [About & contributing](/about)
+- [How the engine works](/explanation)
+- [Workflow governance](/explanation/workflow-governance)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+- [What's new in the 2026 Workflows engine](/explanation/whats-new)
+
+---
+
+*Source: [Attio Help Center — Overview of workflows](https://attio.com/help/reference/automations/workflows/overview-of-workflows). Last reviewed against the Attio Help Center, June 2026.*

@@ -1,0 +1,336 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Attio Workflows Handbook",
+  "description": "The open-source, definitive guide to Attio's new Workflows engine — every trigger and block documented, every credit cost explained, and follow-along GTM builds.",
+  "colors": {
+    "primary": "#1b6edc",
+    "light": "#4d8fe6",
+    "dark": "#003dff"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/favicon.svg",
+    "dark": "/favicon.svg",
+    "href": "/"
+  },
+  "fonts": {
+    "family": "Inter"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/80x-djh/attio-workflows-handbook"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Work with me",
+      "href": "/pro"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/80x-djh/attio-workflows-handbook"
+    }
+  },
+  "search": {
+    "prompt": "Search the handbook…"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Learn",
+        "icon": "graduation-cap",
+        "groups": [
+          {
+            "group": "Foundations",
+            "pages": [
+              "learn",
+              "learn/build-your-first-workflow"
+            ]
+          },
+          {
+            "group": "Applied tracks",
+            "pages": [
+              "learn/capture-and-qualify",
+              "learn/route-and-sequence",
+              "learn/keep-the-pipeline-honest",
+              "learn/let-ai-own-a-stage"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Guides",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["guides"]
+          },
+          {
+            "group": "Capture & qualify",
+            "pages": [
+              "guides/capture-and-qualify/webhook-lead-intake",
+              "guides/capture-and-qualify/enrichment-waterfall",
+              "guides/capture-and-qualify/signal-scoring"
+            ]
+          },
+          {
+            "group": "Route & sequence",
+            "pages": [
+              "guides/route-and-sequence/territory-routing",
+              "guides/route-and-sequence/round-robin-routing",
+              "guides/route-and-sequence/sequence-enrollment",
+              "guides/route-and-sequence/slack-deal-alerts"
+            ]
+          },
+          {
+            "group": "Pipeline hygiene & lifecycle",
+            "pages": [
+              "guides/pipeline-hygiene/stale-deal-sweep",
+              "guides/pipeline-hygiene/dedupe-on-create",
+              "guides/pipeline-hygiene/closed-won-handoff",
+              "guides/pipeline-hygiene/renewal-watch",
+              "guides/pipeline-hygiene/pipeline-digest"
+            ]
+          },
+          {
+            "group": "Signals & AI",
+            "pages": [
+              "guides/signals-and-ai/inbound-lead-research",
+              "guides/signals-and-ai/funding-signal-outbound",
+              "guides/signals-and-ai/ai-agents-playbook"
+            ]
+          },
+          {
+            "group": "Platform patterns",
+            "pages": [
+              "guides/platform-patterns/http-json-patterns",
+              "guides/platform-patterns/app-sdk-custom-blocks"
+            ]
+          },
+          {
+            "group": "Migrating from legacy",
+            "pages": [
+              "guides/migrating-from-legacy",
+              "guides/migrating-from-legacy/block-changes",
+              "guides/migrating-from-legacy/pricing-changes"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "icon": "square-terminal",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "reference",
+              "reference/credits-and-pricing"
+            ]
+          },
+          {
+            "group": "Triggers",
+            "pages": [
+              "reference/triggers/record-created",
+              "reference/triggers/record-updated",
+              "reference/triggers/attribute-value-changed",
+              "reference/triggers/record-added-to-list",
+              "reference/triggers/record-command",
+              "reference/triggers/list-entry-updated",
+              "reference/triggers/list-entry-command",
+              "reference/triggers/task-created",
+              "reference/triggers/recurring-schedule",
+              "reference/triggers/webhook-received",
+              "reference/triggers/manual-run"
+            ]
+          },
+          {
+            "group": "Record blocks",
+            "pages": [
+              "reference/records/create-record",
+              "reference/records/create-or-update-record",
+              "reference/records/update-record",
+              "reference/records/find-records"
+            ]
+          },
+          {
+            "group": "List blocks",
+            "pages": [
+              "reference/lists/add-record-to-list",
+              "reference/lists/update-list-entry",
+              "reference/lists/find-list-entries",
+              "reference/lists/delete-list-entry"
+            ]
+          },
+          {
+            "group": "Task blocks",
+            "pages": [
+              "reference/tasks/create-task",
+              "reference/tasks/complete-task"
+            ]
+          },
+          {
+            "group": "Sequence blocks",
+            "pages": [
+              "reference/sequences/enroll-in-sequence",
+              "reference/sequences/exit-from-sequence"
+            ]
+          },
+          {
+            "group": "AI blocks",
+            "pages": [
+              "reference/ai/classify-record",
+              "reference/ai/classify-text",
+              "reference/ai/summarize-record"
+            ]
+          },
+          {
+            "group": "Agent blocks",
+            "pages": [
+              "reference/agents/web-agent",
+              "reference/agents/custom-agent"
+            ]
+          },
+          {
+            "group": "Condition blocks",
+            "pages": [
+              "reference/conditions/if",
+              "reference/conditions/switch",
+              "reference/conditions/filter"
+            ]
+          },
+          {
+            "group": "Calculation blocks",
+            "pages": [
+              "reference/calculations/formula",
+              "reference/calculations/aggregate-values",
+              "reference/calculations/adjust-time",
+              "reference/calculations/random-number",
+              "reference/calculations/execute-code"
+            ]
+          },
+          {
+            "group": "Delay blocks",
+            "pages": [
+              "reference/delays/delay",
+              "reference/delays/delay-until"
+            ]
+          },
+          {
+            "group": "Utility blocks",
+            "pages": [
+              "reference/utilities/loop",
+              "reference/utilities/parse-json",
+              "reference/utilities/send-http-request"
+            ]
+          },
+          {
+            "group": "Workspace blocks",
+            "pages": [
+              "reference/workspace/round-robin",
+              "reference/workspace/broadcast-message",
+              "reference/workspace/celebration"
+            ]
+          },
+          {
+            "group": "Third-party & expressions",
+            "pages": [
+              "reference/integrations",
+              "reference/variable-syntax",
+              "reference/glossary"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Explanation",
+        "icon": "lightbulb",
+        "groups": [
+          {
+            "group": "How the engine works",
+            "pages": [
+              "explanation",
+              "explanation/what-are-workflows",
+              "explanation/whats-new",
+              "explanation/triggers",
+              "explanation/variables",
+              "explanation/conditions-and-filters",
+              "explanation/records-vs-list-entries",
+              "explanation/runs-and-debugging",
+              "explanation/loops",
+              "explanation/infinite-loops-and-safety",
+              "explanation/permissions-and-access",
+              "explanation/workflow-governance",
+              "explanation/ai-search-optimization"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Troubleshooting",
+        "icon": "wrench",
+        "groups": [
+          {
+            "group": "Diagnose & recover",
+            "pages": [
+              "troubleshooting",
+              "troubleshooting/runbook",
+              "troubleshooting/common-errors"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Pro",
+        "icon": "rocket",
+        "groups": [
+          {
+            "group": "Pro & services",
+            "pages": [
+              "pro",
+              "about",
+              "privacy"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "redirects": [
+    { "source": "/start/first-workflow", "destination": "/learn/build-your-first-workflow" },
+    { "source": "/start/what-are-workflows", "destination": "/explanation/what-are-workflows" },
+    { "source": "/start/whats-new", "destination": "/explanation/whats-new" },
+    { "source": "/start/credits-and-pricing", "destination": "/reference/credits-and-pricing" },
+    { "source": "/concepts/triggers", "destination": "/explanation/triggers" },
+    { "source": "/concepts/variables", "destination": "/explanation/variables" },
+    { "source": "/concepts/conditions-and-filters", "destination": "/explanation/conditions-and-filters" },
+    { "source": "/concepts/records-vs-list-entries", "destination": "/explanation/records-vs-list-entries" },
+    { "source": "/concepts/loops", "destination": "/explanation/loops" },
+    { "source": "/concepts/permissions-and-access", "destination": "/explanation/permissions-and-access" },
+    { "source": "/concepts/runs-and-debugging", "destination": "/explanation/runs-and-debugging" },
+    { "source": "/recipes", "destination": "/guides" },
+    { "source": "/recipes/enrichment-waterfall", "destination": "/guides/capture-and-qualify/enrichment-waterfall" },
+    { "source": "/recipes/signal-scoring", "destination": "/guides/capture-and-qualify/signal-scoring" },
+    { "source": "/recipes/webhook-lead-intake", "destination": "/guides/capture-and-qualify/webhook-lead-intake" },
+    { "source": "/recipes/round-robin-routing", "destination": "/guides/route-and-sequence/round-robin-routing" },
+    { "source": "/recipes/sequence-enrollment", "destination": "/guides/route-and-sequence/sequence-enrollment" },
+    { "source": "/recipes/slack-deal-alerts", "destination": "/guides/route-and-sequence/slack-deal-alerts" },
+    { "source": "/recipes/stale-deal-sweep", "destination": "/guides/pipeline-hygiene/stale-deal-sweep" },
+    { "source": "/recipes/inbound-lead-research", "destination": "/guides/signals-and-ai/inbound-lead-research" },
+    { "source": "/advanced", "destination": "/guides" },
+    { "source": "/advanced/http-json-patterns", "destination": "/guides/platform-patterns/http-json-patterns" },
+    { "source": "/advanced/app-sdk-custom-blocks", "destination": "/guides/platform-patterns/app-sdk-custom-blocks" },
+    { "source": "/advanced/ai-agents-playbook", "destination": "/guides/signals-and-ai/ai-agents-playbook" },
+    { "source": "/advanced/infinite-loops-and-safety", "destination": "/explanation/infinite-loops-and-safety" },
+    { "source": "/advanced/workflow-governance", "destination": "/explanation/workflow-governance" },
+    { "source": "/advanced/ai-search-optimization", "destination": "/explanation/ai-search-optimization" },
+    { "source": "/migration", "destination": "/guides/migrating-from-legacy" },
+    { "source": "/migration/block-changes", "destination": "/guides/migrating-from-legacy/block-changes" },
+    { "source": "/migration/pricing-changes", "destination": "/guides/migrating-from-legacy/pricing-changes" }
+  ]
+}

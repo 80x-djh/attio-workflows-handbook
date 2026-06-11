@@ -1,0 +1,78 @@
+---
+title: What are Attio Workflows?
+description: An Attio workflow is an event-driven automation inside your CRM — a trigger starts a run, and a chain of blocks does the work.
+---
+
+An **Attio workflow** is an event-driven automation inside your CRM — a trigger starts a run, and a chain of blocks does the work. The shape is always the same — *when something happens, do these things*. A deal moves stage, so the workflow notifies a channel. A form submits, so it creates the lead, enriches it, and routes it. Every Monday morning, it sweeps the pipeline for stale deals and assigns follow-ups.
+
+For a go-to-market (GTM) engineer, this is the connective tissue between your CRM and the rest of the stack. Workflows are where lead routing, pipeline hygiene, sequence enrollment, and AI enrichment stop being manual chores and become rules the system enforces for you. You build them on a visual canvas, or you describe the outcome in plain language and let Ask Attio assemble the blocks.
+
+Underneath, the structure is identical either way, and understanding that structure is most of what it takes to master the engine. Once you can read a workflow as *one trigger plus an ordered chain of blocks passing data downstream*, every recipe in this handbook becomes legible. This page gives you that mental model, shows you the smallest workflow that does real work, and marks the boundaries where a workflow is the wrong tool.
+
+## Reading the trigger-and-blocks model
+
+Every workflow is exactly one trigger followed by one or more blocks, wired together on a canvas in execution order. The trigger answers *when does this run?* The blocks answer *and then what?*
+
+A **trigger** is the single event that starts a run — a record created, an attribute changing value, a schedule firing, a webhook arriving, or a person running a command from a record. You pick one per workflow; see [Choosing the right trigger](/explanation/triggers) for how to match an event to an intent. A **block** is one operation: it might [Update record](/reference/records/update-record), [Create task](/reference/tasks/create-task), post to Slack, send an HTTP request, or run an AI agent. You assemble blocks from the [block reference](/reference) library.
+
+Here is the smallest workflow that earns its keep — a one-block run that stamps an owner onto a new lead:
+
+| Field | Value |
+| --- | --- |
+| Trigger | [Record created](/reference/triggers/record-created) on `People` |
+| Block | [Update record](/reference/records/update-record) |
+| Set attribute | `owner` |
+| To | Priya Sharma |
+
+When a new person record appears, the run fires and writes `owner = Priya Sharma` onto that record. That is a complete, publishable workflow: one trigger, one block, one observable change in the CRM.
+
+## Branching the path with conditions
+
+Real workflows rarely run in a straight line. Connections between blocks define order, and condition blocks let one trigger fan out to different outcomes. The [If](/reference/conditions/if) block splits the path two ways on a true/false test, and the [Switch](/reference/conditions/switch) block routes to one of several branches by matching a value.
+
+Consider routing inbound by company size so enterprise leads reach a senior rep:
+
+| Field | Value |
+| --- | --- |
+| Trigger | [Record created](/reference/triggers/record-created) on `People` |
+| Condition | [If](/reference/conditions/if) — `company.employee_count` is greater than 500 |
+| True branch | [Update record](/reference/records/update-record) sets `owner` to Priya Sharma |
+| False branch | [Update record](/reference/records/update-record) sets `owner` from [Round robin](/reference/workspace/round-robin) |
+
+A lead from a 2,000-person company takes the true branch and lands on Priya Sharma; everyone else is distributed evenly across the team. The single trigger now produces two distinct outcomes from one canvas.
+
+## Passing data between blocks with variables
+
+Each block has **inputs** — the values you configure — and most blocks produce **outputs** during a run. Outputs flow downstream as [variables](/explanation/variables), and this data-passing is where substantial workflows get built. It is also where most mistakes happen, because a block that references an output the upstream block never produced will fail at run time rather than at design time.
+
+A [Find records](/reference/records/find-records) block, for example, outputs the records it matched. A later block reads that output by reference:
+
+```text
+{{ steps.find_records.records }}
+```
+
+Feed that into a [Loop](/reference/utilities/loop) block and the workflow runs its inner blocks once per matched record. So a daily run can find every deal with no activity in 30 days and create a follow-up task on each one — the loop turns a list of records into a list of actions, all from a single scheduled trigger.
+
+## Knowing when a workflow is the wrong tool
+
+A workflow is the right tool for event-driven, per-record automation. It is the wrong tool for three jobs in particular, and recognizing them early saves you a debugging session.
+
+First, a workflow is not a replacement for the API. Bulk backfills across tens of thousands of records belong in a script against the [Attio REST API](https://docs.attio.com/rest-api/overview), not a workflow — [Find records](/reference/records/find-records) caps at 100 results per call, so a workflow cannot sweep an entire large object in one pass.
+
+<Warning>
+Workflow runs consume workspace credits — far fewer than the legacy engine, but never zero for the blocks that do real work. Read [Credits & pricing explained](/reference/credits-and-pricing) before you publish anything that runs at volume. The new engine removed per-workflow credit caps, so a runaway loop has no built-in ceiling.
+</Warning>
+
+Second, a workflow is not write-enabled by default. A workflow has no write access to your objects until an admin grants it, and AI agents inside a workflow get **read-only** tool access gated by the **"Run as"** permission model. This surprises everyone exactly once; see [Permissions & workflow access](/explanation/permissions-and-access) for how to grant exactly what a workflow needs.
+
+Third, a workflow is not the legacy automation you may remember. You can no longer create new legacy workflows; existing ones keep running, and Attio says sunset notice will come "well in advance." If you are coming from the old engine, read [What's new in the 2026 Workflows engine](/explanation/whats-new) before you rebuild anything.
+
+## See also
+
+- [Choosing the right trigger](/explanation/triggers)
+- [Variables & data passing](/explanation/variables)
+- [Permissions & workflow access](/explanation/permissions-and-access)
+- [Build your first workflow](/learn/build-your-first-workflow)
+- [Block reference overview](/reference)
+
+*Source: [Attio Help Center — Overview of workflows](https://attio.com/help/reference/automations/workflows/overview-of-workflows). Last reviewed against the Attio Help Center, June 2026.*

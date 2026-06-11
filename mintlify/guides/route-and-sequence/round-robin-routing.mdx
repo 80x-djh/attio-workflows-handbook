@@ -1,0 +1,168 @@
+---
+title: Round-robin lead routing
+description: Round-robin routing assigns each new qualified lead to the next rep in a fair rotation, sets the owner, and books a first-touch task.
+icon: users
+---
+
+Round-robin routing assigns each new qualified lead to the next rep in a fair rotation, sets the owner, and books a first-touch task. It fires on [Record created](/reference/triggers/record-created), gates on a free [Filter](/reference/conditions/filter) so only qualified leads route, picks the next rep with the [Round robin](/reference/workspace/round-robin) block, stamps that rep with [Update record](/reference/records/update-record), schedules a 24-hour first touch with [Create task](/reference/tasks/create-task), and notifies the rep through a Slack [third-party block](/reference/integrations). The outcome for a sales team is plain: no inbound goes cold, no rep hoards the easy leads, and the right person owns each lead within minutes of it landing.
+
+| | |
+| --- | --- |
+| **Difficulty** | Starter |
+| **Time to build** | About 10 minutes |
+| **Trigger** | [Record created](/reference/triggers/record-created) on People, or [Record added to list](/reference/triggers/record-added-to-list) |
+| **Blocks used** | [Filter](/reference/conditions/filter), [Round robin](/reference/workspace/round-robin), [Update record](/reference/records/update-record), [Create task](/reference/tasks/create-task), Slack [third-party block](/reference/integrations) |
+| **Credit cost per run** | 3 credits per routed lead, 0 credits for a filtered-out lead |
+| **Plan required** | Plus or higher |
+
+## Prerequisites
+
+- An Attio Plus plan or higher. Workflows is available from Plus up.
+- The Slack integration connected to your workspace, with the workflow allowed to post to your target channel.
+- A People object with an `owner` attribute of type **User**. Swap in Companies if you route accounts instead of contacts.
+- A defined pool of reps as workspace members. These are the people who should receive routed leads.
+- A `lead_status` attribute (or your equivalent) you can filter on to tell qualified leads from raw signups.
+- Workspace admin access to publish a workflow, plus the Slack channel for the alert.
+
+## How it works
+
+The trigger fires once for each new lead. A free [Filter](/reference/conditions/filter) drops anything that is not qualified or that already has an owner, so the rotation only advances on real work. [Round robin](/reference/workspace/round-robin) returns the next rep from your pool and remembers its position across runs. [Update record](/reference/records/update-record) writes that rep onto the lead's `owner` attribute. [Create task](/reference/tasks/create-task) gives the rep a dated first touch, and a Slack message tells them to go work it. The three logic blocks at the front are free, so the only paid steps are the two record writes and the Slack send.
+
+The blocks run in this order:
+
+1. [Record created](/reference/triggers/record-created) on People fires the run. Free.
+2. [Filter](/reference/conditions/filter) keeps only qualified, unowned leads. Free.
+3. [Round robin](/reference/workspace/round-robin) picks the next rep in the rotation. Free.
+4. [Update record](/reference/records/update-record) sets `owner` to that rep. 1 credit.
+5. [Create task](/reference/tasks/create-task) schedules the first touch for 24 hours out. 1 credit.
+6. Slack [third-party block](/reference/integrations) notifies the assigned rep. 1 credit.
+
+## Build steps
+
+<Steps>
+  <Step title="Add the trigger">
+    Open a new workflow, click the **Add trigger** button, and choose **Record created**. Set the object to **People**. If you instead stage inbound on a list, choose [Record added to list](/reference/triggers/record-added-to-list) and select that list. The rest of the build is identical, except that you read fields from the list entry's parent record.
+
+    | Field | Value |
+    | --- | --- |
+    | Trigger | Record created |
+    | Object | People |
+    | Run as | A workspace member with edit access to People |
+  </Step>
+
+  <Step title="Filter to qualified, unowned leads">
+    Click the **Add block** button, choose **Filter**, and add two conditions joined with **And**. This is a free condition: when it does not pass, the run stops and costs nothing. Stopping at the filter also keeps the rotation fair, because [Round robin](/reference/workspace/round-robin) only advances on leads you actually route.
+
+    | Field | Value |
+    | --- | --- |
+    | Condition 1 | `lead_status` is `Qualified` |
+    | Condition 2 | `owner` is empty |
+    | Join | And |
+  </Step>
+
+  <Step title="Pick the next rep">
+    Add a **Round robin** block. Add each rep in the pool as an entry. The block hands out the next member in sequence and persists its cursor between runs, so assignment stays even over time.
+
+    | Field | Value |
+    | --- | --- |
+    | Pool members | Priya Sharma, Marcus Lee, Dana Okoro |
+    | Mode | Round robin, one per run |
+    | Output | `round_robin.assignee` |
+  </Step>
+
+  <Step title="Set the owner">
+    Add an **Update record** block. Target the lead from the trigger and write the rep from Round robin into `owner`. This is the one write that makes ownership real, so it costs 1 credit.
+
+    | Field | Value |
+    | --- | --- |
+    | Record | `{{trigger.record}}` |
+    | Attribute | `owner` |
+    | Value | `{{round_robin.assignee}}` |
+  </Step>
+
+  <Step title="Create the first-touch task">
+    Add a **Create task** block. Assign it to the same rep and date it 24 hours out, so first touch is enforced rather than hoped for.
+
+    | Field | Value |
+    | --- | --- |
+    | Linked record | `{{trigger.record}}` |
+    | Assignee | `{{round_robin.assignee}}` |
+    | Title | `First touch: {{trigger.record.name}}` |
+    | Due | `{{trigger.timestamp}}` plus 24 hours |
+  </Step>
+
+  <Step title="Notify the rep in Slack">
+    Add the **Slack** block, choose **Send message**, and post to your inbound channel. Keep the message short, and include the rep and a link to the record. Click the **Publish** button to go live.
+
+    | Field | Value |
+    | --- | --- |
+    | Channel | `#inbound-leads` |
+    | Message | `New lead {{trigger.record.name}} routed to {{round_robin.assignee}}. First touch due in 24h.` |
+  </Step>
+</Steps>
+
+## Variable mapping
+
+| Variable | Source block | Field | Example value |
+| --- | --- | --- | --- |
+| `{{trigger.record}}` | Record created | The new person record | jane@acme.com |
+| `{{trigger.record.name}}` | Record created | Person name | Jane Rivera |
+| `{{round_robin.assignee}}` | Round robin | Next pool member | Priya Sharma |
+| `{{trigger.timestamp}}` | Record created | When the record was created | 2026-06-11T14:02:00Z |
+
+## Credit cost worked example
+
+The trigger, [Filter](/reference/conditions/filter), and [Round robin](/reference/workspace/round-robin) are free logic blocks, so a run that is filtered out costs 0 credits. A lead that routes costs 3 credits: 1 for [Update record](/reference/records/update-record), 1 for [Create task](/reference/tasks/create-task), and 1 for the Slack message.
+
+At 400 new leads a month with a 50% qualification rate, 200 leads route:
+
+```
+200 routed leads × 3 credits = 600 credits per month
+```
+
+This workflow has no AI blocks, so the cost is fixed and predictable. Check your monthly allowance against this number on [Credits & pricing explained](/reference/credits-and-pricing) before you scale the pool or add channels.
+
+## Test plan
+
+1. Create a test person with `lead_status` set to `Qualified` and `owner` empty. Use a record you can delete, such as jane@acme.com.
+2. Open **Run history** and find the run the create triggered.
+3. Confirm the [Filter](/reference/conditions/filter) shows **Passed**.
+4. Confirm [Round robin](/reference/workspace/round-robin) output names a real pool member, such as Priya Sharma.
+5. Confirm [Update record](/reference/records/update-record) set `owner` to that member on the record.
+6. Confirm a first-touch task exists, assigned to that member, due about 24 hours out.
+7. Confirm the Slack message landed in `#inbound-leads`.
+8. Now fail it on purpose. Create a person with `lead_status` set to `Unqualified`. The run should stop at the [Filter](/reference/conditions/filter) with **Did not pass** and consume 0 credits, and Round robin must not advance its cursor.
+
+## Failure modes
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Same rep gets every lead | Round robin cursor resets each run, or the pool has one member | Keep the block published, do not rebuild it, and confirm the pool lists all reps. |
+| Leads with an owner get reassigned | The Filter is missing the `owner` is empty condition | Add the empty-owner condition so manually assigned leads are skipped. |
+| Rotation skews over time | A run set the owner, but Round robin advanced on a record that later disqualified | Keep the qualification check in the Filter before Round robin, so the cursor only moves on real routes. |
+| No Slack message arrives | The channel is wrong, or the integration lacks post access | Re-select the channel and confirm the Slack app is invited to it. |
+| Task has no due date | The date expression was left blank | Set **Due** to the trigger timestamp plus 24 hours. |
+
+## Variations
+
+### Route by territory or segment first
+
+Add a [Switch](/reference/conditions/switch) on a `region` or `segment` attribute before Round robin, then keep a separate pool per branch. EMEA (Europe, Middle East, and Africa) leads rotate through the EMEA reps, and SMB (small and medium business) leads rotate through the SMB reps. The downstream writes are unchanged. For a full territory build, see [Inbound routing by territory and seniority](/guides/route-and-sequence/territory-routing).
+
+### Weighted pools
+
+If one rep should carry more volume, list them more than once in the pool. Alternatively, split into tiers and route a [Filter](/reference/conditions/filter)-defined slice, such as enterprise leads, to a smaller senior pool. Round robin stays free, so only the writes after it cost credits.
+
+### Enroll routed leads into a sequence
+
+Replace or follow the [Create task](/reference/tasks/create-task) step with [Enroll in sequence](/reference/sequences/enroll-in-sequence) to start automated outreach the moment a lead is assigned. The owner you just set on the record carries through as the sequence sender.
+
+## See also
+
+- [Inbound routing by territory and seniority](/guides/route-and-sequence/territory-routing)
+- [Enroll in sequence](/reference/sequences/enroll-in-sequence)
+- [Records vs list entries](/explanation/records-vs-list-entries)
+- [Round robin](/reference/workspace/round-robin)
+- [Assign records and tasks in Attio](https://attio.com/help/workflows)
+
+_Source: [Attio Help Center — Workflows](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026._

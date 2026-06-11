@@ -1,0 +1,95 @@
+---
+title: Update list entry
+description: The Update list entry block writes new values to the list attributes of an existing entry, not the parent record.
+icon: list-checks
+---
+
+The **Update list entry** block (Lists) writes new values to the list attributes of an existing entry, not the parent record. It edits the per-list row that wraps a record — its stage, owner, source, or priority — while the underlying object record stays untouched. The block expects a list *entry*, so passing a plain record where an entry belongs fails the run.
+
+| | |
+| --- | --- |
+| **Category** | Lists |
+| **Credit cost** | 1 credit |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All paid plans |
+| **Limits** | Edits list attributes only; object attributes belong to [Update record](/reference/records/update-record). See [Credits & pricing explained](/reference/credits-and-pricing) for the credit allowance. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| List | List | Yes | None | The list the entry belongs to. |
+| Entry | List entry | Yes | None | The specific list entry to edit, not the parent record. Pass a single entry resolved earlier in the run. |
+| Attributes to set | List-entry attributes | Yes | None | The list attributes to write, such as stage, owner, or source. |
+| Replace existing values | Boolean | No | Off | Controls multi-select behavior: on replaces the existing values, off appends the new ones. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Updated list entry | List entry | `Acme Corp` in `Sales pipeline` | The entry after the write, including its updated list attributes and parent record. |
+
+Reference the updated entry's data in a later block as `{{ steps.update_list_entry.list_entry }}`.
+
+## Behavior
+
+The block writes the supplied attributes to one list entry per run and returns the updated entry. It edits only the list attributes that live on the entry, such as stage and service-level agreement (SLA) status; the parent record's object attributes are out of scope and belong to an [Update record](/reference/records/update-record) block instead. See [Records vs list entries](/explanation/records-vs-list-entries) for where each attribute lives.
+
+The **Entry** input must resolve to a single list entry. The block does not start from a record, so when your workflow holds a record — for example the record that fired a trigger — resolve its entry first with a [Find list entries](/reference/lists/find-list-entries) lookup and pass the matched entry here.
+
+The **Replace existing values** toggle changes how multi-select attributes are written. Off, the new values are added to whatever the entry already holds; on, the new values replace the existing set. The toggle has no effect on single-value attributes such as a stage or a date, which a write always overwrites.
+
+## Gotchas
+
+- **A record passed where an entry belongs fails the run.** The block reads a list entry, so wiring a record — including the trigger record — into the **Entry** input errors instead of guessing the entry. Resolve the entry first with [Find list entries](/reference/lists/find-list-entries), then pass its output here.
+- **Updating a watched list attribute can retrigger list workflows.** Writing to an attribute that a [List entry updated](/reference/triggers/list-entry-updated) trigger watches starts another run, which can chain into a loop if that run writes back. Scope the watched trigger to a different attribute, or guard the downstream workflow with an [If](/reference/conditions/if) condition that stops the chain.
+- **Replace existing values silently changes multi-select results.** Left off, the block appends to a multi-select attribute rather than replacing it, so a "set the tags" intent quietly accumulates old values. Turn **Replace existing values** on when the new set should fully overwrite the old one.
+
+## Examples
+
+### Updating an inbound entry's owner and SLA status
+
+A round-robin routing workflow assigns each new inbound lead and stamps its service-level status on the pipeline entry. A [Round robin](/reference/workspace/round-robin) block picks the next rep, [Find list entries](/reference/lists/find-list-entries) resolves the lead's pipeline entry, and **Update list entry** writes both fields.
+
+| Field | Value |
+| --- | --- |
+| List | Inbound pipeline |
+| Entry | `{{ steps.find_list_entries.entries[0] }}` |
+| Attributes to set | Owner: `priya.sharma@acme.com`, SLA status: `Awaiting first touch` |
+
+The Acme Corp entry on the Inbound pipeline list is assigned to Priya Sharma with its SLA status set to `Awaiting first touch`, while the company record itself is unchanged.
+
+### Replacing the tags on a list entry
+
+A cleanup workflow loops over stale Sales pipeline entries and rewrites their tags so the new set fully replaces the old one rather than piling on. **Replace existing values** is on so the multi-select tag attribute is overwritten on each entry the loop passes in.
+
+```json
+{
+  "list": "Sales pipeline",
+  "entry": "{{ steps.loop.current_item }}",
+  "attributes_to_set": {
+    "tags": ["Renewal", "Priority"]
+  },
+  "replace_existing_values": true
+}
+```
+
+Each looped entry, such as the Acme Corp entry, ends with exactly the `Renewal` and `Priority` tags; any earlier tags are dropped because **Replace existing values** is on.
+
+## Credit cost worked example
+
+Each run of **Update list entry** costs 1 credit because it is a write. A round-robin routing workflow that updates 300 inbound entries each month — one owner-and-status write per lead — spends 300 credits on this block. The [Round robin](/reference/workspace/round-robin) pick and the [Find list entries](/reference/lists/find-list-entries) lookup that feed it are free, so only the writes bill. Where you can, set list attributes on the [Add record to list](/reference/lists/add-record-to-list) block that creates the entry instead of chaining a separate update, which keeps the cost at 1 credit per entry. Compare the monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Update record](/reference/records/update-record)
+- [Find list entries](/reference/lists/find-list-entries)
+- [Records vs list entries](/explanation/records-vs-list-entries)
+- [Round-robin lead routing](/guides/route-and-sequence/round-robin-routing)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

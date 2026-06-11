@@ -1,0 +1,88 @@
+---
+title: Record command
+description: The Record command trigger (Triggers) adds a Run workflow button to an object's records so a person can run the workflow on demand, on one record or a batch.
+icon: mouse-pointer-click
+---
+
+The **Record command** trigger (Triggers) adds a *Run workflow* button to an object's records so a person can run the workflow on demand, on one record or a batch. It is the trigger for human-in-the-loop automation: enrichment on request, account prep, or a one-click push to outreach. Because a run only starts when someone clicks, it is the lowest-risk way to ship a new automation before you hand it to an automatic trigger.
+
+| | |
+| --- | --- |
+| **Category** | Triggers |
+| **Credit cost** | Free — triggers and logic blocks consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Object | Object | Yes | None | The *Run workflow* button appears on every record of this object. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Record | Record | `Acme Inc.` | The record the operator ran the workflow on. |
+| Actor | Actor | `Priya Sharma` | The workspace member who clicked the button. |
+| Timestamp | Datetime | `2026-06-11T14:32:00Z` | When the trigger fired. |
+
+Reference the triggering record downstream as `{{ steps.record_command.record }}`, the operator who ran it as `{{ steps.record_command.actor }}`, and the run time as `{{ steps.record_command.timestamp }}`.
+
+## Behavior
+
+Each click starts one workflow run scoped to the record the operator chose. The run carries that record, the actor, and the timestamp into every downstream block, so a record-typed block such as [Update record](/reference/records/update-record) reads the triggering record without a lookup.
+
+Batch selection runs the workflow once per selected record. Selecting 50 records and choosing *Run workflow* enrolls 50 separate runs, each billed on its own path. Runs do not share state, so a counter or rotation that depends on order is not guaranteed across a batch.
+
+The trigger has no automatic component. Nothing fires on record creation, on an attribute change, or on a schedule, which is what makes the button safe to leave in place while you tune the downstream blocks.
+
+## Gotchas
+
+- **Batch selection multiplies credits silently.** Each selected record becomes its own run, so a 50-record batch over a 2-credit path costs 100 credits. Estimate the per-run cost against the [credit math](/reference/credits-and-pricing) before you select-all.
+- **The button name is what operators see.** Anyone who can view the workflow sees the button, so name the workflow for the person clicking it, not for the builder — *Enrich and route this lead*, not *WF-7 v2 final*.
+- **Record-typed blocks only see the record, not list attributes.** A Record command run cannot read a list entry's stage or priority without a [Find list entries](/reference/lists/find-list-entries) detour. When the workflow needs list attributes, use [List entry command](/reference/triggers/list-entry-command) instead.
+
+## Examples
+
+### Researching an account on demand
+
+An account executive clicks *Run workflow* on a company just before a call, and an AI agent answers three qualification questions that get saved to the record.
+
+| Field | Value |
+| --- | --- |
+| Trigger | Record command |
+| Object | Companies |
+| Block 1 | [Web agent](/reference/agents/web-agent) — three qualification questions |
+| Block 2 | [Update record](/reference/records/update-record) — write the answers |
+| Block 3 | Slack direct message to `{{ steps.record_command.actor }}` |
+
+Because the run only starts on a click, AI spend stays tied to human intent: the agent runs on the accounts a rep is about to call, not on every record in the object. The full build is in [AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research).
+
+### Pushing a single record into outreach
+
+A sales development rep selects one qualified lead and triggers an enrollment, skipping the automatic intake path for an account they want to start by hand.
+
+| Field | Value |
+| --- | --- |
+| Trigger | Record command |
+| Object | People |
+| Block 1 | [Enroll in sequence](/reference/sequences/enroll-in-sequence) — the outbound sequence |
+| Block 2 | [Create task](/reference/tasks/create-task) — assigned to `{{ steps.record_command.actor }}` |
+
+The lead `jane@acme.com` enters the sequence and a follow-up task lands on the rep who ran it, all from one click on the record page.
+
+## Source
+
+[Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library), Attio Help Center.
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [List entry command](/reference/triggers/list-entry-command)
+- [Manual run](/reference/triggers/manual-run)
+- [Attribute value changed](/reference/triggers/attribute-value-changed)
+- [Choosing the right trigger](/explanation/triggers)
+- [AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research)

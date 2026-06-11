@@ -1,0 +1,92 @@
+---
+title: Create record
+description: The Create record block (Records) creates a new record in an Attio object such as a company, person, or deal.
+icon: square-plus
+---
+
+The **Create record** block (Records) creates a new record in an Attio object such as a company, person, or deal. It always inserts a new row, even when a matching record already exists, so reach for [Create or update record](/reference/records/create-or-update-record) whenever the record might already be in the object. Treat **Create record** as the write step you use only when you know the record is new.
+
+| | |
+| --- | --- |
+| **Category** | Records |
+| **Credit cost** | 1 credit |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All paid plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Object | Object | Yes | None | The object to create the record in, such as Companies, People, or Deals. |
+| Attributes to set | Attribute map | No | None | Values for the new record's attributes. Required attributes on the object still need a value in this map, or the block fails. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Created record | Record | `Acme` (Companies) | The full record that was created, including its generated ID and every attribute you set. |
+
+Reference the created record downstream as `{{ steps.create_record.record }}`, and one of its attributes as `{{ steps.create_record.record.name }}`.
+
+## Behavior
+
+**Create record** runs once per execution and always inserts a new record. It does not search for an existing match first, so two runs on the same input produce two records.
+
+The block needs write access to the target object before it can run. Grant that access in the workflow's settings; without it, the run fails when it reaches this block rather than skipping it.
+
+Every attribute marked required on the object must receive a value through **Attributes to set**. Optional attributes you omit are left empty on the new record. Attributes you do set accept literal values or variables from earlier blocks, such as a domain parsed from a webhook payload.
+
+## Gotchas
+
+- **Duplicate records pile up on retries.** Because the block always inserts, a retried or re-fired run creates a second copy of the same record. When the input might already exist, use [Create or update record](/reference/records/create-or-update-record) so the workflow matches on a unique attribute and writes once.
+- **A missing required attribute fails the run.** If the object has a required attribute and **Attributes to set** does not include it, the block errors instead of creating a partial record. List every required attribute in the input map before publishing.
+- **The block fails without write access.** A workflow has no write access to objects by default. Grant write access to the target object in the workflow's settings, or the run fails when it reaches **Create record**.
+
+## Examples
+
+### Creating a company from a parsed webhook domain
+
+A lead-capture workflow receives a form submission, parses the JSON body, and creates a company record from the submitted domain.
+
+| Field | Value |
+| --- | --- |
+| Object | Companies |
+| Attributes to set → Domain | `{{ steps.parse_json.body.domain }}` |
+| Attributes to set → Name | `Acme` |
+
+The block creates a new company `Acme` with the domain `acme.com`, and exposes it downstream as `{{ steps.create_record.record }}`.
+
+### Creating a deal for a qualified inbound lead
+
+A qualification workflow scores an inbound lead, and on a passing score creates a deal so a rep can pick it up.
+
+```json
+{
+  "object": "Deals",
+  "attributes": {
+    "name": "Acme renewal",
+    "amount": 24000,
+    "stage": "Discovery",
+    "owner": "priya.sharma@acme.com"
+  }
+}
+```
+
+The block creates the deal `Acme renewal` in the Discovery stage, owned by Priya Sharma, ready for an [Update record](/reference/records/update-record) or [Create task](/reference/tasks/create-task) step later in the workflow.
+
+## Credit cost worked example
+
+**Create record** costs 1 credit per run. A workflow that creates one company for every inbound lead, firing on 600 leads a month, spends 600 credits on this block. Compare that figure against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing); failed runs and untaken branches do not consume credits, so only the leads that actually reach this block count.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Create or update record](/reference/records/create-or-update-record)
+- [Update record](/reference/records/update-record)
+- [Find records](/reference/records/find-records)
+- [Variables & data passing](/explanation/variables)
+- [Dedupe on create](/guides/pipeline-hygiene/dedupe-on-create)

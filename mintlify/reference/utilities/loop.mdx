@@ -1,0 +1,112 @@
+---
+title: Loop
+description: The Loop block (utilities) repeats its nested blocks once for each item in an iterable list.
+icon: repeat
+---
+
+The **Loop** block (utilities) repeats its nested blocks once for each item in an iterable list. It is the only way to act on every result a block returns, because every other block processes one record at a time. The Loop itself is free, but the blocks you nest inside it run once per iteration, so the iteration count drives the credit cost.
+
+| | |
+| --- | --- |
+| **Category** | Utility / control flow |
+| **Credit cost** | Free — logic blocks consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | A single [Find records](/reference/records/find-records) feeding the loop returns at most 100 items. Nested loops are not supported. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Iterable | List | Yes | — | The list to iterate over. Accepts records or list entries from a find block, a multi-reference relationship attribute, multi-select values, or an array parsed by [Parse JSON](/reference/utilities/parse-json). |
+| Limit | Number | No | None | Caps the number of iterations. Set a low value while testing so a wrong filter cannot fan out into hundreds of writes. |
+
+## Outputs
+
+The Loop exposes loop-scoped variables to the blocks nested inside it.
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Current item | Record or value | The deal `Acme renewal` | The item for the iteration currently running. This is the variable most nested blocks consume. |
+| Item position | Number | `17` | The one-based index of the current iteration. |
+| Count | Number | `17` | How many iterations have run so far. |
+| Total count | Number | `40` | The total number of items in the iterable. |
+| Limit | Number | `25` | The limit configured on the Loop input, if any. |
+
+Reference the item being processed inside the loop as `{{ steps.loop.current_item }}`, and read its attributes with dot notation, such as `{{ steps.loop.current_item.owner }}`.
+
+## Behavior
+
+The Loop runs its nested blocks in sequence for each item, from the first item in the iterable to the last. Each iteration is a fresh pass through the nested blocks, and `Current item` holds that iteration's item.
+
+The block has two exit paths. The **Next step** path leads to the first block of each iteration and runs once per item. The **Complete** path runs a single time after the final iteration finishes, so a summary step such as a Slack post belongs there, not inside the loop body.
+
+When the iterable is empty, the loop runs zero iterations and continues straight to the **Complete** path. A `Limit` of 25 against a 40-item iterable processes the first 25 items and then completes.
+
+In the [run viewer](/explanation/runs-and-debugging), the `<` and `>` arrows above the Loop step through individual iterations, which is how you find the one iteration that failed in a run of many.
+
+## Gotchas
+
+- **Only the first record is processed.** Wiring a [Find records](/reference/records/find-records) output straight into a single-record block acts on the first match alone and silently skips the rest. Insert a Loop between the find block and the action, then point the action at `Current item`.
+- **Post-loop steps run per iteration.** A block placed inside the loop container runs once for every item, so a "swept 40 deals" summary posted there fires 40 times. Move any once-per-run step onto the **Complete** path.
+- **Credits scale with the iteration count.** The Loop is free, but a paid nested block multiplies by the number of items. A 1-credit [Create task](/reference/tasks/create-task) across 40 deals costs 40 credits. Set the `Limit` input low while testing, and add a free [Filter](/reference/conditions/filter) on `Current item` to skip items before they reach a paid block.
+- **Nested loops are not available.** You cannot place a Loop inside another Loop. Reshape the data upstream into a single flat list before iterating, rather than trying to nest iteration on the canvas.
+
+## Examples
+
+### Creating a task for every stale deal owner
+
+A scheduled sweep finds open deals with no recent activity and opens a follow-up task for each owner.
+
+| Field | Value |
+| --- | --- |
+| Iterable | Matching records from [Find records](/reference/records/find-records) (open deals, no activity in 14 days) |
+| Limit | `25` |
+| Nested block | [Create task](/reference/tasks/create-task), assigned to `{{ steps.loop.current_item.owner }}` |
+
+Result: one follow-up task is created for the owner of each stale deal, capped at 25 deals per run.
+
+### Enrolling every contact on a deal into a sequence
+
+A deal reaching a late stage enrolls each linked contact into a sequence, one person per call.
+
+| Field | Value |
+| --- | --- |
+| Iterable | The deal's contacts relationship attribute |
+| Limit | None |
+| Nested block | [Enroll in sequence](/reference/sequences/enroll-in-sequence), person = `{{ steps.loop.current_item }}` |
+
+Result: every contact linked to the deal is enrolled, because [Enroll in sequence](/reference/sequences/enroll-in-sequence) accepts a single person and the loop hands it one contact at a time.
+
+### Upserting each lead from a webhook array
+
+A webhook delivers a batch of leads as a JSON array, and the loop creates or updates a record for each entry.
+
+```json
+{
+  "iterable": "{{ steps.parse_json.leads }}",
+  "limit": null,
+  "nested": {
+    "block": "Create or update record",
+    "match_on": "email",
+    "values": {
+      "email": "{{ steps.loop.current_item.email }}",
+      "name": "{{ steps.loop.current_item.name }}"
+    }
+  }
+}
+```
+
+Result: each lead in the array, such as `jane@acme.com` for `Priya Sharma`, is upserted once, with no duplicates created for emails that already exist.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Filter](/reference/conditions/filter)
+- [Find records](/reference/records/find-records)
+- [Loops & processing many records](/explanation/loops)
+- [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)
