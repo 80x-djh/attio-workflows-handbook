@@ -88,7 +88,7 @@ One `###` per term, alphabetical, each a 1–2 sentence self-contained definitio
 
 ## Checks
 
-Run before opening a PR (also enforced in CI):
+Run before opening a PR (Mintlify also validates the build on every deploy):
 
 ```sh
 cd mintlify

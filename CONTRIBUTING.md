@@ -30,7 +30,7 @@ mint validate        # strict build — must pass
 mint broken-links    # must report no broken links
 ```
 
-`mint validate` and `mint broken-links` also run in CI on every pull request.
+Mintlify also validates the build on every deploy, so a PR that breaks the build or a link is caught before it goes live.
 
 ## PR checklist
 
