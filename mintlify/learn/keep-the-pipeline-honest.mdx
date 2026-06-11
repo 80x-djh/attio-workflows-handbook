@@ -1,15 +1,17 @@
 ---
-title: "Track 3: Keep the pipeline honest"
+title: "Keep the pipeline honest"
 description: Pipeline hygiene runs on a schedule that flags and tasks drifted records, never auto-closes, and stays cheap because it writes only on the true branch.
 icon: broom
 ---
 
-Pipeline hygiene runs on a schedule that flags and tasks drifted records, never auto-closes, and stays cheap because it writes only on the true branch. A drifted record is a deal that has gone quiet, or one that is about to renew without anyone touching it. The true branch is the path the workflow takes only when a deal really has drifted. This track turns the polite fiction in your pipeline into a system that cleans itself. A workflow wakes on a clock, finds those deals, and acts on them. No human has to open a single view.
+Pipeline hygiene runs on a schedule that flags and tasks drifted records, never auto-closes, and stays cheap because it writes only on the true branch. A drifted record is a deal that has gone quiet, or one that is about to renew without anyone touching it. The true branch is the path the workflow takes only when a deal really has drifted. This path turns the polite fiction in your pipeline into a system that cleans itself. A workflow wakes on a clock, finds those deals, and acts on them. No human has to open a single view.
+
+This is a guided path. It teaches the approach, then walks you through the matching [Guides](/guides) builds in order. Come here to learn the sequence; go straight to [Guides](/guides) when you just need one build.
 
 You finish with five builds. One surfaces aging deals. One stops duplicates at creation. One watches renewals. One hands off closed-won deals. One reports. You also leave with a clear mental model for why each build flags a deal instead of closing it.
 
 <Note>
-**Prerequisites:** finish [Track 1: Capture and qualify](/learn/capture-and-qualify). Then skim [Loops & processing many records](/explanation/loops) and [Runs, debugging & publishing](/explanation/runs-and-debugging), so per-record cost and run history already make sense.
+**Prerequisites:** finish [Capture and qualify](/learn/capture-and-qualify). Then skim [Loops & processing many records](/explanation/loops) and [Runs, debugging & publishing](/explanation/runs-and-debugging), so per-record cost and run history already make sense.
 
 **By the end you can:** stand up a scheduled sweep that flags and tasks drifted deals on its own, with no false positives and no manual cleanup.
 </Note>
@@ -24,7 +26,7 @@ The cost depends on where the writes happen. Logic and lookup blocks are free. Y
 
 ## Build the scheduled sweep
 
-These steps build the track's flagship sweep at lesson altitude. That is enough to grasp the shape and the credit math. The full configuration tables, variable mapping, and test plan live in the Challenge guide, [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep).
+These steps build the path's flagship sweep at lesson altitude. That is enough to grasp the shape and the credit math. The full configuration tables, variable mapping, and test plan live in the Challenge guide, [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep).
 
 <Steps>
   <Step title="Wake the workflow on a schedule">
@@ -82,12 +84,12 @@ Stand up the [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep) end t
 
 ## Where this goes next
 
-This track makes the pipeline tell the truth on its own. The next track hands a whole funnel segment to an AI agent that researches and routes. That agent works under the read-only, "Run as" permission model, in [Track 4: Let AI own a stage](/learn/let-ai-own-a-stage).
+This path makes the pipeline tell the truth on its own. The next path hands a whole funnel segment to an AI agent that researches and routes. That agent works under the read-only, "Run as" permission model, in [Let AI own a stage](/learn/let-ai-own-a-stage).
 
 ## See also
 
 - [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep)
-- [Track 4: Let AI own a stage](/learn/let-ai-own-a-stage)
+- [Let AI own a stage](/learn/let-ai-own-a-stage)
 - [Loops & processing many records](/explanation/loops)
 - [Credits & pricing explained](/reference/credits-and-pricing)
 
