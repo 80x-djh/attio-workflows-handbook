@@ -1,6 +1,6 @@
 ---
 title: What are Attio Workflows?
-description: Attio Workflows are event-driven automations that run inside your CRM — triggers start them, step blocks do the work. Here's the mental model that makes everything else click.
+description: Attio Workflows are event-driven automations inside your CRM — triggers start them, step blocks do the work. The mental model that makes everything click.
 page-type: guide
 ---
 
@@ -16,11 +16,11 @@ Every workflow is a **trigger** followed by one or more **steps**, connected on 
 [Trigger] → [Step] → [Step] → [Step]
 ```
 
-- A **trigger** is the event that starts a run: a record created, an attribute changing value, a schedule firing, a webhook arriving, or a person clicking a button. See [choosing the right trigger](/concepts/triggers/).
+- A **trigger** is the event that starts a run: a record created, an attribute changing value, a schedule firing, a webhook arriving, or a person clicking a button. See [choosing the right trigger](/explanation/triggers/).
 - A **step** is one operation: update a record, create a task, post to Slack, call an external API, run an AI agent. Steps are picked from the [block library](/reference/).
 - **Connections** define order. Conditional blocks like [If](/reference/conditions/if/) and [Switch](/reference/conditions/switch/) split the path; [Loop](/reference/utilities/loop/) repeats steps for each item in a list.
 
-Each block has **inputs** (the values you configure) and most have **outputs** (values the block produces during a run). Outputs flow downstream as [variables](/concepts/variables/) — this data-passing is where real workflows get built, and where most mistakes happen.
+Each block has **inputs** (the values you configure) and most have **outputs** (values the block produces during a run). Outputs flow downstream as [variables](/explanation/variables/) — this data-passing is where real workflows get built, and where most mistakes happen.
 
 ## What workflows are good at
 
@@ -35,13 +35,13 @@ Workflows shine at the connective tissue of a GTM motion:
 ## What workflows are not
 
 - **Not a replacement for the API.** Bulk backfills across tens of thousands of records belong in a script against the [Attio REST API](https://docs.attio.com/rest-api/overview), not a workflow. [Find records](/reference/records/find-records/) caps at 100 results per call.
-- **Not free.** Runs consume workspace credits — though far fewer than they used to. Read [credits & pricing](/start/credits-and-pricing/) before you publish anything that runs at volume.
-- **Not write-enabled by default.** A workflow has no write access to objects until an admin grants it. This surprises everyone exactly once. See [permissions](/concepts/permissions-and-access/).
+- **Not free.** Runs consume workspace credits — though far fewer than they used to. Read [credits & pricing](/reference/credits-and-pricing/) before you publish anything that runs at volume.
+- **Not write-enabled by default.** A workflow has no write access to objects until an admin grants it. This surprises everyone exactly once. See [permissions](/explanation/permissions-and-access/).
 
 ## Where to go next
 
-1. [What's new in the 2026 engine](/start/whats-new/) — if you've used legacy workflows, start here.
-2. [Build your first workflow](/start/first-workflow/) — a complete walkthrough in ~10 minutes.
+1. [What's new in the 2026 engine](/explanation/whats-new/) — if you've used legacy workflows, start here.
+2. [Build your first workflow](/learn/build-your-first-workflow/) — a complete walkthrough in ~10 minutes.
 3. [Block reference](/reference/) — every trigger and step, with credit costs and gotchas.
 
 *Source of truth: [Attio Help Center — Overview of workflows](https://attio.com/help/reference/automations/workflows/overview-of-workflows).*

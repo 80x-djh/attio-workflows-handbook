@@ -6,7 +6,7 @@ page-type: landing
 
 Every workflow is assembled from the blocks on this page. Each block has its own reference page with inputs, outputs, credit cost, gotchas, and a worked example. Pages follow a fixed schema, so once you've read one you can skim them all.
 
-**How credit costs work in one line:** triggers, logic, and lookups are free; writes and external calls are 1 credit; AI is token-priced. Full detail in [credits & pricing](/start/credits-and-pricing/).
+**How credit costs work in one line:** triggers, logic, and lookups are free; writes and external calls are 1 credit; AI is token-priced. Full detail in [credits & pricing](/reference/credits-and-pricing/).
 
 ## Triggers
 
@@ -26,7 +26,7 @@ Triggers start workflow runs. All triggers are **free**.
 | [Manual run](/reference/triggers/manual-run/) | You click Trigger workflow in the editor | Manual |
 | [Recurring schedule](/reference/triggers/recurring-schedule/) | A daily/weekly/monthly/cron schedule fires | Scheduled |
 
-Not sure which? Use the [trigger decision guide](/concepts/triggers/).
+Not sure which? Use the [trigger decision guide](/explanation/triggers/).
 
 ## Steps
 

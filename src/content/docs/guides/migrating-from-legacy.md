@@ -9,7 +9,7 @@ Legacy workflows keep running — Attio says sunset notice will come "well in ad
 Migration is not a button-click exercise. Treat it like production software replacement.
 
 :::tip[Pricing changed too]
-The new engine reprices everything — keep the [credit-model cheat sheet (PDF)](/attio-credits-cheatsheet.pdf) next to you while you rebuild, and see [pricing changes](/migration/pricing-changes/) for what's different from legacy.
+The new engine reprices everything — keep the [credit-model cheat sheet (PDF)](/attio-credits-cheatsheet.pdf) next to you while you rebuild, and see [pricing changes](/guides/migrating-from-legacy/pricing-changes/) for what's different from legacy.
 :::
 
 ## Migration flow

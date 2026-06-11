@@ -24,7 +24,7 @@ Variables can be mixed with static text — a Slack message like `🎉 {Deal nam
 - **Agents and AI blocks** emit text — answers, classifications, summaries. **These are not saved anywhere automatically**; see below.
 - **[Loop](/reference/utilities/loop/)** exposes special outputs *inside* the loop: current item, position, count.
 
-The [run viewer](/concepts/runs-and-debugging/) shows every block's actual inputs and outputs per run — when wiring confuses you, look at real run data rather than reasoning in the abstract.
+The [run viewer](/explanation/runs-and-debugging/) shows every block's actual inputs and outputs per run — when wiring confuses you, look at real run data rather than reasoning in the abstract.
 
 ## Multiple data sources and fallbacks
 
@@ -52,8 +52,8 @@ Skipping step 2 is the most common reason "the AI ran but nothing happened."
 
 ## Wiring rules that prevent debugging sessions
 
-- **Type matters.** An input expecting a list entry fails if handed a record, and vice versa — the error literally says "Please provide a List Entry, not a Record". The bridge patterns are in [records vs list entries](/concepts/records-vs-list-entries/).
+- **Type matters.** An input expecting a list entry fails if handed a record, and vice versa — the error literally says "Please provide a List Entry, not a Record". The bridge patterns are in [records vs list entries](/explanation/records-vs-list-entries/).
 - **Person-typed inputs are strict.** [Enroll in sequence](/reference/sequences/enroll-in-sequence/) takes a *person record* — not a company, not a list entry. Reach people through relationship attributes on the triggering record.
-- **Find blocks hand downstream blocks only the first match** unless you loop. A warning icon on the downstream block is the builder telling you this. See [loops](/concepts/loops/).
+- **Find blocks hand downstream blocks only the first match** unless you loop. A warning icon on the downstream block is the builder telling you this. See [loops](/explanation/loops/).
 - **After a write, reference the write's output.** The trigger's record data is a snapshot from trigger time; the Update block's output reflects the update.
-- **Migrated workflows:** re-verify every variable reference block by block — rewiring is the main thing [Ask Attio migration](/migration/) gets subtly wrong.
+- **Migrated workflows:** re-verify every variable reference block by block — rewiring is the main thing [Ask Attio migration](/guides/migrating-from-legacy/) gets subtly wrong.

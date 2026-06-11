@@ -1,30 +1,26 @@
 {
-  "src/content/docs/concepts/conditions-and-filters.md": [
+  "src/content/docs/explanation/conditions-and-filters.md": [
     "no-see-also"
   ],
-  "src/content/docs/concepts/loops.md": [
-    "desc-too-long",
+  "src/content/docs/explanation/loops.md": [
     "no-see-also"
   ],
-  "src/content/docs/concepts/permissions-and-access.md": [
-    "desc-too-long",
+  "src/content/docs/explanation/permissions-and-access.md": [
     "no-see-also"
   ],
-  "src/content/docs/concepts/records-vs-list-entries.md": [
-    "desc-too-long",
+  "src/content/docs/explanation/records-vs-list-entries.md": [
     "no-see-also"
   ],
-  "src/content/docs/concepts/runs-and-debugging.md": [
+  "src/content/docs/explanation/runs-and-debugging.md": [
     "no-see-also"
   ],
-  "src/content/docs/concepts/triggers.md": [
-    "desc-too-long",
+  "src/content/docs/explanation/triggers.md": [
     "no-see-also"
   ],
-  "src/content/docs/concepts/variables.md": [
+  "src/content/docs/explanation/variables.md": [
     "no-see-also"
   ],
-  "src/content/docs/recipes/enrichment-waterfall.md": [
+  "src/content/docs/guides/capture-and-qualify/enrichment-waterfall.md": [
     "missing-heading:build-steps",
     "missing-heading:credit-cost-worked-example",
     "missing-heading:failure-modes",
@@ -35,7 +31,7 @@
     "missing-heading:variable-mapping",
     "under-300-words"
   ],
-  "src/content/docs/recipes/inbound-lead-research.md": [
+  "src/content/docs/guides/capture-and-qualify/signal-scoring.md": [
     "missing-heading:build-steps",
     "missing-heading:credit-cost-worked-example",
     "missing-heading:failure-modes",
@@ -46,7 +42,7 @@
     "missing-heading:variable-mapping",
     "under-300-words"
   ],
-  "src/content/docs/recipes/round-robin-routing.md": [
+  "src/content/docs/guides/capture-and-qualify/webhook-lead-intake.md": [
     "missing-heading:build-steps",
     "missing-heading:credit-cost-worked-example",
     "missing-heading:failure-modes",
@@ -57,7 +53,7 @@
     "missing-heading:variable-mapping",
     "under-300-words"
   ],
-  "src/content/docs/recipes/sequence-enrollment.md": [
+  "src/content/docs/guides/pipeline-hygiene/stale-deal-sweep.md": [
     "missing-heading:build-steps",
     "missing-heading:credit-cost-worked-example",
     "missing-heading:failure-modes",
@@ -68,7 +64,7 @@
     "missing-heading:variable-mapping",
     "under-300-words"
   ],
-  "src/content/docs/recipes/signal-scoring.md": [
+  "src/content/docs/guides/route-and-sequence/round-robin-routing.md": [
     "missing-heading:build-steps",
     "missing-heading:credit-cost-worked-example",
     "missing-heading:failure-modes",
@@ -79,7 +75,7 @@
     "missing-heading:variable-mapping",
     "under-300-words"
   ],
-  "src/content/docs/recipes/slack-deal-alerts.md": [
+  "src/content/docs/guides/route-and-sequence/sequence-enrollment.md": [
     "missing-heading:build-steps",
     "missing-heading:credit-cost-worked-example",
     "missing-heading:failure-modes",
@@ -90,7 +86,7 @@
     "missing-heading:variable-mapping",
     "under-300-words"
   ],
-  "src/content/docs/recipes/stale-deal-sweep.md": [
+  "src/content/docs/guides/route-and-sequence/slack-deal-alerts.md": [
     "missing-heading:build-steps",
     "missing-heading:credit-cost-worked-example",
     "missing-heading:failure-modes",
@@ -101,7 +97,7 @@
     "missing-heading:variable-mapping",
     "under-300-words"
   ],
-  "src/content/docs/recipes/webhook-lead-intake.md": [
+  "src/content/docs/guides/signals-and-ai/inbound-lead-research.md": [
     "missing-heading:build-steps",
     "missing-heading:credit-cost-worked-example",
     "missing-heading:failure-modes",
@@ -335,17 +331,5 @@
     "no-cost-table",
     "no-see-also",
     "under-300-words"
-  ],
-  "src/content/docs/start/credits-and-pricing.md": [
-    "desc-too-long"
-  ],
-  "src/content/docs/start/first-workflow.md": [
-    "desc-too-long"
-  ],
-  "src/content/docs/start/what-are-workflows.md": [
-    "desc-too-long"
-  ],
-  "src/content/docs/start/whats-new.md": [
-    "desc-too-long"
   ]
 }

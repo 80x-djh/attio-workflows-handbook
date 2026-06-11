@@ -1,6 +1,6 @@
 ---
 title: What's new in the 2026 Workflows engine
-description: Attio replaced its workflows engine in June 2026 — AI agent blocks, custom JavaScript, MCP access, multi-trigger workflows, and a much cheaper credit model. Here's the complete rundown.
+description: Attio replaced its workflows engine in June 2026 — AI agent blocks, custom JavaScript, MCP access, multi-trigger workflows, and a cheaper credit model.
 page-type: guide
 ---
 
@@ -30,22 +30,22 @@ The credit model was rebuilt in your favor. Triggers, logic, and data lookups ar
 | Writes & external sends (Slack, HTTP, sequences) | 1 credit | 1 credit |
 | AI blocks | 1–10 credits fixed | **Token-based (variable)** |
 
-Read-heavy, logic-heavy workflows got dramatically cheaper. AI-heavy workflows became variable-cost — see [credits & pricing](/start/credits-and-pricing/) for the full per-block table and how to reason about variable cost.
+Read-heavy, logic-heavy workflows got dramatically cheaper. AI-heavy workflows became variable-cost — see [credits & pricing](/reference/credits-and-pricing/) for the full per-block table and how to reason about variable cost.
 
 ### 4. Builder quality-of-life
 
-- **Multi-trigger workflows** — one workflow, several starting events, with [advanced variables](/concepts/variables/#multiple-data-sources-and-fallbacks) to handle whichever trigger fired.
+- **Multi-trigger workflows** — one workflow, several starting events, with [advanced variables](/explanation/variables/#multiple-data-sources-and-fallbacks) to handle whichever trigger fired.
 - **Copy/paste blocks** between workflows and even **between workspaces** (consultants, rejoice).
-- **Retry, pause, resume** on in-flight runs, plus [retry-from-failed](/concepts/runs-and-debugging/#rerun-and-retry).
+- **Retry, pause, resume** on in-flight runs, plus [retry-from-failed](/explanation/runs-and-debugging/#rerun-and-retry).
 - Drag blocks from the sidebar, visual JSON editor for HTTP payloads, drop blocks straight into loops.
-- **Custom workflow blocks** via the [App SDK](/advanced/app-sdk-custom-blocks/) and new ecosystem blocks (Webflow, Notion, Linear, and more).
+- **Custom workflow blocks** via the [App SDK](/guides/platform-patterns/app-sdk-custom-blocks/) and new ecosystem blocks (Webflow, Notion, Linear, and more).
 
 ## What this means in practice
 
-**If you have legacy workflows running:** they keep running, and Attio says sunset notice will come "well in advance" — but new capability and the cheaper pricing only exist in the new engine. Several blocks were renamed and a few behave differently. Follow the [migration guide](/migration/) and check the [block changes reference](/migration/block-changes/) before you rebuild.
+**If you have legacy workflows running:** they keep running, and Attio says sunset notice will come "well in advance" — but new capability and the cheaper pricing only exist in the new engine. Several blocks were renamed and a few behave differently. Follow the [migration guide](/guides/migrating-from-legacy/) and check the [block changes reference](/guides/migrating-from-legacy/block-changes/) before you rebuild.
 
-**If you're starting fresh:** ignore legacy entirely. Learn the new engine's [block library](/reference/) and the handful of [core concepts](/concepts/triggers/) that everything else hangs off.
+**If you're starting fresh:** ignore legacy entirely. Learn the new engine's [block library](/reference/) and the handful of [core concepts](/explanation/triggers/) that everything else hangs off.
 
-**If you're a GTM engineer:** the combination of webhook triggers + Execute code + Custom agent + HTTP requests means Attio can now host logic you'd previously run in Zapier, Make, or Clay. Whether you *should* move it is a judgment call — the [recipes](/recipes/) section shows where workflows genuinely win.
+**If you're a GTM engineer:** the combination of webhook triggers + Execute code + Custom agent + HTTP requests means Attio can now host logic you'd previously run in Zapier, Make, or Clay. Whether you *should* move it is a judgment call — the [recipes](/guides/) section shows where workflows genuinely win.
 
 *Sources: [Migrate your legacy workflows](https://attio.com/help/reference/automations/workflows/migrate-your-legacy-workflows), [Attio changelog](https://attio.com/changelog).*

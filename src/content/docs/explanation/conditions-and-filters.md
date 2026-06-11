@@ -50,9 +50,9 @@ If your intent is "(Won or Lost) and owned by Alex", build it as a nested group:
 Filters aren't limited to record attributes — they can test any output of an earlier block, which unlocks the most useful guard patterns:
 
 - **True transitions only:** `New value is Won` *and* `Previous value is not Won` — fires once per actual transition, not on re-saves.
-- **Human-only triggers:** `Updated by → Type → is not → Workflow` — the standard [infinite-loop guard](/advanced/infinite-loops-and-safety/).
+- **Human-only triggers:** `Updated by → Type → is not → Workflow` — the standard [infinite-loop guard](/explanation/infinite-loops-and-safety/).
 - **Webhook payload routing:** after a [Parse JSON](/reference/utilities/parse-json/) block, route on any parsed field with a Switch.
 
 ## Placement strategy
 
-Put your cheapest, most selective check **immediately after the trigger**. Conditions are free; everything downstream of them might not be. A workflow shaped `trigger → Filter → expensive stuff` costs nothing on the 95% of runs that don't matter. The same workflow shaped `trigger → Web agent → Filter` pays the AI cost on every single run — see [credits](/start/credits-and-pricing/).
+Put your cheapest, most selective check **immediately after the trigger**. Conditions are free; everything downstream of them might not be. A workflow shaped `trigger → Filter → expensive stuff` costs nothing on the 95% of runs that don't matter. The same workflow shaped `trigger → Web agent → Filter` pays the AI cost on every single run — see [credits](/reference/credits-and-pricing/).

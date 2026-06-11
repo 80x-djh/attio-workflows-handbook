@@ -1,6 +1,6 @@
 ---
 title: Records vs list entries
-description: The single most confusing concept in Attio workflows — records and list entries are different entities, blocks are strict about which they accept, and here are the bridge patterns.
+description: Records and list entries are different entities in Attio workflows — why that trips everyone, and the bridge patterns between them.
 page-type: concept
 ---
 

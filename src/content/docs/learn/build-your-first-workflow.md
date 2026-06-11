@@ -1,6 +1,6 @@
 ---
 title: Build your first workflow
-description: A complete walkthrough — build, test, and publish a deal-stage Slack alert workflow in about ten minutes, and learn the canvas, variables, and publishing model on the way.
+description: Build, test, and publish a deal-stage Slack alert in about ten minutes — and learn the canvas, variables, and publishing model on the way.
 page-type: guide
 ---
 
@@ -12,7 +12,7 @@ If you don't have Slack connected, swap step 4 for a [Create task](/reference/ta
 
 - Workflows live under **Automations → Workflows** in the left sidebar.
 - You build in a **draft**; nothing runs until you **publish**.
-- Workflows don't have write access to objects by default — for this read-only alert that's fine, but bookmark [permissions](/concepts/permissions-and-access/) for when you build something that writes.
+- Workflows don't have write access to objects by default — for this read-only alert that's fine, but bookmark [permissions](/explanation/permissions-and-access/) for when you build something that writes.
 
 ## Step 1 — Create the workflow
 
@@ -28,7 +28,7 @@ If you don't have Slack connected, swap step 4 for a [Create task](/reference/ta
 2. Set **Object or List** to **Deals**.
 3. Set **Attribute** to **Deal stage**.
 
-Why this trigger and not **Record updated**? Because *Record updated does not fire when an attribute is first set during record creation*. A deal created directly into "Won" would silently skip your workflow. **Attribute value changed** catches both creation-time values and later changes — this distinction is the single most common trigger mistake. See [choosing the right trigger](/concepts/triggers/).
+Why this trigger and not **Record updated**? Because *Record updated does not fire when an attribute is first set during record creation*. A deal created directly into "Won" would silently skip your workflow. **Attribute value changed** catches both creation-time values and later changes — this distinction is the single most common trigger mistake. See [choosing the right trigger](/explanation/triggers/).
 
 ## Step 3 — Filter to the stages you care about
 
@@ -50,22 +50,22 @@ A Filter block silently stops the run when its conditions aren't met — no erro
 Value: {Deal value} · Owner: {Deal owner}
 ```
 
-Each `{…}` is a variable pulled from the trigger's outputs. This is [data passing](/concepts/variables/) — outputs from earlier blocks become inputs to later ones. Note the new engine uses **standard markdown** in Slack messages, not Slack's own markup (a [change from legacy](/migration/block-changes/)).
+Each `{…}` is a variable pulled from the trigger's outputs. This is [data passing](/explanation/variables/) — outputs from earlier blocks become inputs to later ones. Note the new engine uses **standard markdown** in Slack messages, not Slack's own markup (a [change from legacy](/guides/migrating-from-legacy/block-changes/)).
 
 ## Step 5 — Publish and test
 
 1. Click **Publish workflow**. Attio highlights any misconfigured blocks in red; fix and re-publish.
 2. Trigger it for real: move a test deal into the target stage.
-3. Open the **Runs** tab. You'll see the run, the path it took (green arrows), and each block's inputs and outputs — the [run viewer](/concepts/runs-and-debugging/) is where you'll live when things misbehave.
+3. Open the **Runs** tab. You'll see the run, the path it took (green arrows), and each block's inputs and outputs — the [run viewer](/explanation/runs-and-debugging/) is where you'll live when things misbehave.
 
-**What did that cost?** The trigger is free, the Filter is free, and the Slack post is 1 credit. One credit per alert. Understanding this arithmetic *before* publishing matters a lot more for loops and AI blocks — read [credits & pricing](/start/credits-and-pricing/) next.
+**What did that cost?** The trigger is free, the Filter is free, and the Slack post is 1 credit. One credit per alert. Understanding this arithmetic *before* publishing matters a lot more for loops and AI blocks — read [credits & pricing](/reference/credits-and-pricing/) next.
 
 ## Where this pattern goes next
 
 This trigger → filter → act shape is the skeleton of most GTM automation:
 
-- Swap the action for [Enroll in sequence](/reference/sequences/enroll-in-sequence/) → stage-based outbound ([recipe](/recipes/sequence-enrollment/))
-- Swap the trigger for [Webhook received](/reference/triggers/webhook-received/) → product-signal intake ([recipe](/recipes/webhook-lead-intake/))
-- Add a [Web agent](/reference/agents/web-agent/) before the Slack post → research attached to every alert ([recipe](/recipes/inbound-lead-research/))
+- Swap the action for [Enroll in sequence](/reference/sequences/enroll-in-sequence/) → stage-based outbound ([recipe](/guides/route-and-sequence/sequence-enrollment/))
+- Swap the trigger for [Webhook received](/reference/triggers/webhook-received/) → product-signal intake ([recipe](/guides/capture-and-qualify/webhook-lead-intake/))
+- Add a [Web agent](/reference/agents/web-agent/) before the Slack post → research attached to every alert ([recipe](/guides/signals-and-ai/inbound-lead-research/))
 
 *Source of truth: [Create a workflow](https://attio.com/help/reference/automations/workflows/create-a-workflow).*

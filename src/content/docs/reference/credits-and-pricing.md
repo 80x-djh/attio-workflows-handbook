@@ -1,6 +1,6 @@
 ---
 title: Credits & pricing explained
-description: How Attio workflow credits actually work in the new engine — what's free, what costs 1 credit, how token-based AI pricing behaves, and how to estimate a workflow's monthly cost before publishing.
+description: How Attio workflow credits work in the new engine — what's free, what costs 1 credit, how token-based AI pricing behaves, and how to estimate monthly cost.
 page-type: guide
 ---
 
@@ -47,13 +47,13 @@ Credits renew monthly on your billing date. Admins can buy additional credit pac
 
 ## Worked examples
 
-**Stage-change Slack alert** ([recipe](/recipes/slack-deal-alerts/)):
+**Stage-change Slack alert** ([recipe](/guides/route-and-sequence/slack-deal-alerts/)):
 trigger (0) + Filter (0) + Slack post (1) = **1 credit per alert**. At 200 stage changes a month: 200 credits.
 
-**Monday stale-deal sweep** ([recipe](/recipes/stale-deal-sweep/)):
+**Monday stale-deal sweep** ([recipe](/guides/pipeline-hygiene/stale-deal-sweep/)):
 schedule (0) + Find records (0) + Loop (0) + [Create task (1) × 30 stale deals] = **30 credits per week**, ~130/month.
 
-**Inbound lead research** ([recipe](/recipes/inbound-lead-research/)):
+**Inbound lead research** ([recipe](/guides/signals-and-ai/inbound-lead-research/)):
 trigger (0) + Web agent (**variable**) + Update record (1) + Slack post (1). The agent's token usage depends on how many questions you ask and how much it has to read. Run it on ten representative records, check the per-run cost in the run viewer (hover over a run), and *then* decide whether it triggers on every new lead or only filtered ones.
 
 ## Reasoning about AI block costs
@@ -72,6 +72,6 @@ The block configuration sidebar shows credit costs while you build: fixed-cost b
 - **Prefer Attribute value changed over Record updated with no attribute selected.** An unscoped Record updated trigger fires on *every* attribute change on *every* record of the object — each run might cost little, but the run volume can be enormous, and runaway volume is how workspaces hit their cap mid-month.
 - **Use Create or update record instead of Find + If + Create/Update chains.** Same outcome, fewer blocks, one credit.
 - **Push derived values into the workflow only when they change** rather than recomputing on a schedule across the whole object.
-- **Guard against [infinite loops](/advanced/infinite-loops-and-safety/)** — a self-triggering workflow burns credits until someone notices.
+- **Guard against [infinite loops](/explanation/infinite-loops-and-safety/)** — a self-triggering workflow burns credits until someone notices.
 
 *Sources: [Manage workspace and seat credits](https://attio.com/help/reference/workspace-settings-billing/manage-workspace-and-seat-credits), [Migrate your legacy workflows — pricing](https://attio.com/help/reference/automations/workflows/migrate-your-legacy-workflows).*

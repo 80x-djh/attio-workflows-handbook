@@ -18,7 +18,7 @@ The rule in the new engine: triggers, logic, and data lookups are free. Credits 
 
 Legacy nuances worth knowing when you cost a migration: conditions (Filter, If, Switch) were free in legacy only as a terminal block; Research record was 10 credits fixed and is now the token-based Web agent; other AI blocks were 1 credit fixed. Execute code is new in this engine and is Variable (complexity-based).
 
-Full per-block table: [credits & pricing](/start/credits-and-pricing/).
+Full per-block table: [credits & pricing](/reference/credits-and-pricing/).
 
 ## Practical migration math
 

@@ -58,9 +58,9 @@ In-progress runs can be **paused** (current block finishes first), **resumed**, 
 
 Thirty seconds that prevent most incidents:
 
-1. Trigger scoped (attribute selected where possible) + early [Filter](/concepts/conditions-and-filters/)?
-2. [Loop guard](/advanced/infinite-loops-and-safety/) if the workflow writes to the same object it triggers on?
-3. Variables wired and no yellow warnings? [Fallbacks](/concepts/variables/) on formula inputs?
-4. Write [permissions](/concepts/permissions-and-access/) granted — both sides of any relationship?
-5. Worst-case run cost estimated ([credit math](/start/credits-and-pricing/)), Loop **Limit** set while testing?
+1. Trigger scoped (attribute selected where possible) + early [Filter](/explanation/conditions-and-filters/)?
+2. [Loop guard](/explanation/infinite-loops-and-safety/) if the workflow writes to the same object it triggers on?
+3. Variables wired and no yellow warnings? [Fallbacks](/explanation/variables/) on formula inputs?
+4. Write [permissions](/explanation/permissions-and-access/) granted — both sides of any relationship?
+5. Worst-case run cost estimated ([credit math](/reference/credits-and-pricing/)), Loop **Limit** set while testing?
 6. Test-triggered once and traced in the run viewer?

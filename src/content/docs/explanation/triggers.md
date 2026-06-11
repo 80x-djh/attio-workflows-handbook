@@ -1,6 +1,6 @@
 ---
 title: Choosing the right trigger
-description: A decision guide for Attio workflow triggers — record vs list vs data triggers, why Attribute value changed beats Record updated, and when to reach for schedules, webhooks, or manual commands.
+description: A decision guide for Attio workflow triggers — record vs list vs data, why Attribute value changed beats Record updated, and when to use schedules or webhooks.
 page-type: concept
 ---
 
@@ -31,7 +31,7 @@ This matters double for imports and API-driven workspaces: bulk operations creat
 
 ## Object triggers vs list triggers
 
-Attio's separation of [records and list entries](/concepts/records-vs-list-entries/) extends to triggers:
+Attio's separation of [records and list entries](/explanation/records-vs-list-entries/) extends to triggers:
 
 - **Record updated** ignores changes to list attributes.
 - **List entry updated** ignores changes to object attributes.
@@ -41,7 +41,7 @@ If your pipeline stage lives as a list attribute on a "Sales pipeline" list (the
 
 ## Scope your triggers or pay for it
 
-An unscoped **Record updated** on a busy object fires constantly. Each run might cost 0–1 credits, but thousands of pointless runs per month add up, clutter the run history, and can [trigger loops](/advanced/infinite-loops-and-safety/). Always ask:
+An unscoped **Record updated** on a busy object fires constantly. Each run might cost 0–1 credits, but thousands of pointless runs per month add up, clutter the run history, and can [trigger loops](/explanation/infinite-loops-and-safety/). Always ask:
 
 1. Can I select a specific attribute on the trigger? (Record updated and List entry updated both allow this.)
 2. Can a free [Filter](/reference/conditions/filter/) block immediately after the trigger kill irrelevant runs?
@@ -50,10 +50,10 @@ The combination of a scoped trigger plus an early filter is the difference betwe
 
 ## Multi-trigger workflows
 
-The new engine lets one workflow have several triggers — e.g. the same enrichment steps whether a lead arrives by webhook or is created manually. Connect each trigger to the first shared step, then use [multiple data sources](/concepts/variables/#multiple-data-sources-and-fallbacks) in downstream inputs so blocks can read from whichever trigger actually fired. One workflow to maintain instead of two copies that drift apart.
+The new engine lets one workflow have several triggers — e.g. the same enrichment steps whether a lead arrives by webhook or is created manually. Connect each trigger to the first shared step, then use [multiple data sources](/explanation/variables/#multiple-data-sources-and-fallbacks) in downstream inputs so blocks can read from whichever trigger actually fired. One workflow to maintain instead of two copies that drift apart.
 
 ## Trigger outputs
 
 Every trigger emits at least: the triggering entity's data (where applicable), **which actor** performed the action, and **when**. Update-style triggers with a selected attribute also emit **new and previous values** — feed those into filters ("New value is Won *and* Previous value is not Won") to catch only true transitions.
 
-The actor output deserves special mention: filtering on **Updated by → Type → is not → Workflow** is the standard guard against [infinite loops](/advanced/infinite-loops-and-safety/).
+The actor output deserves special mention: filtering on **Updated by → Type → is not → Workflow** is the standard guard against [infinite loops](/explanation/infinite-loops-and-safety/).
