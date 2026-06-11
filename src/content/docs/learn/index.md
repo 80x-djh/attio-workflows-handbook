@@ -21,11 +21,11 @@ New to the concepts? The [Explanation](/explanation/) section is the "why" behin
 
 ## The applied tracks
 
-Four tracks, each mapped to a stage of the go-to-market motion. Work them in order or jump to the one that hurts most — each lists its own prerequisites.
+Four tracks, each mapped to a stage of the go-to-market motion. Work them in order or jump to the one that hurts most — each lists its own prerequisites and ends in a Challenge you ship.
 
-1. **Capture and qualify** — make inbound arrive enriched, scored, and routable, paying for AI only where it changes a decision.
-2. **Route and sequence** — get the right rep on the right account at the right moment, with clean enroll/exit hygiene.
-3. **Keep the pipeline honest** — make the pipeline self-clean, self-summarize, and hand off, on a schedule, with no false positives.
-4. **Let AI own a stage** — stand up a read-only research agent that runs a funnel segment safely and predictably.
+1. [Capture and qualify](/learn/capture-and-qualify/) — make inbound arrive enriched, scored, and routable, paying for AI only where it changes a decision.
+2. [Route and sequence](/learn/route-and-sequence/) — get the right rep on the right account at the right moment, with clean enroll/exit hygiene.
+3. [Keep the pipeline honest](/learn/keep-the-pipeline-honest/) — make the pipeline self-clean, self-summarize, and hand off, on a schedule, with no false positives.
+4. [Let AI own a stage](/learn/let-ai-own-a-stage/) — stand up a read-only research agent that runs a funnel segment safely and predictably.
 
-Until the full track pages land, the end-of-track Challenges are already live in [Guides](/guides/) — start with [Slack deal alerts](/guides/route-and-sequence/slack-deal-alerts/) or the [stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep/).
+Each track's Challenge is a complete build in [Guides](/guides/) — the curriculum graduates you straight into the how-to layer.

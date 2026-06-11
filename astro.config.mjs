@@ -115,6 +115,10 @@ export default defineConfig({
 					items: [
 						{ label: 'Start here', slug: 'learn' },
 						{ label: 'Build your first workflow', slug: 'learn/build-your-first-workflow' },
+						{ label: '1 · Capture & qualify', slug: 'learn/capture-and-qualify' },
+						{ label: '2 · Route & sequence', slug: 'learn/route-and-sequence' },
+						{ label: '3 · Keep the pipeline honest', slug: 'learn/keep-the-pipeline-honest' },
+						{ label: '4 · Let AI own a stage', slug: 'learn/let-ai-own-a-stage' },
 					],
 				},
 				{
@@ -160,6 +164,8 @@ export default defineConfig({
 							],
 						},
 						{ label: 'Third-party blocks', slug: 'reference/integrations' },
+						{ label: 'Variables & expressions', slug: 'reference/variable-syntax' },
+						{ label: 'Glossary', slug: 'reference/glossary' },
 					],
 				},
 				{
