@@ -3,7 +3,13 @@ title: Enroll and auto-exit sequences
 description: Enroll a lead in a sequence the moment they qualify, then exit them the moment they reply or book, so a rep and an automated touch never collide.
 ---
 
-Enroll a lead in a sequence the moment they qualify, then exit them the moment they reply or book, so a rep and an automated touch never collide. A qualified lead belongs in an outbound sequence within seconds, and they belong out of it the instant the conversation turns human. This is a paired build. Workflow A fires on [Attribute value changed](/reference/triggers/attribute-value-changed), runs a free [Filter](/reference/conditions/filter), and calls [Enroll in sequence](/reference/sequences/enroll-in-sequence). Workflow B fires on the reply or meeting-booked signal and calls [Exit from sequence](/reference/sequences/exit-from-sequence) plus [Update record](/reference/records/update-record). Build both halves, or you double-touch.
+Enroll a lead in a sequence the moment they qualify, then exit them the moment they reply or book, so a rep and an automated touch never collide. A sequence is an automated series of outbound emails. When a lead qualifies, they belong in one. When the conversation turns human, they belong out of it.
+
+This is a paired build. You create two workflows that work together. Workflow A puts a qualified lead into the sequence. Workflow B takes them back out once a person picks up the conversation.
+
+Workflow A fires on [Attribute value changed](/reference/triggers/attribute-value-changed). It runs a free [Filter](/reference/conditions/filter), then calls [Enroll in sequence](/reference/sequences/enroll-in-sequence). Workflow B fires on a reply or a meeting-booked signal. It calls [Exit from sequence](/reference/sequences/exit-from-sequence), then [Update record](/reference/records/update-record).
+
+Build both halves. If you skip one, you double-touch the lead. That means a rep and the sequence both contact them at once.
 
 | | |
 | --- | --- |
@@ -20,12 +26,12 @@ Enroll a lead in a sequence the moment they qualify, then exit them the moment t
 - A connected mailbox so sequences can send. Workflow logic does not send mail on its own.
 - A **People** object with a single-select **Status** attribute that includes the value `Qualified`, an **Email** attribute, and an opt-out boolean such as **Unsubscribed**.
 - At least one published sequence and a configured sender or sender pool. This recipe uses a sequence named **EMEA outbound**.
-- A **Sequence enrolled at** date attribute and a **Sequence exit reason** text attribute on People, so each workflow can stamp state for the other to read.
+- A **Sequence enrolled at** date attribute and a **Sequence exit reason** text attribute on People. Each workflow stamps state here for the other one to read.
 - Workflow edit access. No API keys or scopes are needed, because both workflows run inside Attio.
 
 ## How it works
 
-Two workflows share one piece of state: whether a person is currently enrolled. Workflow A enrolls qualified leads who have a valid email and have not opted out. Workflow B watches for any signal that the conversation went human — a reply, a booked meeting, or a manual stage change — and exits the person before the next sequence step can send. The trigger and the [Filter](/reference/conditions/filter) are free, so you pay only when a write actually happens.
+Both workflows share one fact: whether a person is currently in the sequence. Workflow A enrolls qualified leads who have a valid email and have not opted out. Workflow B watches for any signal that the conversation went human. That signal can be a reply, a booked meeting, or a manual stage change. When Workflow B sees one, it exits the person before the next sequence step can send. The trigger and the [Filter](/reference/conditions/filter) are free, so you pay only when a write actually happens.
 
 Workflow A runs in this order:
 
@@ -86,7 +92,7 @@ Workflow B runs in this order:
   </Step>
 
   <Step title="Add the exit trigger (Workflow B)">
-    Create a second workflow named **Exit on reply or booking**. Add the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger on the same **Status** attribute. This is the half people skip, and without it a lead who replies keeps getting sequence steps.
+    Create a second workflow named **Exit on reply or booking**. Add the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger on the same **Status** attribute. This is the half people skip. Without it, a lead who replies keeps getting sequence steps.
 
     | Field | Value |
     | --- | --- |
@@ -130,22 +136,22 @@ Workflow B runs in this order:
 
 The trigger and every [Filter](/reference/conditions/filter) are free, so you pay only for the writes.
 
-Workflow A costs 2 credits per qualifying lead: 1 credit for [Enroll in sequence](/reference/sequences/enroll-in-sequence) and 1 credit for the [Update record](/reference/records/update-record) stamp. Workflow B costs 2 credits per lead who replies or books: 1 credit for [Exit from sequence](/reference/sequences/exit-from-sequence) and 1 credit for the stamp.
+Workflow A costs 2 credits per qualifying lead. That is 1 credit for [Enroll in sequence](/reference/sequences/enroll-in-sequence) and 1 credit for the [Update record](/reference/records/update-record) stamp. Workflow B costs 2 credits per lead who replies or books. That is 1 credit for [Exit from sequence](/reference/sequences/exit-from-sequence) and 1 credit for the stamp.
 
-At a realistic 400 newly qualified leads a month, where 35% reply or book (140 exits):
+Assume 400 newly qualified leads a month, where 35% reply or book. That is 140 exits.
 
 - Enrollments: 400 × 2 = 800 credits.
 - Exits: 140 × 2 = 280 credits.
 - Monthly total: **1,080 credits**.
 
-Leads filtered out for the wrong status, a missing email, or an opt-out cost nothing, because a [Filter](/reference/conditions/filter) that stops a run is free. To compare this total against your plan's monthly allowance, see [Credits & pricing explained](/reference/credits-and-pricing); allowances are documented only there.
+Leads filtered out for the wrong status, a missing email, or an opt-out cost nothing. A [Filter](/reference/conditions/filter) that stops a run is free. To compare this total against your plan's monthly allowance, see [Credits & pricing explained](/reference/credits-and-pricing). Allowances are documented only there.
 
 ## Test plan
 
-1. In your own workspace, open a test person — Priya Sharma, priya@acme.com — and confirm `Status` is `Working` and **Sequence enrolled at** is empty.
+1. In your own workspace, open a test person named Priya Sharma, priya@acme.com. Confirm `Status` is `Working` and **Sequence enrolled at** is empty.
 2. Change `Status` to `Qualified`. Workflow A fires. In run history, expect the [Filter](/reference/conditions/filter) to pass, [Enroll in sequence](/reference/sequences/enroll-in-sequence) to return `enrolled`, and [Update record](/reference/records/update-record) to write a timestamp to **Sequence enrolled at**.
-3. Open run history under the **Runs** tab of Workflow A and confirm two writes are logged, the enrollment and the stamp, with no errors.
-4. Exercise the exit path. Change the same person's `Status` to `Replied`. Workflow B fires, the [Filter](/reference/conditions/filter) passes because **Sequence enrolled at** is set, [Exit from sequence](/reference/sequences/exit-from-sequence) removes them, and **Sequence exit reason** reads `Replied`.
+3. Open run history under the **Runs** tab of Workflow A. Confirm two writes are logged, the enrollment and the stamp, with no errors.
+4. Exercise the exit path. Change the same person's `Status` to `Replied`. Workflow B fires. The [Filter](/reference/conditions/filter) passes because **Sequence enrolled at** is set, [Exit from sequence](/reference/sequences/exit-from-sequence) removes them, and **Sequence exit reason** reads `Replied`.
 5. Confirm in the sequence's own enrollment view that Priya is no longer active. This is the proof that you will not double-touch.
 6. Run the deliberately failing input. Set a second test person to `Qualified` but leave `Email` empty. Workflow A fires, the [Filter](/reference/conditions/filter) stops the run, and run history shows zero writes and zero credits consumed. If you instead see an enrollment error, your filter is mis-ordered.
 
@@ -163,11 +169,11 @@ Leads filtered out for the wrong status, a missing email, or an opt-out cost not
 
 ### Exit on a meeting booked in your calendar tool
 
-If meetings come from an external scheduler, do not wait for a status edit. Swap Workflow B's trigger for [Webhook received](/reference/triggers/webhook-received) fed by the calendar tool, then keep the same [Filter](/reference/conditions/filter), [Exit from sequence](/reference/sequences/exit-from-sequence), and [Update record](/reference/records/update-record) chain. Only the trigger changes.
+If meetings come from an external scheduler, do not wait for a status edit. Swap Workflow B's trigger for [Webhook received](/reference/triggers/webhook-received) fed by the calendar tool. Keep the same [Filter](/reference/conditions/filter), [Exit from sequence](/reference/sequences/exit-from-sequence), and [Update record](/reference/records/update-record) chain. Only the trigger changes.
 
 ### Pause instead of exit
 
-If you want to resume the sequence later, for example after a no-show, do not exit. Set a **Sequence paused** boolean with [Update record](/reference/records/update-record) and let your sequence's own send conditions skip paused people, then clear the flag to resume. Exit is permanent for that enrollment, while pausing is recoverable and keeps the credit cost identical, since either path is one write.
+If you want to resume the sequence later, for example after a no-show, do not exit. Set a **Sequence paused** boolean with [Update record](/reference/records/update-record). Let your sequence's own send conditions skip paused people. Clear the flag later to resume. Exit ends that enrollment for good. Pausing is recoverable. The credit cost is the same, because either path is one write.
 
 ## See also
 

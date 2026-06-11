@@ -4,7 +4,7 @@ description: The Enroll in sequence block (Sequence step) adds a person record a
 icon: mail-plus
 ---
 
-The **Enroll in sequence** block (Sequence step) adds a person record as a recipient in an Attio email sequence. The sender must have delegated sending enabled for that sequence, so confirm the sender setup before you rely on this block in production. Always gate enrollment behind a consent and suppression check, because the block sends real outbound email.
+The **Enroll in sequence** block (Sequence step) adds a person record as a recipient in an Attio email sequence. A sequence is a saved series of outbound emails that go out on a schedule. The emails go out from a sender's mailbox, so that sender must have delegated sending turned on for the sequence. Delegated sending is the permission that lets the workflow send mail on a member's behalf. Confirm the sender setup before you rely on this block in production. This block sends real outbound email, so always gate enrollment behind a consent and suppression check first.
 
 | | |
 | --- | --- |
@@ -32,24 +32,24 @@ Reference the result downstream as `{{ steps.enroll_in_sequence.enrolled_success
 
 ## Behavior
 
-The block takes one person record and enrolls it into the chosen sequence using the chosen sender's mailbox. It produces a single boolean that reports whether enrollment succeeded.
+The block takes one person record and enrolls it into the chosen sequence. It sends from the chosen sender's mailbox. It returns a single boolean that reports whether enrollment succeeded.
 
-Enrollment is idempotent for an already-enrolled person. When the recipient is already in the sequence, the block does not enroll a duplicate and the run does not fail, so a re-trigger does not produce a second cadence of emails.
+Enrollment is idempotent for a person who is already enrolled. Idempotent means running it again has no extra effect. When the recipient is already in the sequence, the block does not add a duplicate, and the run does not fail. A re-trigger therefore does not produce a second round of emails.
 
-The block acts on one recipient per run. To enroll a set of people, iterate over them with the [Loop](/reference/utilities/loop) block and place **Enroll in sequence** inside the loop body, so each person enrolls in its own iteration.
+The block acts on one recipient per run. To enroll a set of people, loop over them. Use the [Loop](/reference/utilities/loop) block and place **Enroll in sequence** inside the loop body. Each person then enrolls in its own iteration.
 
 ## Gotchas
 
-- **Recipient must be a person record.** Passing a company record, a list entry, or any non-person object stops the block. Resolve to the person record first, then wire that record into the **Recipient** input.
-- **Sender lacks delegated sending.** When the chosen sender has not enabled delegated sending for the sequence, enrollment cannot send on their behalf and the block fails. Enable delegated sending in the sequence's sender settings, or select a sender who already has it.
-- **No consent filter precedes the block.** Without a gate, you can email people who opted out or who sit on a suppression list. Add a [Filter](/reference/conditions/filter) block that checks consent and suppression before enrollment, and only continue the path for recipients who pass.
-- **Re-triggering a duplicate is not an error.** When a person is already enrolled, the block does not add a second enrollment and the run still does not fail. Do not treat a re-trigger as a failure path, because no error is raised for an already-enrolled recipient.
+- **Recipient must be a person record.** Passing a company record, a list entry, or any non-person object stops the block. A list entry is a row that links a record to a specific list. Resolve to the person record first, then wire that record into the **Recipient** input.
+- **Sender lacks delegated sending.** Delegated sending is the permission that lets the workflow send on a member's behalf. When the chosen sender has not enabled it for the sequence, enrollment cannot send, and the block fails. Enable delegated sending in the sequence's sender settings, or select a sender who already has it.
+- **No consent filter precedes the block.** Without a gate, you can email people who opted out or who sit on a suppression list. A suppression list is the set of people you have promised not to contact. Add a [Filter](/reference/conditions/filter) block that checks consent and suppression before enrollment. Only continue the path for recipients who pass.
+- **Re-triggering a duplicate is not an error.** When a person is already enrolled, the block does not add a second enrollment, and the run still does not fail. Do not treat a re-trigger as a failure path. No error is raised for an already-enrolled recipient.
 
 ## Examples
 
 ### Enrolling a qualified lead after consent
 
-Enroll a person into a nurture sequence once their lead status reaches `Ready for outbound`, and only after a consent and suppression check passes.
+Enroll a person into a nurture sequence once they are ready. The trigger here is that their lead status reaches `Ready for outbound`. Run it only after a consent and suppression check passes.
 
 | Field | Value |
 | --- | --- |
@@ -61,7 +61,7 @@ Priya Sharma is added to the `Outbound nurture` sequence from Jane's mailbox, an
 
 ### Enrolling a list of people with a loop
 
-Enroll every person returned by an earlier lookup by wrapping the block in a [Loop](/reference/utilities/loop), one enrollment per iteration.
+Enroll every person returned by an earlier lookup. Wrap the block in a [Loop](/reference/utilities/loop) so it runs one enrollment per iteration.
 
 ```json
 {
@@ -71,11 +71,11 @@ Enroll every person returned by an earlier lookup by wrapping the block in a [Lo
 }
 ```
 
-Each person in the loop is enrolled into `Re-engagement Q3` from Jane's mailbox, and any person already enrolled is skipped without failing the run.
+Each person in the loop is enrolled into `Re-engagement Q3` from Jane's mailbox. Any person already enrolled is skipped without failing the run.
 
 ## Credit cost worked example
 
-Each successful enrollment costs 1 credit. A team that enrolls 400 new leads a month into a nurture sequence spends about 400 credits on this block, plus the credits for any paid write or external-call blocks earlier in the same path. Logic blocks such as [Filter](/reference/conditions/filter) and [Loop](/reference/utilities/loop) are free, so the consent gate and the iteration add nothing. Compare the running monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+Each successful enrollment costs 1 credit. Say a team enrolls 400 new leads a month into a nurture sequence. This block then costs about 400 credits. On top of that, add the credits for any paid write or external-call blocks earlier in the same path. Logic blocks such as [Filter](/reference/conditions/filter) and [Loop](/reference/utilities/loop) are free, so the consent gate and the iteration add nothing. Compare the running monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
 
 ## Source
 

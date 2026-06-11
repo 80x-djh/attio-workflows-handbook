@@ -4,12 +4,12 @@ description: The Delay until block pauses a workflow run until a specific date a
 icon: clock
 ---
 
-The **Delay until** block (Delay step) pauses a workflow run until a specific date and time, then resumes the remaining blocks. You give it an absolute timestamp — a fixed value or a variable, most often produced by the [Adjust time](/reference/calculations/adjust-time) block — rather than a duration. Use it to act on a calendar moment, such as a renewal date or a scheduled follow-up, when you know *when* the run should continue but not *how long* the wait will be.
+The **Delay until** block (Delay step) pauses a workflow run until a specific date and time, then resumes the remaining blocks. You give it an absolute timestamp, which means a fixed point on the calendar rather than a duration. The value can be set directly or come from a variable, most often produced by the [Adjust time](/reference/calculations/adjust-time) block. Use it when you know *when* the run should continue but not *how long* the wait will be, such as a renewal date or a scheduled follow-up.
 
 | | |
 | --- | --- |
 | **Category** | Delay step |
-| **Credit cost** | Free — logic and delay blocks consume no credits |
+| **Credit cost** | Free. Logic and delay blocks consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
@@ -24,15 +24,15 @@ The **Delay until** block (Delay step) pauses a workflow run until a specific da
 
 None.
 
-The block does not emit a value. It resumes the existing run in place, so downstream blocks continue to reference the same variables they had before the pause — for example, a record's ID stays available as `{{ steps.create_record.record_id }}`.
+The block does not emit a value. It resumes the existing run in place, so downstream blocks keep referencing the same variables they had before the pause. For example, a record's ID stays available as `{{ steps.create_record.record_id }}`.
 
 ## Behavior
 
-The run pauses when it reaches the **Delay until** block and resumes at the timestamp you provide. The timestamp is absolute, so the wait length depends on how far that moment sits in the future relative to the run.
+The run pauses when it reaches the **Delay until** block. It resumes at the timestamp you provide. Because the timestamp is absolute, the length of the wait depends on how far that moment sits in the future relative to the run.
 
-The block resolves the timestamp against the workflow's timezone. A timestamp that looks correct in your local time can resume the run earlier or later than you expect when the workflow timezone differs, so confirm the workflow timezone before relying on a specific wall-clock moment.
+The block resolves the timestamp against the workflow's timezone. Say the workflow timezone differs from yours. A timestamp that looks correct in your local time can then resume the run earlier or later than you expect. Confirm the workflow timezone before you rely on a specific wall-clock moment.
 
-A paused run holds the workflow version that was active when it started. Editing and publishing the workflow during the wait does not change a run already in flight — that run completes on its original version. This makes long delays predictable, but it also means a fix you publish does not reach runs that are already paused.
+A paused run holds the workflow version that was active when it started. Editing and publishing the workflow during the wait does not change a run already in flight, so that run completes on its original version. This makes long delays predictable. It also means a fix you publish does not reach runs that are already paused.
 
 If the **Delay until** input is empty or resolves to a malformed timestamp, the run cannot determine when to resume. Inspect the run's variables in the run viewer to find the value that arrived at the block.
 
@@ -40,7 +40,7 @@ If the **Delay until** input is empty or resolves to a malformed timestamp, the 
 
 - **The run resumes at the wrong wall-clock time.** The block evaluates the timestamp in the workflow's timezone, which may not match yours. Open the workflow settings, confirm the timezone, and adjust the source timestamp so it lands at the intended local moment.
 - **A published fix never reaches a paused run.** A run that is already waiting keeps the workflow version it started on, so edits you publish mid-delay apply only to future runs. Wait for paused runs to drain, or cancel and re-trigger them if the change must apply now.
-- **The block stalls on a missing timestamp.** An empty or malformed **Delay until** value gives the run no moment to resume at. Open the run viewer, inspect the variable feeding the input, and trace it back to the block that should have produced a valid timestamp, such as [Adjust time](/reference/calculations/adjust-time).
+- **The block stalls on a missing timestamp.** An empty or malformed **Delay until** value gives the run no moment to resume at. Open the run viewer and inspect the variable feeding the input. Trace it back to the block that should have produced a valid timestamp, such as [Adjust time](/reference/calculations/adjust-time).
 
 ## Examples
 
@@ -52,7 +52,7 @@ A run computes a reminder date from a contract's renewal date, waits until that 
 | --- | --- |
 | Delay until | `{{ steps.adjust_time.adjusted_timestamp }}` |
 
-The run pauses until the reminder date and then continues to a [Create task](/reference/tasks/create-task) block that assigns a renewal task to Priya Sharma.
+The run pauses until the reminder date. It then continues to a [Create task](/reference/tasks/create-task) block that assigns a renewal task to Priya Sharma.
 
 ### Holding an onboarding step to a fixed launch date
 
@@ -62,7 +62,7 @@ A run for a new customer waits until a known go-live date before sending the wel
 | --- | --- |
 | Delay until | `2026-09-01T09:00:00` |
 
-The run resumes at 9:00 AM on September 1, 2026 in the workflow's timezone and then continues to an [Enroll in sequence](/reference/sequences/enroll-in-sequence) block for jane@acme.com.
+The run resumes at 9:00 AM on September 1, 2026 in the workflow's timezone. It then continues to an [Enroll in sequence](/reference/sequences/enroll-in-sequence) block for jane@acme.com.
 
 ## Source
 

@@ -1,20 +1,22 @@
 ---
 title: Records vs list entries
-description: "A record is the entity itself; a list entry is that record's membership in one list, and workflow blocks treat the two as different, strictly typed inputs."
+description: "A record is the entity itself. A list entry is that record's membership in one list, and workflow blocks treat the two as different, typed inputs."
 icon: layers
 ---
 
-A **record** is the entity itself; a **list entry** is that record's membership in one list, and workflow blocks treat the two as different, strictly typed inputs. A record lives on an object — a company, a person, a deal — and carries object attributes like name, domain, and annual recurring revenue (ARR). A list entry exists only inside a list — a pipeline, an onboarding process, a tracking view — and carries list attributes like stage, priority, and next step that have no meaning outside that list.
+A **record** is the entity itself. A **list entry** is that record's membership in one list, and workflow blocks treat the two as different, typed inputs. A record lives on an object, such as a company, a person, or a deal. It carries object attributes like name, domain, and annual recurring revenue (ARR), which are facts about the entity. A list entry exists only inside a list, such as a pipeline, an onboarding process, or a tracking view. It carries list attributes like stage, priority, and next step, which have no meaning outside that list.
 
-The same record can belong to several lists at once, so one record can have many list entries, each with its own independent list attributes. Deleting an entry removes the record from that one list; the record and its object attributes are untouched. This single distinction, once internalized, prevents the most common class of workflow failure.
+The same record can belong to several lists at once. So one record can have many list entries, each with its own list attributes. Deleting an entry removes the record from that one list. The record and its object attributes are untouched. Learn this one distinction and you avoid the most common kind of workflow failure.
 
-This matters to a revenue-operations engineer because workflow blocks are typed at the input. A block that expects a list entry rejects a record. A block that expects a record rejects a list entry, returning an error as literal as *Please provide a List Entry, not a Record.* After this page you can tell which side any block or trigger operates on, bridge from one to the other when a block demands the type you don't have, and decide where a new attribute should live before you build anything on top of it.
+This matters to a revenue-operations engineer because each workflow block accepts only one kind of input. A block that wants a list entry rejects a record. A block that wants a record rejects a list entry. When that happens, the block returns a blunt error, such as *Please provide a List Entry, not a Record.*
+
+This page gives you three skills. You can tell which side any block or trigger works on. You can bridge from one to the other when a block demands the type you don't have. And you can decide where a new attribute should live before you build anything on top of it.
 
 ## Reading the type of a block or trigger
 
-Start by reading every block and trigger as operating on exactly one side of the data model, because that single property decides whether your workflow can fire and whether its inputs validate. [Update record](/reference/records/update-record) writes object attributes, so it needs a record. [Update list entry](/reference/lists/update-list-entry) writes list attributes, so it needs an entry. [Enroll in sequence](/reference/sequences/enroll-in-sequence) needs specifically a person record, and the [Web agent](/reference/agents/web-agent) researches a record, never an entry.
+Every block and trigger works on exactly one side: a record or a list entry. That one fact decides whether your workflow can fire and whether its inputs are valid. [Update record](/reference/records/update-record) writes object attributes, so it needs a record. [Update list entry](/reference/lists/update-list-entry) writes list attributes, so it needs an entry. [Enroll in sequence](/reference/sequences/enroll-in-sequence) needs a person record specifically. The [Web agent](/reference/agents/web-agent) researches a record, never an entry.
 
-Triggers are scoped the same way. Consider a `Deals` pipeline where `stage` is a list attribute on the pipeline list rather than an object attribute on the deal. You wire the workflow to fire whenever the stage moves:
+Triggers are scoped the same way. Consider a `Deals` pipeline where `stage` is a list attribute on the pipeline list, not an object attribute on the deal. You wire the workflow to fire whenever the stage moves:
 
 | Field | Value |
 | --- | --- |
@@ -22,11 +24,11 @@ Triggers are scoped the same way. Consider a `Deals` pipeline where `stage` is a
 | Object | `Deals` |
 | Watched attribute | `stage` |
 
-This workflow never runs, because [Record updated](/reference/triggers/record-updated) watches only object attributes and `stage` lives on the list entry. Swapping the trigger to [List entry updated](/reference/triggers/list-entry-updated) on the pipeline list fires correctly on every stage change. This exact mismatch is the most common cause of a workflow that "never runs."
+This workflow never runs. [Record updated](/reference/triggers/record-updated) watches only object attributes, and `stage` lives on the list entry. Swap the trigger to [List entry updated](/reference/triggers/list-entry-updated) on the pipeline list and it fires correctly on every stage change. This exact mismatch is the most common cause of a workflow that "never runs."
 
 ## Bridging from a record to its list entry
 
-When a block demands a list entry and you only hold a record, look the entry up rather than retyping the variable. Add a [Find list entries](/reference/lists/find-list-entries) block against the target list, filtered so the entry's parent record matches the record you already have, then pass the found entry into the entry-typed block. This is the official remedy for the *"List Entry, not a Record"* error.
+When a block demands a list entry and you only hold a record, look the entry up. Do not try to retype the variable. Add a [Find list entries](/reference/lists/find-list-entries) block against the target list. Filter it so the entry's parent record matches the record you already have. Then pass the found entry into the entry-typed block. This is the official remedy for the *"List Entry, not a Record"* error.
 
 For a deal record stored in the variable `deal`, the lookup reads:
 
@@ -38,11 +40,11 @@ For a deal record stored in the variable `deal`, the lookup reads:
 | Condition operator | is |
 | Condition value | `{{ deal }}` |
 
-The block returns the deal's entry on the `Sales pipeline` list, which you then feed into [Update list entry](/reference/lists/update-list-entry) to write its stage or priority.
+The block returns the deal's entry on the `Sales pipeline` list. You then feed that entry into [Update list entry](/reference/lists/update-list-entry) to write its stage or priority.
 
 ## Bridging from a list entry to its record
 
-The reverse direction needs no lookup at all, because the relationship is already on the entry. Every list entry exposes its **parent record** as an output, so you select that record straight from the variable picker and hand it to any record-typed block.
+The reverse direction needs no lookup. The relationship is already on the entry. Every list entry exposes its **parent record** as an output. So you select that record straight from the variable picker and hand it to any record-typed block.
 
 For a list entry in the variable `entry`, an [Update record](/reference/records/update-record) step consumes the parent directly:
 
@@ -53,13 +55,15 @@ For a list entry in the variable `entry`, an [Update record](/reference/records/
 | Attribute to set | `Lifecycle stage` |
 | New value | `Customer` |
 
-The block writes the object attribute on the underlying company or deal, and every list and view that shows that record sees the change.
+The block writes the object attribute on the underlying company or deal. Every list and view that shows that record sees the change.
 
 ## Walking relationships to reach a person
 
-Some blocks need a record of a particular kind that is neither the entry nor its immediate parent. [Enroll in sequence](/reference/sequences/enroll-in-sequence) requires a person record, but a pipeline entry's parent is usually a deal or a company. You reach the person by walking a relationship attribute: from the entry to its parent record, then along an attribute that holds people — a `Champion` or `Contacts` field — to the person record itself.
+Some blocks need a record of a particular kind that is neither the entry nor its immediate parent. [Enroll in sequence](/reference/sequences/enroll-in-sequence) requires a person record. But a pipeline entry's parent is usually a deal or a company. You reach the person by walking a relationship attribute. A relationship attribute is one whose value is another record.
 
-When that relationship can hold more than one person, the enroll input takes only the first value. To enroll everyone, wrap the block in a [Loop](/reference/utilities/loop) over the relationship attribute:
+You do this in three hops. Start from the entry. Go to its parent record. Then follow an attribute that holds people, such as a `Champion` or `Contacts` field, to reach the person record.
+
+When that relationship can hold more than one person, the enroll input takes only the first value. To enroll everyone, wrap the block in a [Loop](/reference/utilities/loop) over the relationship attribute. A loop runs the same block once for each item in a list:
 
 | Field | Value |
 | --- | --- |
@@ -68,15 +72,15 @@ When that relationship can hold more than one person, the enroll input takes onl
 | Person | `{{ loop.item }}` |
 | Sequence | `Onboarding nudges` |
 
-The loop runs the enroll block once per contact, so every person on the deal — for example Priya Sharma and her two colleagues — is enrolled, not just the first.
+The loop runs the enroll block once per contact. So every person on the deal is enrolled, not just the first. For example, Priya Sharma and her two colleagues are all enrolled.
 
 ## Deciding where an attribute lives
 
-When you control the schema, choose each attribute's home deliberately, because that choice fixes which triggers and blocks you can ever use on it. Put a value on the **list** when it only makes sense inside that process, or when the same record needs different values in different pipelines: stage, owner-in-this-process, and next step belong here. Put a value on the **object** when it is a fact about the entity itself that should be visible everywhere the record appears: ICP (ideal customer profile) score, segment, and ARR belong here.
+When you control the schema, choose each attribute's home deliberately. That choice fixes which triggers and blocks you can ever use on it. Put a value on the **list** when it only makes sense inside that process, or when the same record needs different values in different pipelines. Stage, owner-in-this-process, and next step belong here. Put a value on the **object** when it is a fact about the entity itself that should be visible everywhere the record appears. ICP (ideal customer profile) score, segment, and ARR belong here.
 
-The wrong home is expensive to leave. A pipeline stage modeled as an object attribute looks convenient until a company sits in two pipelines at once and the single stage value collides. A genuine fact stored as a list attribute is invisible to every other view, list, and workflow. Moving an attribute later means migrating the data and rewiring every workflow that read it, so the cost compounds the longer the mistake lives.
+The wrong home is expensive to leave. Say you model a pipeline stage as an object attribute. It looks convenient at first. But once a company sits in two pipelines at once, the single stage value collides. A genuine fact stored as a list attribute has the opposite problem. It is invisible to every other view, list, and workflow. Moving an attribute later means migrating the data and rewiring every workflow that read it. The longer the mistake lives, the more that costs.
 
-One related consequence is worth holding in mind: a record can appear in a given list only once, while the same person can be created as duplicate records many times over. That asymmetry means your deduplication hygiene directly governs whether "added to list" automations behave sanely, since duplicate records each carry their own separate list memberships.
+One related consequence is worth holding in mind. A record can appear in a given list only once. But the same person can be created as duplicate records many times over. Each duplicate carries its own separate list memberships. So if you do not merge duplicates, your "added to list" automations can fire more than once for the same real person.
 
 ## See also
 
@@ -88,4 +92,4 @@ One related consequence is worth holding in mind: a record can appear in a given
 
 ---
 
-*Sources: [Attio Help Center — Objects](https://attio.com/help/reference/managing-your-data/objects), [Attio Help Center — Lists](https://attio.com/help/reference/managing-your-data/lists), [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.*
+*Sources: [Attio Help Center: Objects](https://attio.com/help/reference/managing-your-data/objects), [Attio Help Center: Lists](https://attio.com/help/reference/managing-your-data/lists), [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.*

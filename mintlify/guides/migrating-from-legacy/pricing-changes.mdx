@@ -4,67 +4,74 @@ description: The new Workflows engine reprices credits so logic and lookups are 
 icon: badge-dollar-sign
 ---
 
-The new Workflows engine reprices credits so logic and lookups are free and only writes, external calls, and AI cost anything. That shift is one of the strongest reasons to migrate a legacy workflow: the same logic-heavy automation usually costs less in the new engine, while AI-heavy automations need re-costing because their pricing model changed entirely. Re-cost every legacy workflow before you rebuild it, starting with the migration math and a cost-safe pattern that keeps credit consumption predictable.
+The new Workflows engine reprices credits so logic and lookups are free and only writes, external calls, and AI cost anything. A credit is the unit Attio bills workflow steps in. This change is one of the strongest reasons to migrate a legacy workflow. The same logic-heavy automation usually costs less in the new engine. AI-heavy automations need fresh costing, because their pricing model changed entirely. Re-cost every legacy workflow before you rebuild it. Start with the migration math and a cost-safe pattern that keeps credit use predictable.
 
-For the complete per-block cost table and your plan's monthly allowance, see [Credits & pricing explained](/reference/credits-and-pricing). What follows covers only the legacy-to-new differences.
+For the complete per-block cost table and your plan's monthly allowance, see [Credits & pricing explained](/reference/credits-and-pricing). This page covers only the differences between the legacy engine and the new one.
 
 ## Understand what changed
 
-One rule governs cost in the new engine: triggers, logic, and data lookups are free, and credits are only consumed when a block writes data, sends or receives something externally, or uses AI.
+One rule governs cost in the new engine. Triggers, logic, and data lookups are free. Credits are only used when a block writes data, sends or receives something externally, or uses AI.
 
-Legacy pricing did not follow that rule. Most legacy blocks cost 1 credit regardless of what they did, so a workflow's cost tracked its block count rather than its side effects. Three categories moved as a result.
+Legacy pricing did not follow that rule. Most legacy blocks cost 1 credit no matter what they did. A workflow's cost therefore tracked how many blocks it had, not what those blocks actually did. Three categories moved as a result.
 
-**Logic, lookups, delays, and control flow are now free.** In legacy workflows, most of these blocks cost 1 credit each. In the new engine, the [Filter](/reference/conditions/filter), [If](/reference/conditions/if), [Switch](/reference/conditions/switch), [Loop](/reference/utilities/loop), [Delay](/reference/delays/delay), [Find records](/reference/records/find-records), and [Find list entries](/reference/lists/find-list-entries) blocks cost nothing. A legacy nuance to remember when you cost a migration: conditions such as Filter, If, and Switch were free in legacy workflows only as a terminal block, so a long legacy chain of mid-flow conditions was charged. In the new engine they are always free.
+**Logic, lookups, delays, and control flow are now free.** In legacy workflows, most of these blocks cost 1 credit each. In the new engine, the [Filter](/reference/conditions/filter), [If](/reference/conditions/if), [Switch](/reference/conditions/switch), [Loop](/reference/utilities/loop), [Delay](/reference/delays/delay), [Find records](/reference/records/find-records), and [Find list entries](/reference/lists/find-list-entries) blocks cost nothing. One legacy nuance matters when you cost a migration. Conditions such as Filter, If, and Switch were free in legacy workflows only as the last block in a chain. A long legacy chain of conditions in the middle of the flow was charged. In the new engine they are always free.
 
-**Data writes and external pushes still cost 1 credit.** The [Create record](/reference/records/create-record), [Update record](/reference/records/update-record), [Add record to list](/reference/lists/add-record-to-list), and [Send HTTP request](/reference/utilities/send-http-request) blocks cost 1 credit in both engines. This category did not change, so a workflow's true cost in the new engine is essentially the count of its writes and external calls.
+**Data writes and external pushes still cost 1 credit.** The [Create record](/reference/records/create-record), [Update record](/reference/records/update-record), [Add record to list](/reference/lists/add-record-to-list), and [Send HTTP request](/reference/utilities/send-http-request) blocks cost 1 credit in both engines. This category did not change. So a workflow's true cost in the new engine is essentially the number of writes and external calls it makes.
 
-**AI blocks moved from fixed credits to token-based pricing.** Legacy AI blocks charged a fixed amount: the legacy Research record block cost 10 credits, and other AI blocks cost 1 credit each. In the new engine, AI cost is variable and token-based, so it depends on the model, the prompt, the input data, and how much research the block does. Legacy Research record is now the token-priced [Web agent](/reference/agents/web-agent), and the prompt-style and classification work that used fixed-cost legacy blocks now runs on the token-priced [Custom agent](/reference/agents/custom-agent), [Classify record](/reference/ai/classify-record), and [Summarize record](/reference/ai/summarize-record) blocks.
+**AI blocks moved from fixed credits to token-based pricing.** A token is a small chunk of text the AI model reads or writes. Token-based pricing charges by how many tokens the block uses. Legacy AI blocks charged a fixed amount. The legacy Research record block cost 10 credits, and other AI blocks cost 1 credit each. In the new engine, AI cost varies. It depends on the model, the prompt, the input data, and how much research the block does. Legacy Research record is now the token-priced [Web agent](/reference/agents/web-agent). Other fixed-cost legacy AI blocks did prompt-style and classification work. That work now runs on the token-priced [Custom agent](/reference/agents/custom-agent), [Classify record](/reference/ai/classify-record), and [Summarize record](/reference/ai/summarize-record) blocks.
 
 <Note>
-The [Execute code](/reference/calculations/execute-code) block is new in this engine and has no legacy equivalent. Its cost is **Variable (complexity-based)**, so budget for it separately rather than assuming it is free.
+The [Execute code](/reference/calculations/execute-code) block is new in this engine and has no legacy equivalent. Its cost is **Variable (complexity-based)**. Budget for it separately rather than assuming it is free.
 </Note>
 
-Per-workflow credit caps were removed when token-based pricing arrived, so you can no longer set a hard ceiling on a single workflow's spend. Control AI cost with filters and testing instead, as the cost-safe migration pattern sets out.
+Per-workflow credit caps were removed when token-based pricing arrived. You can no longer set a hard ceiling on a single workflow's spend. Control AI cost with filters and testing instead, as the cost-safe migration pattern sets out below.
 
 ## Re-cost logic-heavy workflows
 
-Logic-heavy workflows get cheaper immediately, so migrate them first to capture the saving.
+Logic-heavy workflows get cheaper right away. Migrate them first to capture the saving.
 
-Consider a legacy workflow that runs a trigger, a Filter, a Find records lookup, a Loop, and 20 Update record blocks inside the loop. In a legacy workflow, the trigger, filter, and find could each consume credits before the loop even began. In the new engine, the trigger, [Filter](/reference/conditions/filter), [Find records](/reference/records/find-records), and [Loop](/reference/utilities/loop) blocks are all free, and only the 20 [Update record](/reference/records/update-record) writes cost credits. The result is 20 credits per run regardless of how much logic surrounds the writes.
+Consider a legacy workflow that runs a trigger, a Filter, a Find records lookup, a Loop, and 20 Update record blocks inside the loop. In a legacy workflow, the trigger, filter, and find could each cost credits before the loop even began. In the new engine, the trigger, [Filter](/reference/conditions/filter), [Find records](/reference/records/find-records), and [Loop](/reference/utilities/loop) blocks are all free. Only the 20 [Update record](/reference/records/update-record) writes cost credits. The result is 20 credits per run, no matter how much logic surrounds the writes.
 
-Because writes and external calls are the only paid steps, you can estimate a migrated logic-heavy workflow's cost by counting them: one credit per write or external call, multiplied by the loop iterations they sit inside.
+Writes and external calls are the only paid steps. So you can estimate a migrated logic-heavy workflow's cost by counting them. Charge one credit per write or external call, then multiply by the number of loop iterations they sit inside.
 
 ## Re-cost AI-heavy workflows
 
-AI-heavy workflows need testing rather than arithmetic, because token-based pricing cannot be precomputed.
+AI-heavy workflows need testing, not arithmetic. Token-based pricing cannot be worked out in advance.
 
-A [Web agent](/reference/agents/web-agent) can cost less or more than the fixed 10-credit legacy Research record block depending on the model you choose, how many questions the prompt asks, how much input data it reads, and how deep its web research goes. Attio's hosted models use the same names across blocks, including GPT from OpenAI and Sonnet and Opus from Anthropic. The model you pick changes the per-run cost directly.
+A [Web agent](/reference/agents/web-agent) can cost less or more than the fixed 10-credit legacy Research record block. The cost depends on four things:
 
-Run a representative sample before you wire an AI block to a high-volume trigger, then read the actual credit usage in the run viewer. Take the measured per-run cost, multiply by your expected monthly volume, and only then decide whether the block runs on every record or only on filtered ones.
+- The model you choose.
+- How many questions the prompt asks.
+- How much input data the block reads.
+- How deep its web research goes.
+
+Attio's hosted models use the same names across blocks. These include GPT from OpenAI and Sonnet and Opus from Anthropic. The model you pick changes the per-run cost directly.
+
+Run a representative sample before you wire an AI block to a high-volume trigger. Then read the actual credit usage in the run viewer. Take the measured per-run cost and multiply it by your expected monthly volume. Only then decide whether the block runs on every record or only on filtered ones.
 
 ## Follow a cost-safe migration pattern
 
-Apply these steps as you rebuild and publish each migrated workflow. They keep credit consumption predictable while you confirm the new workflow matches the legacy one.
+Apply these steps as you rebuild and publish each migrated workflow. They keep credit use predictable while you confirm the new workflow matches the legacy one.
 
 <Steps>
   <Step title="Filter before AI or external blocks">
-    Place a [Filter](/reference/conditions/filter) block ahead of every AI block, [Send HTTP request](/reference/utilities/send-http-request), or sequence enrollment. The filter is free and the downstream block is not, so gatekeeping with the cheap block keeps the expensive one off records that do not qualify.
+    Place a [Filter](/reference/conditions/filter) block ahead of every AI block, [Send HTTP request](/reference/utilities/send-http-request), or sequence enrollment. The filter is free and the downstream block is not. Gatekeeping with the cheap block keeps the expensive one off records that do not qualify.
   </Step>
   <Step title="Limit loops while testing">
-    Cap the iteration count on each [Loop](/reference/utilities/loop) block during testing. A loop over an unexpectedly large result set multiplies every paid block inside it, so a temporary limit prevents a runaway test from spending real credits.
+    Cap the iteration count on each [Loop](/reference/utilities/loop) block during testing. A loop over an unexpectedly large result set multiplies every paid block inside it. A temporary limit prevents a runaway test from spending real credits.
   </Step>
   <Step title="Gate expensive AI behind a manual run">
-    Run costly AI workflows from the [Record command](/reference/triggers/record-command) trigger until demand is proven. Operators invoke a command-triggered workflow deliberately from a record, so it cannot fire automatically across thousands of records before you have measured its per-run cost.
+    Run costly AI workflows from the [Record command](/reference/triggers/record-command) trigger until demand is proven. Operators invoke a command-triggered workflow on purpose from a record. So it cannot fire automatically across thousands of records before you have measured its per-run cost.
   </Step>
   <Step title="Review usage weekly after launch">
-    Open **Billing → Credits → Usage** weekly for the first month after publishing anything new. Per-workflow consumption is visible there, so a workflow that costs more than your sample predicted shows up before it drains the month's allowance.
+    Open **Billing → Credits → Usage** weekly for the first month after you publish anything new. Per-workflow consumption is visible there. A workflow that costs more than your sample predicted shows up before it drains the month's allowance.
   </Step>
   <Step title="Keep high-volume enrichment out of workflows when a script is safer">
-    Move very high-volume enrichment to a batch API script when that is the safer option. A workflow that enriches every record on a busy trigger can consume credits faster than you can react, whereas a script you run deliberately gives you a controlled, reviewable batch.
+    Move very high-volume enrichment to a batch API script when that is the safer option. Enrichment means filling in missing details about a record, such as a company's size or industry. A workflow that enriches every record on a busy trigger can consume credits faster than you can react. A script you run on purpose gives you a controlled, reviewable batch instead.
   </Step>
 </Steps>
 
-The model is simpler than legacy once you internalize the one rule, but AI blocks introduced variable cost and loops multiply everything inside them. Cost-test a representative sample of any migrated AI workflow before you point it at a high-volume trigger such as [Record created](/reference/triggers/record-created) on People.
+Once you learn the one rule, the model is simpler than legacy. But AI blocks introduced variable cost, and loops multiply everything inside them. So cost-test a representative sample of any migrated AI workflow first. Do this before you point it at a high-volume trigger such as [Record created](/reference/triggers/record-created) on People.
 
 ## See also
 
@@ -76,4 +83,4 @@ The model is simpler than legacy once you internalize the one rule, but AI block
 
 ---
 
-*Source: [Attio Help Center — Manage workspace and seat credits](https://attio.com/help/reference/workspace-settings-billing/manage-workspace-and-seat-credits). Last reviewed against the Attio Help Center, June 2026.*
+*Source: [Attio Help Center: Manage workspace and seat credits](https://attio.com/help/reference/workspace-settings-billing/manage-workspace-and-seat-credits). Last reviewed against the Attio Help Center, June 2026.*

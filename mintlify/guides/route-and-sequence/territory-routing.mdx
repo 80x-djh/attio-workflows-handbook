@@ -1,9 +1,11 @@
 ---
 title: Inbound routing by territory and seniority
-description: Route every inbound demo request to the right rep in seconds, matched on region and seniority, then set the owner, a first-touch task, and a Slack alert.
+description: Route every inbound demo request to the right rep in seconds, matched on region and seniority. Then set the owner, a first-touch task, and a Slack alert.
 ---
 
-Route every inbound demo request to the right rep in seconds, matched on region and seniority, then set the owner, a first-touch task, and a Slack alert. When a lead lands on your inbound list, this workflow fires on [Record added to list](/reference/triggers/record-added-to-list), screens out noise with a [Filter](/reference/conditions/filter), branches on territory with a [Switch](/reference/conditions/switch), branches again on seniority, picks a rep with [Round robin](/reference/workspace/round-robin), writes the owner with [Update record](/reference/records/update-record), books the first call with [Create task](/reference/tasks/create-task), and direct-messages that rep over Slack. Speed-to-lead drops from hours to seconds, and the right rep owns every demo request.
+Route every inbound demo request to the right rep in seconds, matched on region and seniority. Then set the owner, a first-touch task, and a Slack alert. A lead is a new person who fills out your demo form. When that lead lands on your inbound list, this workflow starts on [Record added to list](/reference/triggers/record-added-to-list).
+
+From there, it screens out noise with a [Filter](/reference/conditions/filter). It then branches on territory with a [Switch](/reference/conditions/switch), and branches again on seniority. Next, it picks a rep with [Round robin](/reference/workspace/round-robin). Finally, it writes the owner with [Update record](/reference/records/update-record), books the first call with [Create task](/reference/tasks/create-task), and direct-messages that rep over Slack. Speed-to-lead drops from hours to seconds, and the right rep owns every demo request.
 
 | | |
 | --- | --- |
@@ -20,29 +22,33 @@ Route every inbound demo request to the right rep in seconds, matched on region 
 - A connected Slack integration with a channel or direct message the workflow can post to.
 - A People object whose inbound records carry a `country` (or `region`) attribute and a `job_title` attribute.
 - A `territory` single-select attribute on People with the options EMEA, AMER, and APAC.
-- An inbound list — for example, Demo requests — that new leads land on from your form or webhook.
+- An inbound list, for example Demo requests, that new leads land on from your form or webhook.
 - Two or more Attio users assigned to each territory-and-tier pool you plan to route to.
 
 ## How it works
 
-The trigger fires the moment a record joins your inbound list, so each run scopes to a genuinely new lead rather than to every edit on a person. A [Filter](/reference/conditions/filter) drops records that are not real inbound demo requests, and because a condition that stops a run is free, it screens out noise before any write happens. A [Switch](/reference/conditions/switch) then reads the country or region field and sends the run down an EMEA, AMER, or APAC branch. A second branch on each path separates senior titles — vice president (VP), director, head — from the rest, so your strongest reps get the named-account leads. [Round robin](/reference/workspace/round-robin) picks one rep from the matched pool, and three writes finish the job.
+The trigger fires the moment a record joins your inbound list. That scopes each run to a genuinely new lead, not to every edit on a person. A [Filter](/reference/conditions/filter) then drops records that are not real inbound demo requests. A condition that stops a run is free, so the Filter screens out noise before any write happens.
+
+Next, a [Switch](/reference/conditions/switch) reads the country or region field and sends the run down an EMEA, AMER, or APAC branch. A second Switch on each path separates senior titles from the rest. Senior titles are vice president (VP), director, and head. Splitting on seniority means your strongest reps get the named-account leads.
+
+Finally, [Round robin](/reference/workspace/round-robin) picks one rep from the matched pool. Round robin shares leads evenly across a list of reps, handing each new one to the next rep in turn. Three writes then finish the job.
 
 The blocks run in this order:
 
-1. [Record added to list](/reference/triggers/record-added-to-list) — a lead joins the inbound list.
-2. [Filter](/reference/conditions/filter) — keep only real demo requests.
-3. [Switch](/reference/conditions/switch) — branch on territory (EMEA, AMER, or APAC).
-4. [Switch](/reference/conditions/switch) — branch on seniority within the territory.
-5. [Round robin](/reference/workspace/round-robin) — pick a rep from the matched pool.
-6. [Update record](/reference/records/update-record) — set the owner and territory.
-7. [Create task](/reference/tasks/create-task) — schedule the first touch.
-8. [Slack](/reference/integrations) — alert the assigned rep.
+1. [Record added to list](/reference/triggers/record-added-to-list): a lead joins the inbound list.
+2. [Filter](/reference/conditions/filter): keep only real demo requests.
+3. [Switch](/reference/conditions/switch): branch on territory (EMEA, AMER, or APAC).
+4. [Switch](/reference/conditions/switch): branch on seniority within the territory.
+5. [Round robin](/reference/workspace/round-robin): pick a rep from the matched pool.
+6. [Update record](/reference/records/update-record): set the owner and territory.
+7. [Create task](/reference/tasks/create-task): schedule the first touch.
+8. [Slack](/reference/integrations): alert the assigned rep.
 
 ## Build steps
 
 <Steps>
   <Step title="Add the trigger">
-    Create a new workflow and add [Record added to list](/reference/triggers/record-added-to-list) as the trigger, then point it at your inbound list. Do not use [Record updated](/reference/triggers/record-updated) for this build. That trigger fires on every edit to a person and re-routes leads that already have an owner.
+    Create a new workflow and add [Record added to list](/reference/triggers/record-added-to-list) as the trigger. Point it at your inbound list. Do not use [Record updated](/reference/triggers/record-updated) for this build. That trigger fires on every edit to a person, so it re-routes leads that already have an owner.
 
     | Field | Value |
     | --- | --- |
@@ -52,7 +58,7 @@ The blocks run in this order:
   </Step>
 
   <Step title="Filter to real inbound">
-    Add a [Filter](/reference/conditions/filter) so the workflow acts only on genuine demo requests. A condition that stops the run is free, so screen out test entries, internal emails, and rows missing a territory before any write happens.
+    Add a [Filter](/reference/conditions/filter) so the workflow acts only on genuine demo requests. A condition that stops the run is free. Use it to screen out test entries, internal emails, and rows missing a territory before any write happens.
 
     | Field | Value |
     | --- | --- |
@@ -68,9 +74,9 @@ The blocks run in this order:
     | Field | Value |
     | --- | --- |
     | Switch on | `country` |
-    | Branch — EMEA | United Kingdom, Germany, France, Spain, United Arab Emirates |
-    | Branch — AMER | United States, Canada, Brazil, Mexico |
-    | Branch — APAC | Australia, Singapore, Japan, India |
+    | Branch: EMEA | United Kingdom, Germany, France, Spain, United Arab Emirates |
+    | Branch: AMER | United States, Canada, Brazil, Mexico |
+    | Branch: APAC | Australia, Singapore, Japan, India |
     | Default branch | EMEA, or your fallback pool |
   </Step>
 
@@ -80,8 +86,8 @@ The blocks run in this order:
     | Field | Value |
     | --- | --- |
     | Switch on | `job_title` |
-    | Branch — Senior | title contains `VP`, `Director`, or `Head` |
-    | Branch — Standard | everything else |
+    | Branch: Senior | title contains `VP`, `Director`, or `Head` |
+    | Branch: Standard | everything else |
   </Step>
 
   <Step title="Round robin within the pool">
@@ -89,8 +95,8 @@ The blocks run in this order:
 
     | Field | Value |
     | --- | --- |
-    | Pool — EMEA Senior | Priya Sharma, Tomás Alvarez |
-    | Pool — EMEA Standard | Lena Fischer, Marco Rossi |
+    | Pool: EMEA Senior | Priya Sharma, Tomás Alvarez |
+    | Pool: EMEA Standard | Lena Fischer, Marco Rossi |
     | Output | `assigned_rep`, a user reference |
   </Step>
 
@@ -109,7 +115,7 @@ The blocks run in this order:
 
     | Field | Value |
     | --- | --- |
-    | Title | First touch: Priya Sharma — demo request |
+    | Title | First touch: Priya Sharma, demo request |
     | Assignee | `assigned_rep` |
     | Linked record | Trigger record |
     | Due | Today |
@@ -138,7 +144,7 @@ The blocks run in this order:
 
 ## Credit cost worked example
 
-The trigger, both [Switch](/reference/conditions/switch) blocks, the [Filter](/reference/conditions/filter), and [Round robin](/reference/workspace/round-robin) are free logic blocks, so they never consume credits. Only the three writes cost: [Update record](/reference/records/update-record) (1) plus [Create task](/reference/tasks/create-task) (1) plus [Slack](/reference/integrations) (1) equals **3 credits per qualified lead**.
+The trigger, both [Switch](/reference/conditions/switch) blocks, the [Filter](/reference/conditions/filter), and [Round robin](/reference/workspace/round-robin) are free logic blocks, so they never consume credits. Only the three writes cost. That is [Update record](/reference/records/update-record) (1) plus [Create task](/reference/tasks/create-task) (1) plus [Slack](/reference/integrations) (1), which equals **3 credits per qualified lead**.
 
 At 400 inbound demo requests a month, that is 400 × 3 = **1,200 credits per month**. A lead that the Filter in step 2 stops costs 0 credits, so your real spend tracks qualified inbound rather than raw form fills. Check that monthly figure against your plan allowance on [Credits & pricing explained](/reference/credits-and-pricing).
 
@@ -147,7 +153,7 @@ At 400 inbound demo requests a month, that is 400 × 3 = **1,200 credits per mon
 1. In your form or test tool, submit a demo request for `jane@acme.com`, country `Germany`, title `VP Marketing`, source `Demo request`. The lead lands on the Demo requests list and fires the trigger.
 2. Open the run in run history and confirm the **Filter** passed, with all three conditions matched.
 3. Confirm the territory **Switch** took the EMEA branch and the seniority **Switch** took the Senior branch.
-4. Confirm **Round robin** returned one EMEA Senior rep — for example, Priya Sharma — and that the same name appears in the **Update record**, **Create task**, and **Slack** steps.
+4. Confirm **Round robin** returned one EMEA Senior rep, for example Priya Sharma. Confirm that the same name appears in the **Update record**, **Create task**, and **Slack** steps.
 5. Verify the lead's `owner` and `territory` are set, a task is due today, and a Slack direct message arrived.
 6. Submit a deliberately failing input: a lead with `country` empty and source `Newsletter`. The step 2 Filter stops the run, and run history shows it halted at the Filter with zero writes and zero credits.
 
@@ -165,7 +171,7 @@ At 400 inbound demo requests a month, that is 400 × 3 = **1,200 credits per mon
 
 ### Routing by ICP score instead of seniority
 
-Replace the seniority [Switch](/reference/conditions/switch) with one that reads an `icp_score` attribute, where ICP stands for ideal customer profile. Branch high scores to your senior pool and the rest to the standard pool. Everything downstream stays the same.
+Replace the seniority [Switch](/reference/conditions/switch) with one that reads an `icp_score` attribute. ICP stands for ideal customer profile, a score of how well a lead matches the kind of customer you want. Branch high scores to your senior pool and the rest to the standard pool. Everything downstream stays the same.
 
 ### Emailing the owner instead of Slack
 
@@ -181,4 +187,4 @@ Swap the [Slack](/reference/integrations) block for a [Send HTTP request](/refer
 
 ---
 
-*Source: [Attio Help Center — Workflows](https://attio.com/help/apps/other-apps/workflows) and [Attio Help Center — Assign records and tasks](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026.*
+*Source: [Attio Help Center: Workflows](https://attio.com/help/apps/other-apps/workflows) and [Attio Help Center: Assign records and tasks](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026.*

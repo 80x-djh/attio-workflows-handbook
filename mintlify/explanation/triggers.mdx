@@ -4,11 +4,11 @@ description: A trigger is the event that starts a workflow, and choosing the wro
 icon: zap
 ---
 
-A **trigger** is the event that starts a workflow, and choosing the wrong one is the most common way an automation fails silently. A mismatched trigger does not raise an error. It simply never fires when you expect it to, which is far harder to notice than a run that fails loudly in the [run history](/explanation/runs-and-debugging).
+A **trigger** is the event that starts a workflow, and choosing the wrong one is the most common way an automation fails silently. A mismatched trigger does not raise an error. It simply never fires when you expect it to. That is far harder to notice than a run that fails loudly in the [run history](/explanation/runs-and-debugging).
 
-This page is a decision guide for the eleven triggers in the new engine. It groups them by the kind of event you are reacting to — a record changing, an entry moving through a list, a schedule elapsing, an external system calling in — and explains why one trigger beats its near-twin in each case. Each trigger's full inputs, outputs, and limits live in its own reference page; this guide tells you which one to reach for.
+This page is a decision guide for the eleven triggers in the new engine. It groups them by the kind of event you are reacting to: a record changing, an entry moving through a list, a schedule elapsing, or an external system calling in. For each case, it explains why one trigger beats its near-twin. Every trigger's full inputs, outputs, and limits live in its own reference page. This guide just tells you which one to reach for.
 
-By the end, you can pick a trigger by the event you mean to catch, scope it so it does not fire thousands of pointless times, and read its outputs to filter for the exact transition you care about. The recurring theme is precision: the more narrowly you describe the event, the cleaner the workflow downstream.
+By the end, you can do three things. You can pick a trigger by the event you mean to catch. You can scope it so it does not fire thousands of pointless times. And you can read its outputs to filter for the exact transition you care about. The recurring theme is precision. The more narrowly you describe the event, the cleaner the workflow downstream.
 
 ## Matching the trigger to the event
 
@@ -17,25 +17,25 @@ Start from the event you want to react to, then read across to the trigger that 
 | You want to react to… | Use | Why not the alternative |
 | --- | --- | --- |
 | A specific attribute getting a value, *including at creation* | [Attribute value changed](/reference/triggers/attribute-value-changed) | [Record updated](/reference/triggers/record-updated) misses values set during creation |
-| Any change to a record after it exists | [Record updated](/reference/triggers/record-updated) | Unscoped, it fires on *every* attribute change — high volume |
-| A brand-new record | [Record created](/reference/triggers/record-created) | — |
+| Any change to a record after it exists | [Record updated](/reference/triggers/record-updated) | Unscoped, it fires on *every* attribute change, so volume is high |
+| A brand-new record | [Record created](/reference/triggers/record-created) | No near-twin to avoid |
 | A record entering a pipeline or list | [Record added to list](/reference/triggers/record-added-to-list) | [Record created](/reference/triggers/record-created) fires for the object, not the list |
 | A list attribute changing, such as stage on a pipeline list | [List entry updated](/reference/triggers/list-entry-updated) | [Record updated](/reference/triggers/record-updated) ignores list attributes entirely |
 | A person deciding "run it on this one" | [Record command](/reference/triggers/record-command) or [List entry command](/reference/triggers/list-entry-command) | [Manual run](/reference/triggers/manual-run) carries no record into the run |
-| A schedule, such as a daily digest or weekly sweep | [Recurring schedule](/reference/triggers/recurring-schedule) | — |
+| A schedule, such as a daily digest or weekly sweep | [Recurring schedule](/reference/triggers/recurring-schedule) | No near-twin to avoid |
 | An external system, such as a form, product event, Clay, or your backend | [Webhook received](/reference/triggers/webhook-received) | Polling on a schedule is slower and wasteful |
-| A new task | [Task created](/reference/triggers/task-created) | — |
+| A new task | [Task created](/reference/triggers/task-created) | No near-twin to avoid |
 | Testing while you build | [Manual run](/reference/triggers/manual-run) | It passes **no record** into the run |
 
-Read the table as "event, then trigger." A funding-signal webhook from Clay maps to [Webhook received](/reference/triggers/webhook-received); a stage moving to Won on a pipeline list maps to [List entry updated](/reference/triggers/list-entry-updated). The rest of this page expands the rows that trip people up most.
+Read the table as "event, then trigger." A funding-signal webhook from Clay maps to [Webhook received](/reference/triggers/webhook-received). A stage moving to Won on a pipeline list maps to [List entry updated](/reference/triggers/list-entry-updated). The rest of this page expands the rows that trip people up most.
 
 ## Distinguishing created from updated
 
 [Record updated](/reference/triggers/record-updated) and [List entry updated](/reference/triggers/list-entry-updated) only fire for changes made *after* the record or entry already exists. If a value is set during creation, these triggers stay silent.
 
-That silence is the trap. A deal imported with stage already set to Won, a CSV row that lands with `priority` pre-filled, or an API call that creates a record fully formed all set their values at creation time, so an update-style trigger sees nothing to react to.
+That silence is the trap. Many values arrive already set at creation time, so an update-style trigger sees nothing to react to. Think of a deal imported with stage already set to Won, a CSV row that lands with `priority` pre-filled, or an API call that creates a record fully formed.
 
-[Attribute value changed](/reference/triggers/attribute-value-changed) fires in both cases — the value set at creation *and* the value changed later. When your logic is "this field became X," default to it. Suppose you want to alert sales the moment any deal reaches `stage = Won`, whether a rep dragged the card or an importer set it on day one.
+[Attribute value changed](/reference/triggers/attribute-value-changed) fires in both cases. It catches the value set at creation *and* the value changed later. When your logic is "this field became X," default to it. Suppose you want to alert sales the moment any deal reaches `stage = Won`. That alert should fire whether a rep dragged the card or an importer set it on day one.
 
 | Field | Value |
 | --- | --- |
@@ -44,15 +44,15 @@ That silence is the trap. A deal imported with stage already set to Won, a CSV r
 | Attribute | `stage` |
 | New value | Won |
 
-Configured this way, the workflow fires for a deal Priya Sharma closes by hand *and* for the fifty deals your migration imported as Won last night, where a [Record updated](/reference/triggers/record-updated) trigger would have caught only Priya's. Reserve the update-style triggers for cases where you specifically want post-creation edits and nothing else.
+Configured this way, the workflow fires for a deal Priya Sharma closes by hand. It also fires for the fifty deals your migration imported as Won last night. A [Record updated](/reference/triggers/record-updated) trigger would have caught only Priya's. Reserve the update-style triggers for cases where you specifically want post-creation edits and nothing else.
 
 ## Choosing between object and list triggers
 
-Attio separates [records and list entries](/explanation/records-vs-list-entries), and that separation runs all the way through to triggers. A trigger scoped to an object cannot see list attributes, and a trigger scoped to a list cannot see object attributes.
+Attio separates [records and list entries](/explanation/records-vs-list-entries), and that separation runs all the way through to triggers. A trigger scoped to an object cannot see list attributes. A trigger scoped to a list cannot see object attributes.
 
 - [Record updated](/reference/triggers/record-updated) ignores changes to list attributes.
 - [List entry updated](/reference/triggers/list-entry-updated) ignores changes to object attributes.
-- [Attribute value changed](/reference/triggers/attribute-value-changed) can point at either — you choose the object *or* the list when you configure it.
+- [Attribute value changed](/reference/triggers/attribute-value-changed) can point at either. You choose the object *or* the list when you configure it.
 
 The common pattern is a pipeline whose `stage` lives as a list attribute on a "Sales pipeline" list rather than as an attribute on the Deals object. Picture a [Record updated](/reference/triggers/record-updated) trigger on Deals watching for stage changes on that pipeline.
 
@@ -62,25 +62,25 @@ The common pattern is a pipeline whose `stage` lives as a list attribute on a "S
 | Object | Deals |
 | Attribute | `stage` (lives on the Sales pipeline list, not the object) |
 
-This workflow never fires, because the object-scoped trigger cannot see a list attribute. The fix is to use [List entry updated](/reference/triggers/list-entry-updated) on the Sales pipeline list, or [Attribute value changed](/reference/triggers/attribute-value-changed) scoped to that list, so the trigger watches the surface where `stage` actually lives.
+This workflow never fires, because the object-scoped trigger cannot see a list attribute. The fix is to watch the surface where `stage` actually lives. Use [List entry updated](/reference/triggers/list-entry-updated) on the Sales pipeline list, or [Attribute value changed](/reference/triggers/attribute-value-changed) scoped to that list.
 
 ## Scoping triggers to control volume
 
-An unscoped [Record updated](/reference/triggers/record-updated) on a busy object fires constantly. A single run may cost only 0–1 credits, but thousands of pointless runs a month add up, clutter the run history, and can [trigger loops](/explanation/infinite-loops-and-safety) when a workflow's own write fires the trigger again.
+An unscoped [Record updated](/reference/triggers/record-updated) on a busy object fires constantly. A single run may cost only 0 to 1 credits, but thousands of pointless runs a month add up. They clutter the run history, and they can [trigger loops](/explanation/infinite-loops-and-safety) when a workflow's own write fires the trigger again.
 
 Before you save a change-style trigger, ask two questions. First, can you select a specific attribute on the trigger itself? Both [Record updated](/reference/triggers/record-updated) and [List entry updated](/reference/triggers/list-entry-updated) let you narrow to one attribute instead of any change. Second, can a free [Filter](/reference/conditions/filter) block immediately after the trigger discard the runs you do not care about?
 
-A scoped trigger followed by an early filter — for example, "Owner is not empty" before any enrichment runs — is the difference between a workspace with tidy, debuggable automation and one with forty thousand mystery runs nobody can account for.
+A scoped trigger followed by an early filter makes all the difference. For example, you might check "Owner is not empty" before any enrichment runs. That is the gap between a workspace with tidy, debuggable automation and one with forty thousand mystery runs nobody can account for.
 
 ## Combining multiple triggers in one workflow
 
-The new engine lets one workflow carry several triggers, so the same downstream steps run whether a lead arrives by [Webhook received](/reference/triggers/webhook-received) or is created by hand with [Manual run](/reference/triggers/manual-run). Connect each trigger to the first shared step, then let downstream blocks read from whichever trigger actually fired.
+The new engine lets one workflow carry several triggers. So the same downstream steps run whether a lead arrives by [Webhook received](/reference/triggers/webhook-received) or is created by hand with [Manual run](/reference/triggers/manual-run). Connect each trigger to the first shared step, then let downstream blocks read from whichever trigger actually fired.
 
-Because only one trigger fires on any given run, downstream inputs need a fallback. Use [multiple data sources](/explanation/variables) on the input — read the email from the webhook payload if it exists, otherwise from the record — so a block resolves correctly no matter which entry point started the run. The result is one workflow to maintain instead of two near-identical copies that drift apart over the months.
+Because only one trigger fires on any given run, downstream inputs need a fallback. Use [multiple data sources](/explanation/variables) on the input. Read the email from the webhook payload if it exists, otherwise from the record. That way a block resolves correctly no matter which entry point started the run. The result is one workflow to maintain instead of two near-identical copies that drift apart over the months.
 
 ## Reading trigger outputs to filter precisely
 
-Every trigger emits at least three things: the triggering entity's data where one applies, **which actor** performed the action, and **when** it happened. Change-style triggers with a selected attribute add two more — the **new value** and the **previous value** — which let you catch only true transitions rather than every save.
+Every trigger emits at least three things: the triggering entity's data where one applies, **which actor** performed the action, and **when** it happened. Change-style triggers with a selected attribute add two more, the **new value** and the **previous value**. Those two let you catch only true transitions rather than every save.
 
 Feed both values into a [Filter](/reference/conditions/filter) so a status-change workflow fires only when the deal genuinely crosses into Won, not on later edits that leave it there.
 
@@ -89,7 +89,7 @@ Feed both values into a [Filter](/reference/conditions/filter) so a status-chang
 | New value | is Won |
 | Previous value | is not Won |
 
-With both conditions in place, a deal saved twice while already Won runs the workflow once, at the real transition. The actor output earns its own guard: filtering on **Updated by → Type → is not → Workflow** is the standard way to stop a workflow from re-triggering on its own writes and spinning into an [infinite loop](/explanation/infinite-loops-and-safety).
+With both conditions in place, a deal saved twice while already Won runs the workflow once, at the real transition. The actor output earns its own guard. Filtering on **Updated by → Type → is not → Workflow** stops a workflow from re-triggering on its own writes. It is the standard way to keep a workflow from spinning into an [infinite loop](/explanation/infinite-loops-and-safety).
 
 ## See also
 
@@ -111,4 +111,4 @@ With both conditions in place, a deal saved twice while already Won runs the wor
   </Card>
 </CardGroup>
 
-*Sources: [Attio Help Center — Overview of workflows](https://attio.com/help/reference/automations/workflows/overview-of-workflows), [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.*
+*Sources: [Attio Help Center: Overview of workflows](https://attio.com/help/reference/automations/workflows/overview-of-workflows), [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.*

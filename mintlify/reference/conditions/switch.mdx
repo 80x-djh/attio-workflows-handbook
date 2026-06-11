@@ -4,12 +4,12 @@ description: The Switch block (Condition step) routes a workflow into multiple n
 icon: git-branch
 ---
 
-The **Switch** block (Condition step) routes a workflow into multiple named case paths by evaluating ordered conditions and running the first case that matches. It evaluates cases top to bottom and runs only the first one whose conditions are true, so case order is the logic. An optional default path runs when no case matches.
+The **Switch** block (Condition step) routes a workflow into multiple named case paths by evaluating ordered conditions and running the first case that matches. It checks the cases from top to bottom and runs only the first one whose conditions are true. Case order is the logic. An optional default path runs when no case matches.
 
 | | |
 | --- | --- |
 | **Category** | Condition step |
-| **Credit cost** | Free — logic blocks consume no credits |
+| **Credit cost** | Free. Logic blocks consume no credits |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
@@ -25,27 +25,27 @@ The **Switch** block (Condition step) routes a workflow into multiple named case
 
 None.
 
-The **Switch** block controls which path runs; it does not produce a data variable. Reference outputs from the blocks inside the case path you took, not from **Switch** itself — for example, a record created on the high-value path is available downstream as `{{ steps.create_record.record_id }}`.
+The **Switch** block controls which path runs. It does not produce a data variable. To use outputs, reference the blocks inside the case path you took, not the **Switch** block itself. For example, a record created on the high-value path is available downstream as `{{ steps.create_record.record_id }}`.
 
 ## Behavior
 
-Cases evaluate in order, from the first case to the last. The workflow runs the first case whose conditions are true and stops checking the remaining cases, so a record that satisfies two cases only ever takes the earlier one. Order your cases from most specific to most general to avoid a broad case swallowing a narrower one.
+Cases evaluate in order, from the first case to the last. The workflow runs the first case whose conditions are true, then stops checking the rest. So a record that satisfies two cases only ever takes the earlier one. Order your cases from most specific to most general. This stops a broad case from swallowing a narrower one.
 
-When no case matches, the run takes the default path if you connected one. If you did not connect a default path, the run ends quietly at the **Switch** block — this is a normal stop, not an error. The default path is your catch-all: connect it to handle the records you did not anticipate, or leave it unconnected to stop those runs on purpose.
+When no case matches, the run takes the default path if you connected one. If you did not connect a default path, the run ends quietly at the **Switch** block. This is a normal stop, not an error. The default path is your catch-all. Connect it to handle the records you did not anticipate, or leave it unconnected to stop those runs on purpose.
 
-Each case is an independent branch. Only the blocks on the case that runs execute, so blocks on the paths you did not take consume no credits and produce no outputs.
+Each case is an independent branch. Only the blocks on the case that runs execute. Blocks on the paths you did not take consume no credits and produce no outputs.
 
 ## Gotchas
 
-- **A later case never runs when an earlier case is too broad.** Because evaluation stops at the first true case, a general case placed before a specific one captures records meant for the specific case. Order cases from most specific to most general, and reserve broad catch-all logic for the default path.
-- **Records vanish when no case matches and no default is connected.** With no matching case and no default path, the run stops silently at the **Switch** block. Connect a default path whenever you need to know which records fell through, or confirm that a silent stop is the behavior you want.
+- **A later case never runs when an earlier case is too broad.** Evaluation stops at the first true case. So a general case placed before a specific one captures records meant for the specific case. Order cases from most specific to most general, and reserve broad catch-all logic for the default path.
+- **Records vanish when no case matches and no default is connected.** With no matching case and no default path, the run stops silently at the **Switch** block. Connect a default path whenever you need to know which records fell through. Or confirm that a silent stop is the behavior you want.
 - **Case names like `Case 1` make run history unreadable.** Generic names give the run viewer no business meaning, so you cannot tell at a glance which path a record took. Rename each case for what it represents, such as `Enterprise`, `Mid-market`, and `SMB`.
 
 ## Examples
 
 ### Routing leads by deal size
 
-A **Switch** block sends each new opportunity down a path sized to its value, with a default path for everything that does not fit a band.
+A **Switch** block sends each new opportunity down a path sized to its value. A default path catches everything that does not fit a band.
 
 | Case | Condition | Path |
 | --- | --- | --- |
@@ -54,11 +54,11 @@ A **Switch** block sends each new opportunity down a path sized to its value, wi
 | `SMB` | `amount` is greater than 0 | Add to the self-serve nurture list |
 | Default | No case matched | Notify `priya@acme.com` to triage manually |
 
-An opportunity with an `amount` of 150000 matches the `Enterprise` case first and never reaches `Mid-market`, so it takes the high-touch onboarding path.
+An opportunity with an `amount` of 150000 matches the `Enterprise` case first and never reaches `Mid-market`. So it takes the high-touch onboarding path.
 
 ### Branching a lead score into explainable bands
 
-A **Switch** block turns a numeric score into named tiers so the run history reads as the business logic rather than as thresholds.
+A **Switch** block turns a numeric score into named tiers. The run history then reads as the business logic rather than as raw thresholds.
 
 ```json
 {
@@ -71,7 +71,7 @@ A **Switch** block turns a numeric score into named tiers so the run history rea
 }
 ```
 
-A lead with a `lead_score` of 64 matches the `Warm` case and enrolls in the nurture sequence; a lead scored 88 matches `Hot` first and triggers the Slack alert.
+A lead with a `lead_score` of 64 matches the `Warm` case and enrolls in the nurture sequence. A lead scored 88 matches `Hot` first and triggers the Slack alert.
 
 ## Source
 

@@ -1,9 +1,9 @@
 ---
 title: Build your first workflow
-description: Build, test, and publish a deal-stage Slack alert in about ten minutes, learning the canvas, variables, and publishing model as you go.
+description: Build, test, and publish a deal-stage Slack alert in about ten minutes. Learn the canvas, variables, and publishing model as you go.
 ---
 
-Build, test, and publish a deal-stage Slack alert in about ten minutes, learning the canvas, variables, and publishing model as you go.
+Build, test, and publish a deal-stage Slack alert in about ten minutes. Learn the canvas, variables, and publishing model as you go.
 
 <Note>
 **Prerequisites:** you understand what a workflow is and how a trigger starts one. If that is new, read [What are Attio Workflows?](/explanation/what-are-workflows) first.
@@ -11,28 +11,28 @@ Build, test, and publish a deal-stage Slack alert in about ten minutes, learning
 **By the end you can:** build, publish, and debug a live workflow that posts a Slack alert every time a deal reaches a chosen stage.
 </Note>
 
-This lesson builds the classic first workflow: when a deal moves to a new stage, it posts an alert with the deal's details. The build is small, but it touches every fundamental you will reuse forever: a trigger, a filter, variables, an action, and the publishing model. It is also genuinely useful on day one.
+This lesson builds the classic first workflow. When a deal moves to a new stage, it posts an alert with the deal's details. The build is small, but it touches every fundamental you will reuse forever. You will set up a trigger, a filter, variables, an action, and the publishing model. It is also genuinely useful on day one.
 
 If you have not connected Slack, swap the message step for a [Create task](/reference/tasks/create-task) block. Every other step is identical.
 
 ## What you build
 
-The finished workflow follows the shape most go-to-market (GTM) automation shares: a trigger fires, a filter narrows it, and an action runs. In this case the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger watches the deal stage, a [Filter](/reference/conditions/filter) block keeps only the stage you care about, and the Slack **Post message to channel** block sends the alert.
+The finished workflow follows the shape that most go-to-market (GTM) automation shares. A trigger fires, a filter narrows it, and an action runs. Here the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger watches the deal stage. A [Filter](/reference/conditions/filter) block keeps only the stage you care about. The Slack **Post message to channel** block sends the alert.
 
 A few facts orient you before you start:
 
 - Workflows live under **Automations → Workflows** in the left sidebar.
 - You build in a **draft**. Nothing runs until you publish.
-- Workflows have no write access to objects by default. A read-only Slack alert needs none, but bookmark [Permissions & workflow access](/explanation/permissions-and-access) for the first workflow you build that changes data.
+- Workflows have no write access to objects by default. A read-only Slack alert needs none. But bookmark [Permissions & workflow access](/explanation/permissions-and-access) for the first workflow you build that changes data.
 
 ## Build the workflow
 
 <Steps>
   <Step title="Create and name the workflow">
-    Open **Automations → Workflows** and click the **Create workflow** button. Click the **Untitled Workflow** name in the top-left and rename it to something a colleague would recognize, such as `Deal stage → Slack alert`. Add a one-line description while you are there; future-you will be grateful.
+    Open **Automations → Workflows** and click the **Create workflow** button. Click the **Untitled Workflow** name in the top-left and rename it to something a colleague would recognize, such as `Deal stage → Slack alert`. Add a one-line description while you are there. Future-you will be grateful.
 
     <Tip>
-      **The Ask Attio shortcut.** You can type *"When a deal's stage changes, post the deal name, value, and new stage to #revenue"* into the **Describe your workflow…** box and let the agent assemble the blocks. Build it by hand once first, because debugging an agent-built workflow takes exactly the block knowledge this lesson teaches.
+      **The Ask Attio shortcut.** You can type *"When a deal's stage changes, post the deal name, value, and new stage to #revenue"* into the **Describe your workflow…** box and let the agent assemble the blocks. Build it by hand once first. Debugging an agent-built workflow takes exactly the block knowledge this lesson teaches.
     </Tip>
   </Step>
 
@@ -44,7 +44,7 @@ A few facts orient you before you start:
     | Object or List | Deals |
     | Attribute | Deal stage |
 
-    Why this trigger and not [Record updated](/reference/triggers/record-updated)? Because **Record updated** does not fire when an attribute is first set during record creation. A deal created straight into "Won" would silently skip your workflow. **Attribute value changed** catches both the creation-time value and every later change, and that distinction is the single most common trigger mistake. [Choosing the right trigger](/explanation/triggers) covers the full decision.
+    Why this trigger and not [Record updated](/reference/triggers/record-updated)? Because **Record updated** does not fire when an attribute is first set during record creation. A deal created straight into "Won" would silently skip your workflow. **Attribute value changed** catches both the creation-time value and every later change. That distinction is the single most common trigger mistake. [Choosing the right trigger](/explanation/triggers) covers the full decision.
   </Step>
 
   <Step title="Filter to the stages you care about">
@@ -70,13 +70,13 @@ A few facts orient you before you start:
   </Step>
 
   <Step title="Publish and test">
-    Click the **Publish workflow** button. Attio highlights any misconfigured block in red; fix each one and publish again. Then trigger the workflow for real by moving a test deal, such as `Acme renewal`, into the target stage. Open the **Runs** tab to confirm it worked: you see the run, the green-arrow path it took, and every block's inputs and outputs. The [run viewer](/explanation/runs-and-debugging) is where you will spend your time when a workflow misbehaves.
+    Click the **Publish workflow** button. Attio highlights any misconfigured block in red. Fix each one and publish again. Then trigger the workflow for real by moving a test deal, such as `Acme renewal`, into the target stage. Open the **Runs** tab to confirm it worked. You see the run, the green-arrow path it took, and every block's inputs and outputs. The [run viewer](/explanation/runs-and-debugging) is where you will spend your time when a workflow misbehaves.
   </Step>
 </Steps>
 
 ## What it costs
 
-The trigger is free, the filter is free, and the Slack post costs 1 credit, so each alert costs 1 credit in total. The arithmetic stays trivial here, but it matters far more once you add loops or AI blocks, so learn to read it now. [Credits & pricing explained](/reference/credits-and-pricing) shows how every block is priced.
+The trigger is free, the filter is free, and the Slack post costs 1 credit. So each alert costs 1 credit in total. The arithmetic stays trivial here, but it matters far more once you add loops or AI blocks. Learn to read it now. [Credits & pricing explained](/reference/credits-and-pricing) shows how every block is priced.
 
 ## Where this goes next
 

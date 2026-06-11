@@ -4,12 +4,14 @@ description: The Attribute value changed trigger (Triggers) starts a workflow wh
 icon: pencil
 ---
 
-The **Attribute value changed** trigger (Triggers) starts a workflow when an attribute is set or changed, including values set at record or list-entry creation. Unlike [Record updated](/reference/triggers/record-updated) and [List entry updated](/reference/triggers/list-entry-updated), it fires on creation-time values, so it is the safer choice for most stage and status rules. Point it at an object to watch an object attribute, or at a list to watch a list attribute.
+The **Attribute value changed** trigger (Triggers) starts a workflow when an attribute is set or changed, including values set at record or list-entry creation. An attribute is a single field on a record, such as a deal's stage or a company's lifecycle. This trigger watches one attribute and runs your workflow whenever its value moves.
+
+It differs from [Record updated](/reference/triggers/record-updated) and [List entry updated](/reference/triggers/list-entry-updated) in one important way. It fires on values set at creation time, so it catches a deal that is created already marked `Won`. That makes it the safer choice for most stage and status rules. Point it at an object to watch an object attribute, or at a list to watch a list attribute.
 
 | | |
 | --- | --- |
 | **Category** | Triggers |
-| **Credit cost** | Free — triggers consume no credits |
+| **Credit cost** | Free. Triggers consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
@@ -35,24 +37,26 @@ Reference the new value in a later block as `{{ steps.attribute_value_changed.ne
 
 ## Behavior
 
-The trigger evaluates one attribute on one object or list. It fires when that attribute moves from empty to a value, from one value to another, or from a value back to empty. Because it also fires when the value is set during record or list-entry creation, a deal created directly as `Won` triggers it — the case that [Record updated](/reference/triggers/record-updated) and [List entry updated](/reference/triggers/list-entry-updated) miss.
+The trigger evaluates one attribute on one object or list. It fires when that attribute moves from empty to a value, from one value to another, or from a value back to empty.
 
-Each firing exposes both the new value and the previous value, so you can detect a true transition rather than any touch of the attribute. On the first-ever set of an attribute, the previous value is empty. Re-saving the same value does not count as a change, so the trigger does not fire when the value is unchanged.
+It also fires when the value is set during record or list-entry creation. So a deal created directly as `Won` triggers it. That is the case that [Record updated](/reference/triggers/record-updated) and [List entry updated](/reference/triggers/list-entry-updated) miss.
 
-A workflow that writes back to the same attribute re-fires this trigger, because a workflow is an actor like any other. Scope the trigger to an attribute your workflows never write, or guard the run with an early [Filter](/reference/conditions/filter) on the actor, to avoid a trigger loop. See [infinite loops and safety](/explanation/infinite-loops-and-safety).
+Each firing gives you both the new value and the previous value. With both, you can spot a real change in state, not just any edit to the attribute. On the first-ever set of an attribute, the previous value is empty. Re-saving the same value does not count as a change, so the trigger does not fire when the value is unchanged.
+
+A workflow that writes back to the same attribute will re-fire this trigger, because a workflow is an actor like any other. To avoid a trigger loop, scope the trigger to an attribute your workflows never write. You can also guard the run with an early [Filter](/reference/conditions/filter) on the actor. See [infinite loops and safety](/explanation/infinite-loops-and-safety).
 
 ## Gotchas
 
-- **Watches the object, misses the list.** A pipeline `stage` is usually a list attribute, not an object attribute, so a trigger pointed at the object never fires on stage moves. Point the trigger at the list instead, and read [records vs list entries](/explanation/records-vs-list-entries) to tell the two apart.
+- **Watches the object, misses the list.** A pipeline `stage` is usually a list attribute, not an object attribute. A trigger pointed at the object never fires on stage moves. Point the trigger at the list instead, and read [records vs list entries](/explanation/records-vs-list-entries) to tell the two apart.
 - **Fires on every set, not only the transition you want.** Without a value check, the trigger runs each time the attribute changes to anything, including back-and-forth edits. Add an early [Filter](/reference/conditions/filter) comparing the new value to the target, such as `New value is Won`.
-- **Re-fires the same stage as a fresh win.** A re-save of `Won` over `Won` does not fire, but a move from `Won` to `Negotiation` and back to `Won` does. Filter for a true transition with `New value is Won` **and** `Previous value is not Won`, or a re-entered deal sends a duplicate alert.
+- **Re-fires the same stage as a fresh win.** A re-save of `Won` over `Won` does not fire. But a move from `Won` to `Negotiation` and back to `Won` does. Filter for a true transition with `New value is Won` **and** `Previous value is not Won`. Otherwise a re-entered deal sends a duplicate alert.
 - **Loops when a workflow writes the attribute.** If any workflow updates the watched attribute, this trigger fires again and can chain into a loop. Filter out the workflow actor, or watch an attribute that workflows never set.
 
 ## Examples
 
 ### Alerting on a closed-won deal
 
-Point the trigger at the `Sales pipeline` list and watch the `Stage` attribute, then filter for the true transition into `Won` before alerting.
+Point the trigger at the `Sales pipeline` list and watch the `Stage` attribute. Then filter for the true transition into `Won` before alerting.
 
 | Field | Value |
 | --- | --- |
@@ -65,7 +69,7 @@ When a rep drags `Acme renewal` from `Negotiation` to `Won`, the workflow posts 
 
 ### Catching a status set at creation
 
-Point the trigger at the `Companies` object and watch the `Lifecycle` attribute so that companies created already marked `Customer` are caught, not just those edited later.
+Point the trigger at the `Companies` object and watch the `Lifecycle` attribute. This way, companies created already marked `Customer` are caught, not just those edited later.
 
 ```json
 {
@@ -76,11 +80,11 @@ Point the trigger at the `Companies` object and watch the `Lifecycle` attribute 
 }
 ```
 
-A company imported with `Lifecycle` set to `Customer` fires the trigger and creates the kickoff task, where [Record updated](/reference/triggers/record-updated) would have stayed silent because the value was set at creation.
+A company imported with `Lifecycle` set to `Customer` fires the trigger and creates the kickoff task. [Record updated](/reference/triggers/record-updated) would have stayed silent here, because the value was set at creation.
 
 ## Source
 
-Attio Help Center — [Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.
+Attio Help Center: [Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.
 
 ## See also
 

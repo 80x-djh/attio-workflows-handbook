@@ -4,12 +4,12 @@ description: The Find records block (Records) looks up records in an object that
 icon: "search"
 ---
 
-The **Find records** block (Records) looks up records in an object that match filter conditions, so later steps can read or act on them. It is the standard way to pull a working set into a run that did not start from a single record, such as a [Recurring schedule](/reference/triggers/recurring-schedule) sweep. The block returns at most 100 records, so a filter that matches more than that silently leaves the remainder behind.
+The **Find records** block (Records) looks up records in an object that match filter conditions, so later steps can read or act on them. Use it to pull a working set into a run that did not start from one record. A good example is a [Recurring schedule](/reference/triggers/recurring-schedule) sweep, which kicks off on a timer rather than on a single record. The block returns at most 100 records. If your filter matches more than that, the extra records are silently left out.
 
 | | |
 | --- | --- |
 | **Category** | Records |
-| **Credit cost** | Free — lookups consume no credits |
+| **Credit cost** | Free. Lookups consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans that include Workflows |
 | **Limits** | Returns at most 100 records per run; `Limit` is required. |
@@ -33,17 +33,17 @@ Reference the matched records downstream as `{{ steps.find_records.records }}`, 
 
 ## Behavior
 
-The block evaluates the filter against the chosen object and returns the records that match, ordered as Attio returns them. When no record matches, the run continues with an empty list and a count of `0` rather than failing, so guard later steps with an [If](/reference/conditions/if) block when an empty result should change the path.
+The block runs your filter against the chosen object and returns the records that match. They come back in the order Attio returns them. When nothing matches, the run does not fail. It continues with an empty list and a count of `0`. So if an empty result should change what happens next, guard the later steps with an [If](/reference/conditions/if) block.
 
-The block returns a list, not a single record. Wiring that list directly into a block that expects one record, such as [Update record](/reference/records/update-record), uses only the first match and silently ignores the rest. To act on every match, pass the list into a [Loop](/reference/utilities/loop) and place the write inside the loop.
+The block always returns a list, not a single record. Some blocks expect one record, such as [Update record](/reference/records/update-record). If you wire the list straight into one of those, it uses only the first match and silently ignores the rest. To act on every match, pass the list into a [Loop](/reference/utilities/loop) and put the write step inside the loop.
 
-The 100-record cap is a hard ceiling on what one run can see. A filter that matches 400 deals returns 100; the other 300 never enter the run. For larger working sets, narrow the filter so each run handles a slice, or schedule the workflow to run more often against a moving condition such as "last touched more than 30 days ago."
+The 100-record cap is a hard ceiling on what one run can see. A filter that matches 400 deals returns 100. The other 300 never enter the run. For larger working sets, narrow the filter so each run handles a slice. You can also schedule the workflow to run more often against a moving condition, such as "last touched more than 30 days ago".
 
 ## Gotchas
 
-- **Limit is required and rejects values over 100.** The block will not save without a `Limit`, and the field caps at 100. Set it to the largest batch one run should process, and design the filter so the working set fits, rather than assuming the block will page through everything.
+- **Limit is required and rejects values over 100.** The block will not save without a `Limit`, and the field caps at 100. Set it to the largest batch one run should process. Then design the filter so the working set fits, rather than assuming the block will page through everything.
 - **A multi-record result collapses into the first match.** Connecting `{{ steps.find_records.records }}` into a single-record input takes record one and drops the rest with no error. Wrap the write in a [Loop](/reference/utilities/loop) whenever the filter can return more than one record.
-- **An empty result does not stop the run.** A filter that matches nothing yields an empty list, and downstream blocks still execute against it. Branch on `{{ steps.find_records.number_of_matches }}` with an [If](/reference/conditions/if) block when "no matches" should take a different path.
+- **An empty result does not stop the run.** A filter that matches nothing yields an empty list, and downstream blocks still run against it. Branch on `{{ steps.find_records.number_of_matches }}` with an [If](/reference/conditions/if) block when "no matches" should take a different path.
 - **The count reflects only what was returned.** `Number of matches` reports the records inside the limit, not the true total in the object. Do not treat it as a complete population count when the filter can match more than 100 records.
 
 ## Examples
@@ -58,11 +58,11 @@ A nightly run finds open deals that have not moved recently, then creates a foll
 | Limit | `100` |
 | Filter | `Status` is `Open` **and** `Last activity` is before `30 days ago` |
 
-The block returns up to 100 stale deals; a [Loop](/reference/utilities/loop) over `{{ steps.find_records.records }}` then runs [Create task](/reference/tasks/create-task) once per deal.
+The block returns up to 100 stale deals. A [Loop](/reference/utilities/loop) over `{{ steps.find_records.records }}` then runs [Create task](/reference/tasks/create-task) once per deal.
 
 ### Finding a company by domain before creating a duplicate
 
-A webhook-triggered run looks for an existing company on the inbound domain so the workflow can update it instead of creating a second record.
+A webhook-triggered run looks for an existing company on the inbound domain. That way the workflow can update it instead of creating a second record.
 
 ```json
 {
@@ -74,7 +74,7 @@ A webhook-triggered run looks for an existing company on the inbound domain so t
 }
 ```
 
-When one record matches, `{{ steps.find_records.number_of_matches }}` is `1` and the run routes to [Update record](/reference/records/update-record); when it is `0`, the run routes to [Create record](/reference/records/create-record) instead.
+When one record matches, `{{ steps.find_records.number_of_matches }}` is `1` and the run routes to [Update record](/reference/records/update-record). When it is `0`, the run routes to [Create record](/reference/records/create-record) instead.
 
 ## Source
 

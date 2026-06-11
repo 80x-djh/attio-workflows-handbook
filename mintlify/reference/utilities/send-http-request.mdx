@@ -4,7 +4,9 @@ description: The Send HTTP request block (Utilities) calls an external URL from 
 icon: webhook
 ---
 
-The **Send HTTP request** block (Utilities) calls an external URL from a workflow and returns the response. It is how a workflow reaches enrichment providers, internal services, or any system with a REST API, and it is the only block that sends an arbitrary outbound request. Treat every call as unreliable: the block returns a success flag you must check before you write the returned data back into Attio.
+The **Send HTTP request** block (Utilities) calls an external URL from a workflow and returns the response. Use it when a workflow needs to reach an outside system. That system might be an enrichment provider (a service that fills in missing company or person details), an internal service, or any tool with a REST API. It is the only block that sends a free-form outbound request.
+
+Treat every call as unreliable. The block returns a success flag. Check that flag before you write the returned data back into Attio.
 
 | | |
 | --- | --- |
@@ -18,8 +20,8 @@ The **Send HTTP request** block (Utilities) calls an external URL from a workflo
 
 | Input | Type | Required | Default | Notes |
 | --- | --- | --- | --- | --- |
-| Method | Enum | Yes | — | One of `DELETE`, `GET`, `HEAD`, `PATCH`, `POST`, or `PUT`. |
-| URL | Text | Yes | — | Static text, [variables](/reference/variable-syntax), or both. |
+| Method | Enum | Yes | None | One of `DELETE`, `GET`, `HEAD`, `PATCH`, `POST`, or `PUT`. |
+| URL | Text | Yes | None | Static text, [variables](/reference/variable-syntax), or both. |
 | Headers | Key-value pairs | No | None | Authentication and content headers, subject to platform restrictions. |
 | Content-Type | Text | Conditional | None | Required when the request sends a body. |
 | Body | Text | No | None | The request payload, usually JSON. |
@@ -36,24 +38,24 @@ Reference the response body downstream as `{{ steps.send_http_request.response_b
 
 ## Behavior
 
-The block sends a single request and waits for the response before the workflow continues. The request times out after 2 minutes; an endpoint that does not respond within that window fails the block rather than hanging the run.
+The block sends a single request and waits for the response before the workflow continues. The request times out after 2 minutes. If the endpoint does not respond within that window, the block fails instead of hanging the run.
 
-The response body is returned as text. To use individual fields downstream, follow the block with [Parse JSON](/reference/utilities/parse-json), which converts the string into typed [variables](/explanation/variables). The block does not parse the response for you.
+The response body comes back as text. To use individual fields from it downstream, follow the block with [Parse JSON](/reference/utilities/parse-json). That block converts the text into typed [variables](/explanation/variables), which are named values you can reuse later in the workflow. The Send HTTP request block does not parse the response for you.
 
-The success flag reflects the transport-level outcome, so check it before you act on the body. An endpoint can return a `200` status with an error payload, or a `4xx` status with a body that explains the problem; gate any record write on the success flag and, where the API uses status codes meaningfully, on the status code as well.
+The success flag tells you whether the request reached the endpoint and got a response. Check it before you act on the body. The flag does not tell you whether the response was the one you wanted. An endpoint can return a `200` status with an error message in the body, or a `4xx` status with a body that explains the problem. So gate any record write on the success flag. Where the API uses status codes meaningfully, gate on the status code as well.
 
 ## Gotchas
 
-- **The response arrives as raw text, not fields.** The block returns the body as a string, so `{{ steps.send_http_request.response_body }}` cannot be mapped field-by-field on its own. Add a [Parse JSON](/reference/utilities/parse-json) block after it and reference the parsed outputs downstream.
-- **A request that never returns fails at 2 minutes.** A slow or unresponsive endpoint holds the run open until the 2-minute timeout, then fails the block. Point the URL at endpoints that respond quickly, and branch on the success flag so a timeout does not silently skip later writes.
-- **Writing the body without checking success corrupts records.** A failed call can still carry a body, and writing it back overwrites good data with an error message. Add an [If](/reference/conditions/if) block on `{{ steps.send_http_request.success }}` and only write when it is `true`.
-- **A missing Content-Type drops the body.** Requests that send a payload need a Content-Type header; without it the endpoint may ignore or reject the body. Set `Content-Type` to `application/json` whenever the Body field is populated.
+- **The response arrives as raw text, not fields.** The block returns the body as a string. On its own, `{{ steps.send_http_request.response_body }}` cannot be mapped field by field. Add a [Parse JSON](/reference/utilities/parse-json) block after it, then reference the parsed outputs downstream.
+- **A request that never returns fails at 2 minutes.** A slow or unresponsive endpoint holds the run open until the 2-minute timeout, then fails the block. Point the URL at endpoints that respond quickly. Branch on the success flag so a timeout does not silently skip later writes.
+- **Writing the body without checking success corrupts records.** A failed call can still return a body. Writing that body back overwrites good data with an error message. Add an [If](/reference/conditions/if) block on `{{ steps.send_http_request.success }}` and only write when it is `true`.
+- **A missing Content-Type drops the body.** Requests that send a payload need a Content-Type header. Without it, the endpoint may ignore or reject the body. Set `Content-Type` to `application/json` whenever the Body field is populated.
 
 ## Examples
 
 ### Enriching a new company from an external API
 
-This workflow calls an enrichment provider when a company gains a domain, then parses the response and updates the record. The example sends a `GET` request with the domain in the path and an API key in the header.
+This workflow calls an enrichment provider when a company gains a domain. It then parses the response and updates the record. The example sends a `GET` request with the domain in the path and an API key in the header.
 
 | Field | Value |
 | --- | --- |
@@ -89,7 +91,7 @@ The block returns `201` with the new account's ID in the body, and `{{ steps.sen
 
 ### Handling a failed enrichment call
 
-This example shows the edge case: the enrichment endpoint is down and the request times out. The configuration matches the first example, but the endpoint does not respond within 2 minutes.
+This example shows the edge case. The enrichment endpoint is down and the request times out. The configuration matches the first example, but the endpoint does not respond within 2 minutes.
 
 | Field | Value |
 | --- | --- |
@@ -97,11 +99,11 @@ This example shows the edge case: the enrichment endpoint is down and the reques
 | URL | `https://api.enrich.example/v1/companies/acme.com` |
 | Headers | `Authorization: Bearer {{ secrets.enrich_api_key }}` |
 
-The block fails at the 2-minute timeout and `{{ steps.send_http_request.success }}` is `false`. The downstream [If](/reference/conditions/if) branch routes to a [Create task](/reference/tasks/create-task) block for a manual follow-up instead of writing an empty enrichment result over the company.
+The block fails at the 2-minute timeout and `{{ steps.send_http_request.success }}` is `false`. The downstream [If](/reference/conditions/if) branch routes to a [Create task](/reference/tasks/create-task) block for a manual follow-up, instead of writing an empty enrichment result over the company.
 
 ## Credit cost worked example
 
-A single **Send HTTP request** costs 1 credit per run. An outbound enrichment workflow that fires on each of 500 new companies per month spends 500 credits on this block alone. A following [Parse JSON](/reference/utilities/parse-json) block is free, so it adds nothing; an [Update record](/reference/records/update-record) block adds 1 credit per run, taking the path to 2 credits and 1,000 credits per month. Check that monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+A single **Send HTTP request** costs 1 credit per run. Say an outbound enrichment workflow fires on each of 500 new companies per month. That spends 500 credits on this block alone. A following [Parse JSON](/reference/utilities/parse-json) block is free, so it adds nothing. An [Update record](/reference/records/update-record) block adds 1 credit per run, which takes the path to 2 credits and 1,000 credits per month. Check that monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
 
 ## Source
 

@@ -4,7 +4,7 @@ description: A weekly sweep finds open deals that have gone quiet, flags any pas
 icon: clock
 ---
 
-A weekly sweep finds open deals that have gone quiet, flags any past a stage-specific age threshold, and tasks the owner to act. This is pipeline-hygiene work for sales managers and revenue operations (RevOps) engineers who watch a business-to-business (B2B) pipeline drift between Monday reviews. A [Recurring schedule](/reference/triggers/recurring-schedule) wakes the workflow, [Find records](/reference/records/find-records) pulls the open deals, a [Loop](/reference/utilities/loop) walks them, and an [If](/reference/conditions/if) condition compares each deal's idle time against an [Adjust time](/reference/calculations/adjust-time) cutoff tuned per stage. Stale deals get a "Needs review" flag from [Update record](/reference/records/update-record) and a [Create task](/reference/tasks/create-task) for the owner. The sweep flags and nudges; it never auto-closes anything.
+A weekly sweep finds open deals that have gone quiet, flags any past a stage-specific age threshold, and tasks the owner to act. This is pipeline-hygiene work. It is for sales managers and revenue operations (RevOps) engineers who watch a business-to-business (B2B) pipeline drift between Monday reviews. A [Recurring schedule](/reference/triggers/recurring-schedule) wakes the workflow. [Find records](/reference/records/find-records) pulls the open deals, and a [Loop](/reference/utilities/loop) walks them one at a time. For each deal, an [If](/reference/conditions/if) condition compares the deal's idle time against an [Adjust time](/reference/calculations/adjust-time) cutoff tuned per stage. A stale deal then gets a "Needs review" flag from [Update record](/reference/records/update-record) and a [Create task](/reference/tasks/create-task) for its owner. The sweep flags and nudges. It never auto-closes anything.
 
 | | |
 | --- | --- |
@@ -25,7 +25,7 @@ A weekly sweep finds open deals that have gone quiet, flags any past a stage-spe
 
 ## How it works
 
-The schedule fires once a week and hands a list of open, owned deals to a loop. For each deal, the workflow computes a per-stage cutoff date. A `Qualified` deal is stale after 7 days; a `Proposal` deal after 30. The workflow then checks whether the deal's last interaction falls before that cutoff. Deals that fail the freshness check get flagged and generate an owner task. Fresh deals fall through untouched. Nothing in this flow closes or moves a deal, so a false positive costs an owner one glance, not a lost record.
+The schedule fires once a week. It hands a list of open, owned deals to a loop. For each deal, the workflow computes a cutoff date that depends on the deal's stage. A `Qualified` deal is stale after 7 days. A `Proposal` deal is stale after 30. The workflow then checks whether the deal's last interaction falls before that cutoff. Deals that fail this freshness check get flagged and generate an owner task. Fresh deals fall through untouched. Nothing in this flow closes or moves a deal. So a false positive costs an owner one glance, not a lost record.
 
 The blocks run in this order:
 
@@ -41,7 +41,7 @@ The blocks run in this order:
 
 <Steps>
   <Step title="Add the recurring-schedule trigger">
-    Create a new workflow and add the [Recurring schedule](/reference/triggers/recurring-schedule) trigger. Set it to run weekly so the sweep lands before the Monday pipeline review. Pick the time zone your reps actually work in, not the workspace default, so "Monday morning" means the same thing for everyone.
+    Create a new workflow and add the [Recurring schedule](/reference/triggers/recurring-schedule) trigger. Set it to run weekly so the sweep lands before the Monday pipeline review. Pick the time zone your reps actually work in, not the workspace default. That way "Monday morning" means the same thing for everyone.
 
     | Field | Value |
     | --- | --- |
@@ -64,12 +64,12 @@ The blocks run in this order:
     | Limit (while testing) | 5 |
 
     <Warning>
-      While you are building, keep the **Limit** at 5. A single **Find records** block returns at most 100 records, so a maxed-out sweep with a loose filter can still fire 100 task writes in one run. Raise the limit only after a clean test, and keep the stage filter narrow.
+      While you are building, keep the **Limit** at 5. A single **Find records** block returns at most 100 records. So a maxed-out sweep with a loose filter can still fire 100 task writes in one run. Raise the limit only after a clean test, and keep the stage filter narrow.
     </Warning>
   </Step>
 
   <Step title="Loop over the matches">
-    Add a [Loop](/reference/utilities/loop) block and point it at the records from the previous step. The loop is free; what runs inside it is not. Every write lives inside the loop and is gated by the condition two steps on.
+    Add a [Loop](/reference/utilities/loop) block and point it at the records from the previous step. The loop is free. What runs inside it is not. Every write lives inside the loop and is gated by the condition two steps on.
 
     | Field | Value |
     | --- | --- |
@@ -78,7 +78,7 @@ The blocks run in this order:
   </Step>
 
   <Step title="Compute a stage-specific cutoff">
-    Inside the loop, add an [Adjust time](/reference/calculations/adjust-time) block to turn now into a cutoff date. Stage-specific ages are how you avoid false positives. A `Qualified` deal idle for 8 days is genuinely stale, but flagging a `Proposal` deal at the same age just trains reps to ignore the flag. Subtract the right number of days for the current deal's stage.
+    Inside the loop, add an [Adjust time](/reference/calculations/adjust-time) block to turn now into a cutoff date. Per-stage ages are how you avoid false positives. A `Qualified` deal idle for 8 days is genuinely stale. Flagging a `Proposal` deal at the same age just trains reps to ignore the flag. Subtract the right number of days for the current deal's stage.
 
     | Field | Value |
     | --- | --- |
@@ -88,12 +88,12 @@ The blocks run in this order:
     | Output | `cutoff_date` |
 
     <Note>
-      The cleanest way to pick the per-stage number is a [Switch](/reference/conditions/switch) on `{{deal.stage}}` ahead of this block, writing the day count into a variable you feed into **Amount**. Both **Switch** and **Adjust time** are free.
+      The cleanest way to pick the per-stage number is a [Switch](/reference/conditions/switch) on `{{deal.stage}}` ahead of this block. It writes the day count into a variable that you feed into **Amount**. Both **Switch** and **Adjust time** are free.
     </Note>
   </Step>
 
   <Step title="Gate on staleness">
-    Add an [If](/reference/conditions/if) condition that compares the deal's last interaction against the cutoff. A condition that stops a run is free, so this is where you spend nothing to protect the writes that follow it. Only deals that fail the freshness check continue down the true branch.
+    Add an [If](/reference/conditions/if) condition that compares the deal's last interaction against the cutoff. A condition that stops a run is free. So this is where you spend nothing to protect the writes that follow it. Only deals that fail the freshness check continue down the true branch.
 
     | Field | Value |
     | --- | --- |
@@ -103,7 +103,7 @@ The blocks run in this order:
   </Step>
 
   <Step title="Flag the deal">
-    On the true branch, add an [Update record](/reference/records/update-record) block to raise the review flag. This write is idempotent: re-running the sweep on an already-flagged deal just re-sets the same value.
+    On the true branch, add an [Update record](/reference/records/update-record) block to raise the review flag. This write is idempotent, which means re-running the sweep on an already-flagged deal just re-sets the same value.
 
     | Field | Value |
     | --- | --- |
@@ -117,7 +117,7 @@ The blocks run in this order:
 
     | Field | Value |
     | --- | --- |
-    | Task text | `Stale deal — review: {{deal.name}} ({{deal.stage}}), no activity since {{deal.last_interaction}}` |
+    | Task text | `Stale deal, review: {{deal.name}} ({{deal.stage}}), no activity since {{deal.last_interaction}}` |
     | Assignee | `{{deal.owner}}` |
     | Linked record | `{{deal}}` |
     | Due date | Today |
@@ -137,11 +137,11 @@ The blocks run in this order:
 
 ## Credit cost worked example
 
-The schedule, [Find records](/reference/records/find-records), [Loop](/reference/utilities/loop), [Adjust time](/reference/calculations/adjust-time), the optional [Switch](/reference/conditions/switch), and the [If](/reference/conditions/if) condition are all free logic and lookup blocks. They cost nothing no matter how often they run. You pay only for the two writes on the stale branch: the [Update record](/reference/records/update-record) flag and the [Create task](/reference/tasks/create-task), each 1 credit.
+Most of the blocks here are free. The schedule, [Find records](/reference/records/find-records), [Loop](/reference/utilities/loop), [Adjust time](/reference/calculations/adjust-time), the optional [Switch](/reference/conditions/switch), and the [If](/reference/conditions/if) condition are all logic and lookup blocks. They cost nothing no matter how often they run. You pay only for the two writes on the stale branch. Those are the [Update record](/reference/records/update-record) flag and the [Create task](/reference/tasks/create-task), each 1 credit.
 
-Each stale deal therefore costs 2 credits per run, and fresh deals cost nothing. Say a typical Monday surfaces 15 stale deals. That is 15 × 2 = 30 credits per run, or roughly 120 credits a month across four sweeps. Because the loop only writes on the true branch, a quiet week with two stale deals costs 4 credits, not the full pipeline.
+So each stale deal costs 2 credits per run, and fresh deals cost nothing. Say a typical Monday surfaces 15 stale deals. That is 15 × 2 = 30 credits per run, or roughly 120 credits a month across four sweeps. The loop only writes on the true branch. So a quiet week with two stale deals costs 4 credits, not the full pipeline.
 
-Loops multiply: the per-run cost is (writes on the stale branch) × (number of stale deals). The only lever that matters is keeping the stale count honest with a tight filter in the find step and accurate per-stage thresholds. Check your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing); never assume the number from another page.
+Loops multiply. The per-run cost is (writes on the stale branch) × (number of stale deals). The only lever that matters is keeping the stale count honest. You do that with a tight filter in the find step and accurate per-stage thresholds. Check your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing). Never assume the number from another page.
 
 ## Test plan
 
@@ -149,7 +149,11 @@ Loops multiply: the per-run cost is (writes on the stale branch) × (number of s
 2. Pick or create one `Qualified` deal with a last interaction 10 days ago, owned by a real user such as Priya Sharma. This is your expected pass.
 3. Add one deliberately failing input: a `Proposal` deal touched 8 days ago. With the 30-day threshold, it must *not* be flagged. If it gets a task, your stage thresholds are wired backward.
 4. Open the workflow and click the **Run test** button to fire the trigger manually instead of waiting for Monday.
-5. In run history, expect this: **Find records** returns up to 5 deals; **Loop** shows one iteration per deal; **Adjust time** outputs a `cutoff_date` that differs by stage; **If** branches true only for the 10-day `Qualified` deal.
+5. In run history, expect this:
+   - **Find records** returns up to 5 deals.
+   - **Loop** shows one iteration per deal.
+   - **Adjust time** outputs a `cutoff_date` that differs by stage.
+   - **If** branches true only for the 10-day `Qualified` deal.
 6. Confirm exactly one **Update record** and one **Create task** ran, both for the `Qualified` deal, and that the `Proposal` deal produced neither.
 7. Open the flagged deal and confirm **Needs review** is set and the owner has a linked task. Then raise the limit deliberately toward its maximum of 100 for the live schedule.
 
@@ -167,11 +171,11 @@ Loops multiply: the per-run cost is (writes on the stale branch) × (number of s
 
 ### One digest instead of per-deal tasks
 
-If per-deal tasks feel noisy, drop [Create task](/reference/tasks/create-task) and collect the stale deals into a single message. Keep the loop and the [If](/reference/conditions/if) condition, append each stale deal to a variable, and after the loop send one [Broadcast message](/reference/workspace/broadcast-message) or a Slack post through a [third-party block](/reference/integrations) to the pipeline channel such as `#revenue`. This trades one credit per deal for one credit per digest, and gives managers a single Monday list instead of scattered tasks.
+If per-deal tasks feel noisy, collect the stale deals into a single message instead. Drop [Create task](/reference/tasks/create-task). Keep the loop and the [If](/reference/conditions/if) condition, and append each stale deal to a variable. After the loop, send one [Broadcast message](/reference/workspace/broadcast-message) or a Slack post through a [third-party block](/reference/integrations) to the pipeline channel such as `#revenue`. This trades one credit per deal for one credit per digest. It gives managers a single Monday list instead of scattered tasks.
 
 ### Auto-snooze low-priority stages
 
-For early-stage deals you do not want to chase weekly, add a [Switch](/reference/conditions/switch) that routes `Qualified` deals through a longer threshold and writes a "Snoozed until" date with [Adjust time](/reference/calculations/adjust-time) instead of flagging. The sweep then skips snoozed deals until their date passes. There is still no auto-close, just a quieter cadence for the top of the funnel.
+Some early-stage deals are not worth chasing weekly. For those, add a [Switch](/reference/conditions/switch) that routes `Qualified` deals through a longer threshold. Instead of flagging, write a "Snoozed until" date with [Adjust time](/reference/calculations/adjust-time). The sweep then skips snoozed deals until their date passes. There is still no auto-close, just a quieter cadence for the top of the funnel.
 
 ## See also
 

@@ -4,12 +4,12 @@ description: The Random number block (Calculations) returns a random number betw
 icon: dices
 ---
 
-The **Random number** block (Calculations) returns a random number between a minimum and a maximum value each time a workflow runs. Use it to spread records across paths probabilistically, such as A/B experiments or weighted routing. When you need every member to get an even, ordered share of records instead of a probabilistic one, reach for [Round robin](/reference/workspace/round-robin).
+The **Random number** block (Calculations) returns a random number between a minimum and a maximum value each time a workflow runs. Use it to split records across paths by chance. That fits A/B experiments or weighted routing. When you instead need every member to get an even, ordered share of records, reach for [Round robin](/reference/workspace/round-robin).
 
 | | |
 | --- | --- |
 | **Category** | Calculations |
-| **Credit cost** | Free — calculation blocks consume no credits |
+| **Credit cost** | Free. Calculation blocks consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
@@ -31,14 +31,14 @@ Reference the drawn value in a later block as `{{ steps.random_number.random_num
 
 ## Behavior
 
-The block draws one value each time the workflow runs and exposes it as a single output. Each run is independent, so the block holds no memory of earlier draws and cannot guarantee an even spread across runs the way [Round robin](/reference/workspace/round-robin) does. Over a small number of runs, the split between branches can look lopsided; the distribution evens out only across many runs.
+The block draws one value each time the workflow runs and exposes it as a single output. Each run is independent. The block holds no memory of earlier draws, so it cannot guarantee an even spread across runs the way [Round robin](/reference/workspace/round-robin) does. Over a small number of runs, the split between branches can look lopsided. The distribution evens out only across many runs.
 
-Feed the output into a downstream [If](/reference/conditions/if) or [Switch](/reference/conditions/switch) block to turn the number into a branch decision. To bias the split, set the threshold in that condition rather than the range here: a `0` to `1` range compared against `0.7` sends roughly 70 percent of runs down one path.
+Feed the output into a downstream [If](/reference/conditions/if) or [Switch](/reference/conditions/switch) block to turn the number into a branch decision. To bias the split, set the threshold in that condition rather than in the range here. A `0` to `1` range compared against `0.7` sends roughly 70 percent of runs down one path.
 
 ## Gotchas
 
-- **The split looks uneven at low volume.** Each draw is independent, so ten runs can land nine-to-one by chance. Treat the percentages as long-run averages, and use [Round robin](/reference/workspace/round-robin) when you need an exact, fair share per member.
-- **The same record can land on a different path on re-run.** A retried or re-triggered run draws a fresh number, so a record routed to one rep on the first attempt may route elsewhere on the second. Write the drawn value or the resulting assignment to the record if you need the decision to stick.
+- **The split looks uneven at low volume.** Each draw is independent, so ten runs can land nine-to-one by chance. Treat the percentages as long-run averages. Use [Round robin](/reference/workspace/round-robin) when you need an exact, fair share per member.
+- **The same record can land on a different path on re-run.** A retried or re-triggered run draws a fresh number. A record routed to one rep on the first attempt may route elsewhere on the second. Write the drawn value or the resulting assignment to the record if you need the decision to stick.
 - **Minimum and maximum are both required.** The block has no default range, so leaving either bound empty blocks configuration. Set both bounds before publishing the workflow.
 
 ## Examples
@@ -52,7 +52,7 @@ Draw a number in the `0` to `1` range, then branch on it to assign roughly half 
 | Minimum | `0` |
 | Maximum | `1` |
 
-Wire the output into an [If](/reference/conditions/if) block with the condition `{{ steps.random_number.random_number }}` is greater than `0.5`. Leads above the threshold route to Priya Sharma; the rest route to Jordan Lee, giving an even split over time.
+Wire the output into an [If](/reference/conditions/if) block with the condition `{{ steps.random_number.random_number }}` is greater than `0.5`. Leads above the threshold route to Priya Sharma. The rest route to Jordan Lee, giving an even split over time.
 
 ### Sampling one in ten records for a manual review
 
@@ -63,7 +63,7 @@ Draw a number in the `1` to `10` range to flag a 10 percent sample for a human t
 | Minimum | `1` |
 | Maximum | `10` |
 
-Send `{{ steps.random_number.random_number }}` into an [If](/reference/conditions/if) block with the condition equals `1`. Matching records route to a [Create task](/reference/tasks/create-task) block that asks a reviewer to audit the enrichment; the other nine in ten skip the review.
+Send `{{ steps.random_number.random_number }}` into an [If](/reference/conditions/if) block with the condition equals `1`. Matching records route to a [Create task](/reference/tasks/create-task) block. The task asks a reviewer to check that the auto-filled company details look right. The other nine in ten skip the review.
 
 ## Source
 

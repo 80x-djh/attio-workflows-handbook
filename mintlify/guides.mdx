@@ -4,27 +4,27 @@ description: Guides are complete, follow-along Attio workflow builds, each with 
 icon: book-open
 ---
 
-Guides are complete, follow-along Attio workflow builds, each with the exact trigger, blocks, credit math, and a test plan you can run. Every build names its trigger, configures every block with real field values, shows the per-run credit cost, and ends with a test you fire yourself. Ship it into your own workspace and watch it run. They assume you have finished [Build your first workflow](/learn/build-your-first-workflow); when a concept is unclear, [How the engine works](/explanation) covers the why.
+Guides are complete, follow-along Attio workflow builds, each with the exact trigger, blocks, credit math, and a test plan you can run. Every build names its trigger and configures every block with real field values. It shows the per-run credit cost, then ends with a test you fire yourself. Ship it into your own workspace and watch it run. These guides assume you have finished [Build your first workflow](/learn/build-your-first-workflow). When a concept is unclear, [How the engine works](/explanation) covers the why.
 
 ## Capture and qualify
 
-Make inbound arrive enriched, scored, and routable, and pay for AI only where it changes a decision.
+When a new lead arrives, these builds fill in its company details, give it a score, and route it to the right rep. You pay for AI only when it changes what happens next, not on every lead.
 
 <CardGroup cols={2}>
   <Card title="Cheapest-first enrichment waterfall" icon="layers" href="/guides/capture-and-qualify/enrichment-waterfall">
-    Run enrichment providers in cost order and stop at the first hit, so you never pay twice for one email.
+    Enrichment fills in missing fields like company size or industry. Run providers in cost order and stop at the first hit, so you never pay twice for one email.
   </Card>
   <Card title="Score leads into explainable bands" icon="gauge" href="/guides/capture-and-qualify/signal-scoring">
     Turn raw signals into a number and a hot, warm, or cold band a rep can read at a glance.
   </Card>
   <Card title="Webhook lead intake with safe upsert" icon="webhook" href="/guides/capture-and-qualify/webhook-lead-intake">
-    Receive form leads on a webhook and create or update without ever duplicating a person.
+    A webhook lets an outside form send leads straight into Attio. Receive those leads and create or update a person without ever duplicating one.
   </Card>
 </CardGroup>
 
 ## Route and sequence
 
-Get the right rep on the right account at the right moment, with clean enroll and exit hygiene.
+Get the right rep on the right account at the right moment. Each build also keeps your enroll and exit steps clean, so no lead gets stuck in the wrong place.
 
 <CardGroup cols={2}>
   <Card title="Slack deal alerts on stage change" icon="bell" href="/guides/route-and-sequence/slack-deal-alerts">
@@ -43,7 +43,7 @@ Get the right rep on the right account at the right moment, with clean enroll an
 
 ## Pipeline hygiene and lifecycle
 
-Make the pipeline self-clean and hand off on a schedule, with no false positives.
+Make the pipeline clean itself and hand off work on a schedule. Each build is tuned to avoid false positives, so an owner only hears from it when something real needs attention.
 
 <CardGroup cols={2}>
   <Card title="Stale-deal sweep" icon="sparkles" href="/guides/pipeline-hygiene/stale-deal-sweep">
@@ -65,7 +65,7 @@ Make the pipeline self-clean and hand off on a schedule, with no false positives
 
 ## Signals and AI
 
-Turn signals into researched, routed action, with the AI cost gated behind a filter.
+Turn a signal into researched action that lands on the right person. The AI cost sits behind a filter, so you only pay when the lead is worth it.
 
 <CardGroup cols={2}>
   <Card title="AI ICP-fit research and routing" icon="bot" href="/guides/signals-and-ai/inbound-lead-research">
@@ -81,7 +81,7 @@ Turn signals into researched, routed action, with the AI cost gated behind a fil
 
 ## Platform patterns
 
-The escape hatches for when native blocks are not enough.
+Use these when the native blocks are not enough. They are the escape hatches for everything Attio does not do out of the box.
 
 <CardGroup cols={2}>
   <Card title="HTTP and JSON patterns" icon="code" href="/guides/platform-patterns/http-json-patterns">
@@ -110,6 +110,6 @@ You can no longer create new legacy workflows; existing ones keep running, and A
 
 ## What makes a good build
 
-The best Attio workflow is boring. It pairs a precise trigger with an early, free filter, then a minimal data lookup, one clear write or external action, run-viewer verification, and a documented owner and rollback. Reach for agents, the [Send HTTP request](/reference/utilities/send-http-request) block, and the [Execute code](/reference/calculations/execute-code) block when they remove real complexity, not because they are available.
+The best Attio workflow is boring. It starts with a precise trigger and an early filter that is free to run. From there it does the least it can. That means one small data lookup, one clear write or external action, then a check in the run viewer. It also names an owner and a way to roll it back. Reach for agents, the [Send HTTP request](/reference/utilities/send-http-request) block, and the [Execute code](/reference/calculations/execute-code) block when they remove real complexity, not because they are available.
 
 *Last reviewed against the Attio Help Center, June 2026.*

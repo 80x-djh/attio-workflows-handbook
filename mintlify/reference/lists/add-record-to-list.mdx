@@ -4,7 +4,7 @@ description: The Add record to list block (Lists) adds a record to a selected At
 icon: list-plus
 ---
 
-The **Add record to list** block (Lists) adds a record to a selected Attio list and optionally sets the new list entry's attributes. It creates a *list entry* — a per-list row that wraps the record — not a new record, so the record must already exist before this block runs. Set the entry's list attributes in this same block whenever you can, rather than chaining a separate [Update list entry](/reference/lists/update-list-entry) block afterward.
+The **Add record to list** block (Lists) adds a record to a selected Attio list and optionally sets the new list entry's attributes. It creates a *list entry*, which is a per-list row that wraps the record. It does not create a new record, so the record must already exist before this block runs. Set the entry's list attributes in this same block whenever you can. That is simpler than chaining a separate [Update list entry](/reference/lists/update-list-entry) block afterward.
 
 | | |
 | --- | --- |
@@ -32,21 +32,21 @@ Reference the created entry's data in a later block as `{{ steps.add_record_to_l
 
 ## Behavior
 
-The block creates one list entry for the record on the chosen list. The record must exist first; this block adds an existing record to a list and never creates a record itself. To create the record in the same workflow, run [Create record](/reference/records/create-record) or [Create or update record](/reference/records/create-or-update-record) earlier and pass its output here.
+The block creates one list entry for the record on the chosen list. The record must exist first. This block adds an existing record to a list and never creates a record itself. To create the record in the same workflow, run [Create record](/reference/records/create-record) or [Create or update record](/reference/records/create-or-update-record) earlier, then pass its output here.
 
-Any values you supply under **Attributes to set** are written to the new entry's list attributes as it is created, which is why setting them here is cheaper and simpler than adding a separate [Update list entry](/reference/lists/update-list-entry) step. The block does not deduplicate, so if the record might already be on the list, check for an existing entry before this block runs to avoid an unwanted second entry.
+Any values you supply under **Attributes to set** are written to the new entry's list attributes as it is created. That is why setting them here is cheaper and simpler than adding a separate [Update list entry](/reference/lists/update-list-entry) step. The block does not check for duplicates. So if the record might already be on the list, check for an existing entry before this block runs to avoid an unwanted second entry.
 
 ## Gotchas
 
-- **A list entry is not a record.** The output of this block is a list entry that wraps the record, so a downstream block expecting a plain record cannot consume it directly. Read [Records vs list entries](/explanation/records-vs-list-entries) before you wire the output, and pass the parent record where a record is required.
-- **The record may already be on the list.** The block does not check for membership before it adds, so re-running it on a record that is already on the list can create a second entry. When the record might already be a member, run [Find list entries](/reference/lists/find-list-entries) first and branch on whether an entry exists.
-- **Adding a separate update step wastes a credit.** Each write costs 1 credit, so a chained [Update list entry](/reference/lists/update-list-entry) block doubles the cost of populating the new entry. Set the entry's attributes under **Attributes to set** in this block instead.
+- **A list entry is not a record.** The output of this block is a list entry that wraps the record. A downstream block that expects a plain record cannot consume it directly. Read [Records vs list entries](/explanation/records-vs-list-entries) before you wire the output, and pass the parent record where a record is required.
+- **The record may already be on the list.** The block does not check for membership before it adds. So re-running it on a record that is already on the list can create a second entry. When the record might already be a member, run [Find list entries](/reference/lists/find-list-entries) first and branch on whether an entry exists.
+- **Adding a separate update step wastes a credit.** Each write costs 1 credit. A chained [Update list entry](/reference/lists/update-list-entry) block doubles the cost of populating the new entry. Set the entry's attributes under **Attributes to set** in this block instead.
 
 ## Examples
 
 ### Adding a qualified company to the sales pipeline
 
-A lead-qualification workflow adds a newly qualified company to the sales pipeline and stamps its source and priority as the entry is created.
+A lead-qualification workflow adds a newly qualified company to the sales pipeline. It stamps the source and priority as the entry is created.
 
 | Field | Value |
 | --- | --- |
@@ -54,11 +54,11 @@ A lead-qualification workflow adds a newly qualified company to the sales pipeli
 | Record | `{{ steps.find_records.record }}` (Acme Corp) |
 | Attributes to set | Source: `Inbound`, Priority: `High` |
 
-Acme Corp appears in the Sales pipeline list with its source set to `Inbound` and its priority set to `High`, and no separate update step is needed.
+Acme Corp appears in the Sales pipeline list with its source set to `Inbound` and its priority set to `High`. No separate update step is needed.
 
 ### Adding a record only when it is not already a member
 
-An intake workflow checks for an existing entry first, then adds the company to the onboarding list only when it is absent.
+An intake workflow checks for an existing entry first. It then adds the company to the onboarding list only when it is absent.
 
 ```json
 {
@@ -71,11 +71,11 @@ An intake workflow checks for an existing entry first, then adds the company to 
 }
 ```
 
-When [Find list entries](/reference/lists/find-list-entries) returns no match for Acme Corp, the block adds the company to the Onboarding list at the `Kickoff` stage and assigns Priya Sharma as owner; when a match already exists, the workflow skips this block and avoids a wasted write.
+When [Find list entries](/reference/lists/find-list-entries) returns no match for Acme Corp, the block adds the company to the Onboarding list at the `Kickoff` stage and assigns Priya Sharma as owner. When a match already exists, the workflow skips this block and avoids a wasted write.
 
 ## Credit cost worked example
 
-Each run of this block costs 1 credit. A workflow that adds 200 newly qualified companies to the sales pipeline each month spends 200 credits — one per company. Setting the entry's `Source` and `Priority` under **Attributes to set** in this same block keeps the cost at 1 credit per company; chaining a separate [Update list entry](/reference/lists/update-list-entry) block would raise it to 2 credits per company, or 400 per month. Check the run against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+Each run of this block costs 1 credit. A workflow that adds 200 newly qualified companies to the sales pipeline each month spends 200 credits, one per company. Setting the entry's `Source` and `Priority` under **Attributes to set** in this same block keeps the cost at 1 credit per company. Chaining a separate [Update list entry](/reference/lists/update-list-entry) block would raise it to 2 credits per company, or 400 per month. Check the run against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing).
 
 ## Source
 

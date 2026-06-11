@@ -4,7 +4,7 @@ description: The Update record block writes new attribute values to a record tha
 icon: pencil
 ---
 
-The **Update record** block (Records) writes new attribute values to a record that already exists in an Attio object. You point it at one record, list the attributes to change, and the block leaves every other attribute untouched. Updating the same object that triggered the workflow is the block's main hazard, because the write can re-fire the trigger and loop.
+The **Update record** block writes new attribute values to a record that already exists in an Attio object. You point it at one record and list the attributes you want to change. The block changes only those attributes and leaves every other attribute untouched. The main hazard is updating the same object that triggered the workflow. That write can re-fire the trigger and start a loop.
 
 | | |
 | --- | --- |
@@ -18,10 +18,10 @@ The **Update record** block (Records) writes new attribute values to a record th
 
 | Input | Type | Required | Default | Notes |
 | --- | --- | --- | --- | --- |
-| Object | Object reference | Yes | — | The object the record belongs to, such as `Companies` or `Deals`. |
-| Record | Record reference | Yes | — | The specific record to update. Usually a variable from an earlier block, such as the trigger record or a [Find records](/reference/records/find-records) result. |
-| Attributes to set | Attribute–value pairs | Yes | — | The attributes to write and their new values. Attributes you omit are left unchanged. |
-| Replace existing values | Boolean | No | Off | For multi-select attributes, controls whether the new values replace the existing ones or append to them. |
+| Object | Object reference | Yes | None | The object the record belongs to, such as `Companies` or `Deals`. |
+| Record | Record reference | Yes | None | The specific record to update. This is usually a variable from an earlier block, such as the trigger record or a [Find records](/reference/records/find-records) result. |
+| Attributes to set | Attribute–value pairs | Yes | None | The attributes to write and their new values. Attributes you leave out are not changed. |
+| Replace existing values | Boolean | No | Off | For multi-select attributes, this controls whether the new values replace the existing ones or are added to them. |
 
 ## Outputs
 
@@ -29,28 +29,28 @@ The **Update record** block (Records) writes new attribute values to a record th
 | --- | --- | --- | --- |
 | Updated record | Record | `Acme Corp` | The full record after the write, including attributes you did not change. |
 
-Reference the updated record downstream as `{{ steps.update_record.record }}`. Read a single attribute from it with dot notation, for example `{{ steps.update_record.record.stage }}`.
+Use the updated record in later blocks as `{{ steps.update_record.record }}`. To read one attribute from it, use dot notation. For example, `{{ steps.update_record.record.stage }}` reads the `stage` attribute.
 
 ## Behavior
 
-The block performs a partial update: it writes only the attributes you list under **Attributes to set** and preserves every other attribute on the record. Omitting an attribute is not the same as clearing it. To clear a value, include the attribute with an empty value.
+The block does a partial update. It writes only the attributes you list under **Attributes to set** and keeps every other attribute on the record. Leaving an attribute out is not the same as clearing it. To clear a value, include the attribute and give it an empty value.
 
-For single-value attributes, the new value always replaces the old one. For multi-select attributes, the **Replace existing values** toggle decides the outcome. With the toggle off, the block appends the new values to whatever is already on the record. With the toggle on, the block discards the existing values and writes only the new set.
+For single-value attributes, the new value always replaces the old one. For multi-select attributes (attributes that hold more than one value at once), the **Replace existing values** toggle decides what happens. With the toggle off, the block adds the new values to whatever is already on the record. With the toggle on, the block removes the existing values and writes only the new set.
 
-The block writes through the workflow's own access, not the access of the person who triggered the run. A workflow with read-only access to the object fails at this block rather than writing silently. See [Permissions & workflow access](/explanation/permissions-and-access) for how to grant write access.
+The block writes using the workflow's own access, not the access of the person who triggered the run. If a workflow has read-only access to the object, it fails at this block instead of writing silently. See [Permissions & workflow access](/explanation/permissions-and-access) for how to grant write access.
 
 ## Gotchas
 
-- **The workflow loops on itself.** Updating an attribute on the same object that triggered the workflow can re-fire the trigger, which runs the workflow again and writes again. Filter the trigger to ignore changes the workflow itself made, or use a trigger that does not react to your own writes. See [Infinite loops and safety](/explanation/infinite-loops-and-safety) for the standard guard.
-- **Multi-select values pile up unexpectedly.** With **Replace existing values** off, every run appends to a multi-select attribute, so a tag or category list grows on each pass. Turn the toggle on when you mean to set the attribute to an exact list rather than add to it.
-- **The block fails on read-only access.** A new workflow has no write access to an object until you grant it. Grant **Read and write** access to the object before you publish, or the block fails at run time. See [Permissions & workflow access](/explanation/permissions-and-access).
-- **Stale trigger data overwrites a fresh value.** Writing a value the trigger captured earlier can overwrite a change made between the trigger and this block. Read the current value with [Find records](/reference/records/find-records) first when timing matters.
+- **The workflow loops on itself.** Updating an attribute on the same object that triggered the workflow can re-fire the trigger. That runs the workflow again, which writes again. Filter the trigger so it ignores changes the workflow itself made. You can also use a trigger that does not react to your own writes. See [Infinite loops and safety](/explanation/infinite-loops-and-safety) for the standard guard.
+- **Multi-select values pile up unexpectedly.** With **Replace existing values** off, every run adds to a multi-select attribute. A tag or category list then grows on each pass. Turn the toggle on when you want to set the attribute to an exact list rather than add to it.
+- **The block fails on read-only access.** A new workflow has no write access to an object until you grant it. Grant **Read and write** access to the object before you publish. Otherwise the block fails when it runs. See [Permissions & workflow access](/explanation/permissions-and-access).
+- **Stale trigger data overwrites a fresh value.** The trigger captures values when it fires. Writing one of those captured values later can overwrite a change made between the trigger and this block. When timing matters, read the current value first with [Find records](/reference/records/find-records).
 
 ## Examples
 
 ### Assigning a lead to the picked owner
 
-A [Round robin](/reference/workspace/round-robin) block picks the next sales rep, and this block writes that rep onto the lead's `Owner` attribute.
+A [Round robin](/reference/workspace/round-robin) block picks the next sales rep. This block then writes that rep onto the lead's `Owner` attribute.
 
 | Field | Value |
 | --- | --- |
@@ -59,11 +59,11 @@ A [Round robin](/reference/workspace/round-robin) block picks the next sales rep
 | Attributes to set | `Owner` = `{{ steps.round_robin.assignee }}` |
 | Replace existing values | Off |
 
-The lead's `Owner` attribute is set to the chosen rep, for example Priya Sharma, and the run continues to a [Create task](/reference/tasks/create-task) block for that owner.
+The lead's `Owner` attribute is set to the chosen rep, for example Priya Sharma. The run then continues to a [Create task](/reference/tasks/create-task) block for that owner.
 
 ### Replacing a deal's tags with a single status
 
-A deal moves to a new stage, and the workflow resets its `Tags` multi-select to one canonical value instead of adding to the existing tags.
+A deal moves to a new stage. The workflow resets its `Tags` multi-select to one canonical value instead of adding to the existing tags.
 
 | Field | Value |
 | --- | --- |
@@ -72,11 +72,11 @@ A deal moves to a new stage, and the workflow resets its `Tags` multi-select to 
 | Attributes to set | `Tags` = `Closed won` |
 | Replace existing values | On |
 
-The deal's `Tags` attribute now contains only `Closed won`, and any earlier tags are removed because **Replace existing values** is on.
+The deal's `Tags` attribute now contains only `Closed won`. Any earlier tags are removed because **Replace existing values** is on.
 
 ### Clearing a follow-up date after a reply
 
-A reply arrives, and the workflow clears the `Next follow-up` date so the record drops out of a follow-up view.
+A reply arrives. The workflow clears the `Next follow-up` date so the record drops out of a follow-up view.
 
 ```json
 {
@@ -89,11 +89,11 @@ A reply arrives, and the workflow clears the `Next follow-up` date so the record
 }
 ```
 
-The person's `Next follow-up` attribute is emptied, while their `Owner`, `Email`, and every other attribute stay exactly as they were.
+The person's `Next follow-up` attribute is emptied. Their `Owner`, `Email`, and every other attribute stay exactly as they were.
 
 ## Credit cost worked example
 
-Each run of this block costs 1 credit. A workflow that updates an owner on every inbound lead, at 600 leads a month, spends 600 credits on this block alone. Logic and lookup blocks earlier in the same workflow, such as [Round robin](/reference/workspace/round-robin) and [If](/reference/conditions/if), are free, so they add nothing to the total. Compare that 600-credit monthly draw against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+Each run of this block costs 1 credit. Say a workflow updates an owner on every inbound lead, at 600 leads a month. That spends 600 credits on this block alone. The logic and lookup blocks earlier in the same workflow, such as [Round robin](/reference/workspace/round-robin) and [If](/reference/conditions/if), are free, so they add nothing to the total. Compare that 600-credit monthly draw against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
 
 ## Source
 

@@ -4,12 +4,12 @@ description: The Filter block continues a workflow only when its conditions are 
 icon: filter
 ---
 
-The **Filter** block (Condition step) continues a workflow only when its conditions are true, and stops the run otherwise. It is the cheapest, most important safety block in Attio Workflows: it produces no data, costs no credits, and gates every expensive step that follows. Place it immediately after the trigger so the runs that don't matter end before they touch a paid block.
+The **Filter** block (Condition step) continues a workflow only when its conditions are true, and stops the run otherwise. It is the cheapest and most important safety block in Attio Workflows. It produces no data, costs no credits, and gates every expensive step that follows. Place it right after the trigger. That way the runs that don't matter end before they reach a paid block.
 
 | | |
 | --- | --- |
 | **Category** | Condition step |
-| **Credit cost** | Free — logic blocks consume no credits |
+| **Credit cost** | Free. Logic blocks consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
@@ -18,36 +18,36 @@ The **Filter** block (Condition step) continues a workflow only when its conditi
 
 | Input | Type | Required | Default | Notes |
 | --- | --- | --- | --- | --- |
-| Conditions | Condition group | Yes | — | One or more conditions or nested condition groups that must evaluate true for the run to continue. |
+| Conditions | Condition group | Yes | None | One or more conditions or nested condition groups that must evaluate true for the run to continue. |
 
-A condition is **attribute → operator → value**. Join conditions with **and** / **or**, and use **Convert to advanced condition** to build nested groups such as `(A and B) or (C and D)`. Conditions can test record attributes or any output of an earlier block. For the full operator set per attribute type, see [Conditions & filters](/explanation/conditions-and-filters).
+A condition is a test in three parts: an **attribute**, an **operator**, and a **value**. Join conditions with **and** / **or**. Use **Convert to advanced condition** to build nested groups such as `(A and B) or (C and D)`. Conditions can test record attributes or any output of an earlier block. For the full operator set per attribute type, see [Conditions & filters](/explanation/conditions-and-filters).
 
 ## Outputs
 
 None.
 
-The **Filter** block decides whether the run continues; it does not expose a value to later blocks. To pass data downstream, reference the upstream trigger or lookup block directly — for example, a record found earlier is available as `{{ steps.find_records.records }}`.
+The **Filter** block decides whether the run continues. It does not expose a value to later blocks. To pass data downstream, reference the upstream trigger or lookup block directly. For example, a record found earlier is available as `{{ steps.find_records.records }}`.
 
 ## Behavior
 
-The **Filter** block evaluates its conditions against the current run's data and either continues to the next block or stops the run. A stopped run is not an error: it ends quietly, costs nothing, and appears in run history as a normal completed run that took the stop path.
+The **Filter** block evaluates its conditions against the current run's data. It then either continues to the next block or stops the run. A stopped run is not an error. It ends quietly, costs nothing, and appears in run history as a normal completed run that took the stop path.
 
-Conditions joined by **and** all need to be true; conditions joined by **or** need only one. When you mix the two operators in a flat list, the structure evaluates differently than it reads, so wrap the intended grouping in a nested condition group.
+Conditions joined by **and** all need to be true. Conditions joined by **or** need only one. When you mix the two operators in a flat list, the structure evaluates differently than it reads. Wrap the intended grouping in a nested condition group instead.
 
-For a multi-value attribute, such as a multi-select or a multi-reference relationship, a condition is true if any one value matches. A condition like `Tags contains Customer` passes when any tag is `Customer`. There is no built-in "all values match" operator; evaluate that case in an [Execute code](/reference/calculations/execute-code) block instead.
+A multi-value attribute holds more than one value at once, such as a multi-select or a multi-reference relationship. For these, a condition is true if any one value matches. A condition like `Tags contains Customer` passes when any tag is `Customer`. There is no built-in "all values match" operator. To test that case, use an [Execute code](/reference/calculations/execute-code) block instead.
 
 ## Gotchas
 
-- **Expensive blocks run on every trigger.** A workflow shaped `trigger → Web agent → Filter` pays the artificial intelligence (AI) cost on every run, because the filter sits after the paid block. Move the filter directly after the trigger so the run stops before reaching anything that consumes credits.
-- **The workflow re-triggers itself.** A workflow that writes a record can fire its own trigger again and loop. Add a `Updated by → Type → is not → Workflow` filter to admit only human-driven changes; see [Infinite loops and safety](/explanation/infinite-loops-and-safety).
-- **The filter fires on re-saves, not real transitions.** Testing only the new value matches every save that lands on that value, including the ones already there. Add a second condition on the previous value — `New value is Won` and `Previous value is not Won` — so the filter passes once per actual transition.
-- **Mixed and/or passes records it shouldn't.** A flat list like `stage is Won or stage is Lost and Owner is Priya Sharma` evaluates as `Won or (Lost and Priya)`, not `(Won or Lost) and Priya`. Build the intended grouping with **Convert to advanced condition** and check the and/or structure first whenever a filter leaks.
+- **Expensive blocks run on every trigger.** A workflow shaped `trigger → Web agent → Filter` runs the paid block first. So it pays the artificial intelligence (AI) cost on every run, because the filter sits after that block. Move the filter directly after the trigger so the run stops before reaching anything that consumes credits.
+- **The workflow re-triggers itself.** A workflow that writes a record can fire its own trigger again and loop. Add a `Updated by → Type → is not → Workflow` filter to admit only human-driven changes. See [Infinite loops and safety](/explanation/infinite-loops-and-safety).
+- **The filter fires on re-saves, not real transitions.** Testing only the new value matches every save that lands on that value, including the ones already there. Add a second condition on the previous value, such as `New value is Won` and `Previous value is not Won`. The filter then passes once per actual transition.
+- **Mixed and/or passes records it shouldn't.** A flat list like `stage is Won or stage is Lost and Owner is Priya Sharma` evaluates as `Won or (Lost and Priya)`, not `(Won or Lost) and Priya`. Build the intended grouping with **Convert to advanced condition**. Check the and/or structure first whenever a filter leaks.
 
 ## Examples
 
 ### Gating a Slack alert on closed-won deals
 
-This filter lets only a real transition into the `Won` stage reach a downstream Slack alert, after an [Attribute value changed](/reference/triggers/attribute-value-changed) trigger watching `stage`.
+This filter lets only a real transition into the `Won` stage reach a downstream Slack alert. It runs after an [Attribute value changed](/reference/triggers/attribute-value-changed) trigger watching `stage`.
 
 | Field | Value |
 | --- | --- |
@@ -55,21 +55,21 @@ This filter lets only a real transition into the `Won` stage reach a downstream 
 | Join | and |
 | Condition 2 | `Previous value` is not `Won` |
 
-The run continues to the alert only when a deal actually moves into `Won`; re-saving an already-won deal stops the run quietly.
+The run continues to the alert only when a deal actually moves into `Won`. Re-saving an already-won deal stops the run quietly.
 
 ### Blocking self-triggered loops
 
-This filter admits only human edits, so a workflow that writes back to the same object does not re-fire itself.
+This filter admits only human edits. A workflow that writes back to the same object then does not re-fire itself.
 
 | Field | Value |
 | --- | --- |
 | Condition 1 | `Updated by` → `Type` is not `Workflow` |
 
-A workspace member updating the record passes the filter; a write made by another workflow stops the run before it can loop.
+A workspace member updating the record passes the filter. A write made by another workflow stops the run before it can loop.
 
 ### Routing on a parsed webhook field
 
-This filter sits after a [Parse JSON](/reference/utilities/parse-json) block and continues only for enterprise-tier leads, so the costly enrichment steps that follow run on a fraction of inbound traffic.
+This filter sits after a [Parse JSON](/reference/utilities/parse-json) block. It continues only for enterprise-tier leads, so the costly enrichment steps that follow run on a fraction of inbound traffic.
 
 ```json
 {
@@ -81,7 +81,7 @@ This filter sits after a [Parse JSON](/reference/utilities/parse-json) block and
 }
 ```
 
-The run continues for an enterprise lead from `jane@acme.com`; a free-tier lead stops at the filter and consumes no enrichment credits.
+The run continues for an enterprise lead from `jane@acme.com`. A free-tier lead stops at the filter and consumes no enrichment credits.
 
 ## Source
 

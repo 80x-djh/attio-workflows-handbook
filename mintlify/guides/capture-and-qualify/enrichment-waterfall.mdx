@@ -1,9 +1,13 @@
 ---
 title: Cheapest-first enrichment waterfall
-description: Enrich a new company through ordered providers, stop on the first hit, and write only into dedicated source fields so you never pay twice.
+description: Enrich a new company through ordered providers, stop on the first hit, and write into dedicated source fields so you never pay twice.
 ---
 
-Enrich a new company through ordered providers, stop on the first hit, and write only into dedicated source fields so you never pay twice. This recipe rebuilds Clay's stop-on-first-hit waterfall economics natively in Attio. A [Record created](/reference/triggers/record-created) trigger fires on the Companies object, a free [Filter](/reference/conditions/filter) skips records that already hold good data, and a [Send HTTP request](/reference/utilities/send-http-request) calls your cheapest provider first. A [Parse JSON](/reference/utilities/parse-json) block pulls out the fields you need, an [If](/reference/conditions/if) condition stops the run the moment the cheap provider hits, and an [Update record](/reference/records/update-record) block writes the result into dedicated `Enriched ...` attributes. Only when the first provider misses does the run fall through to a second, pricier provider, so you pay for the expensive lookup only on the records the cheap one could not fill.
+Enrich a new company through ordered providers, stop on the first hit, and write into dedicated source fields so you never pay twice. To enrich means to fill in missing details about a company, such as its industry or headcount, by calling an outside data provider. A waterfall calls those providers in order, cheapest first, and stops as soon as one returns the data. This recipe rebuilds Clay's stop-on-first-hit waterfall economics natively in Attio.
+
+Here is the flow. A [Record created](/reference/triggers/record-created) trigger fires on the Companies object. A free [Filter](/reference/conditions/filter) skips records that already hold good data. A [Send HTTP request](/reference/utilities/send-http-request) block calls your cheapest provider first. A [Parse JSON](/reference/utilities/parse-json) block pulls out the fields you need. An [If](/reference/conditions/if) condition stops the run the moment the cheap provider hits. An [Update record](/reference/records/update-record) block writes the result into dedicated `Enriched ...` attributes.
+
+Only when the first provider misses does the run fall through to a second, pricier provider. So you pay for the expensive lookup only on the records the cheap one could not fill.
 
 | | |
 | --- | --- |
@@ -12,7 +16,7 @@ Enrich a new company through ordered providers, stop on the first hit, and write
 | **Trigger** | [Record created](/reference/triggers/record-created) on Companies, or a [Record command](/reference/triggers/record-command) |
 | **Blocks used** | [Filter](/reference/conditions/filter), [Send HTTP request](/reference/utilities/send-http-request), [Parse JSON](/reference/utilities/parse-json), [If](/reference/conditions/if), [Update record](/reference/records/update-record) |
 | **Credit cost per run** | 1 to 3 credits, depending on how far down the waterfall the run falls |
-| **Plan required** | Pro recommended — see [Credits & pricing explained](/reference/credits-and-pricing) |
+| **Plan required** | Pro recommended. See [Credits & pricing explained](/reference/credits-and-pricing) |
 
 ## Prerequisites
 
@@ -24,7 +28,9 @@ Enrich a new company through ordered providers, stop on the first hit, and write
 
 ## How it works
 
-The workflow runs cheapest provider to priciest, stops the moment it has the data, and writes results only into fields humans never touch. The [Filter](/reference/conditions/filter) is free, so gating costs nothing. You pay one credit per HTTP call you actually make and one credit for the single write at the end. A record that the cheap provider fills costs 2 credits and never touches provider B.
+The workflow runs from the cheapest provider to the priciest. It stops the moment it has the data. It writes results only into fields humans never touch.
+
+The [Filter](/reference/conditions/filter) is free, so gating costs nothing. Gating means checking a record and deciding whether the run should continue. You pay one credit per HTTP call you actually make, plus one credit for the single write at the end. A record that the cheap provider fills costs 2 credits and never touches provider B.
 
 1. [Record created](/reference/triggers/record-created) on Companies fires for each new company.
 2. [Filter](/reference/conditions/filter) continues only when `Enriched industry` is empty and `Industry verified` is unchecked.
@@ -39,7 +45,7 @@ The workflow runs cheapest provider to priciest, stops the moment it has the dat
 
 <Steps>
   <Step title="Add the Record created trigger">
-    Create a new workflow and add the [Record created](/reference/triggers/record-created) trigger. Set its object to Companies so the workflow fires once per new company. To enrich on demand from a record's actions menu instead, swap in a [Record command](/reference/triggers/record-command) trigger; the rest of the build is identical.
+    Create a new workflow and add the [Record created](/reference/triggers/record-created) trigger. Set its object to Companies so the workflow fires once per new company. You can also enrich on demand from a record's actions menu. To do that, swap in a [Record command](/reference/triggers/record-command) trigger. The rest of the build is identical.
 
     | Field | Value |
     | --- | --- |
@@ -49,7 +55,7 @@ The workflow runs cheapest provider to priciest, stops the moment it has the dat
   </Step>
 
   <Step title="Gate on the free Filter">
-    Add a [Filter](/reference/conditions/filter) block immediately after the trigger. Configure it to continue only for records worth enriching: the target field is empty and no human has verified it. The Filter is free, so this gate costs nothing and protects every paid step after it.
+    Add a [Filter](/reference/conditions/filter) block immediately after the trigger. Set it to continue only for records worth enriching. That means the target field is empty and no human has verified it. The Filter is free, so this gate costs nothing and protects every paid step after it.
 
     | Field | Value |
     | --- | --- |
@@ -60,7 +66,7 @@ The workflow runs cheapest provider to priciest, stops the moment it has the dat
   </Step>
 
   <Step title="Call provider A, the cheapest">
-    Add a [Send HTTP request](/reference/utilities/send-http-request) block. Point it at your cheapest provider and pass the company `domain` from the trigger. Pick a provider endpoint that responds within the 2-minute HTTP timeout, and respect that provider's rate limits so a burst of new companies does not trip a `429`.
+    Add a [Send HTTP request](/reference/utilities/send-http-request) block. Point it at your cheapest provider and pass the company `domain` from the trigger. Pick a provider endpoint that responds within the 2-minute HTTP timeout. Respect that provider's rate limits too, so a burst of new companies does not trip a `429`.
 
     | Field | Value |
     | --- | --- |
@@ -70,7 +76,7 @@ The workflow runs cheapest provider to priciest, stops the moment it has the dat
   </Step>
 
   <Step title="Parse provider A's response">
-    Add a [Parse JSON](/reference/utilities/parse-json) block and feed it the response body from the provider A call. Define a schema for the two fields you care about so later blocks can reference them by name.
+    Add a [Parse JSON](/reference/utilities/parse-json) block and feed it the response body from the provider A call. Parsing JSON reads the provider's raw response and turns it into named fields. Define a schema for the two fields you care about so later blocks can reference them by name.
 
     | Field | Value |
     | --- | --- |
@@ -80,7 +86,7 @@ The workflow runs cheapest provider to priciest, stops the moment it has the dat
   </Step>
 
   <Step title="Stop on the first hit">
-    Add an [If](/reference/conditions/if) condition. When provider A returned an industry, route to the write step and skip provider B entirely. When it is empty, fall through to the next provider. The condition itself is free, and stopping early is what makes this a waterfall rather than two full lookups every time.
+    Add an [If](/reference/conditions/if) condition. When provider A returned an industry, route to the write step and skip provider B entirely. When the industry is empty, fall through to the next provider. The condition itself is free. Stopping early is what makes this a waterfall rather than two full lookups every time.
 
     | Field | Value |
     | --- | --- |
@@ -90,7 +96,7 @@ The workflow runs cheapest provider to priciest, stops the moment it has the dat
   </Step>
 
   <Step title="Call provider B, richer, on the miss branch">
-    On the false branch only, add a second [Send HTTP request](/reference/utilities/send-http-request) block pointed at your richer, pricier provider, again passing `domain`. Because this call sits behind the [If](/reference/conditions/if) condition, you pay provider B, and spend the credit, only on records provider A could not fill.
+    On the false branch only, add a second [Send HTTP request](/reference/utilities/send-http-request) block. Point it at your richer, pricier provider, and again pass `domain`. This call sits behind the [If](/reference/conditions/if) condition. So you pay provider B, and spend the credit, only on records provider A could not fill.
 
     | Field | Value |
     | --- | --- |
@@ -100,7 +106,7 @@ The workflow runs cheapest provider to priciest, stops the moment it has the dat
   </Step>
 
   <Step title="Parse provider B's response">
-    Add a [Parse JSON](/reference/utilities/parse-json) block for provider B's body and map its shape to the same two fields. Provider B may name them differently, so map `sector` to `industry` and `headcount` to `employee_count` in the schema.
+    Add a [Parse JSON](/reference/utilities/parse-json) block for provider B's body and map its shape to the same two fields. Provider B may name them differently. In the schema, map `sector` to `industry` and `headcount` to `employee_count`.
 
     | Field | Value |
     | --- | --- |
@@ -110,7 +116,7 @@ The workflow runs cheapest provider to priciest, stops the moment it has the dat
   </Step>
 
   <Step title="Write only to source fields">
-    Add an [Update record](/reference/records/update-record) block targeting the triggering company. Write the winning values into your dedicated `Enriched ...` attributes only, never into the human-owned `Industry` or `Employees` attributes. Set `Enriched source` to the provider that won so you can audit coverage later.
+    Add an [Update record](/reference/records/update-record) block targeting the triggering company. Write the winning values into your dedicated `Enriched ...` attributes only. Never write into the human-owned `Industry` or `Employees` attributes. Set `Enriched source` to the provider that won, so you can audit coverage later.
 
     | Field | Value |
     | --- | --- |
@@ -139,23 +145,29 @@ The workflow runs cheapest provider to priciest, stops the moment it has the dat
 
 ## Credit cost worked example
 
-The [Filter](/reference/conditions/filter), [Parse JSON](/reference/utilities/parse-json), and [If](/reference/conditions/if) blocks are free logic and lookups, so they never consume credits. You pay 1 credit per [Send HTTP request](/reference/utilities/send-http-request) you actually fire and 1 credit for the single [Update record](/reference/records/update-record) write. The whole point of the waterfall is that most runs never reach provider B.
+The [Filter](/reference/conditions/filter), [Parse JSON](/reference/utilities/parse-json), and [If](/reference/conditions/if) blocks are free logic and lookups, so they never consume credits. You pay 1 credit per [Send HTTP request](/reference/utilities/send-http-request) you actually fire, plus 1 credit for the single [Update record](/reference/records/update-record) write. The whole point of the waterfall is that most runs never reach provider B.
 
 Three paths cost three different amounts. A run where the cheap provider hits fires one HTTP call to provider A plus one write, so it costs 2 credits. A run where provider A misses and provider B hits fires two HTTP calls plus one write, so it costs 3 credits. A run that the Filter stops at the gate fires nothing and costs 0 credits.
 
-Assume 800 new companies a month, a 70% hit rate on provider A, and a 10% Filter skip rate. That breaks down into 80 skipped runs at 0 credits, 504 runs that stop on provider A at 2 credits each for 1,008 credits, and 216 runs that fall through to provider B at 3 credits each for 648 credits. The total is roughly **1,656 Attio credits a month**, plus whatever each provider bills you per call. Compare that against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+Now work an example. Assume 800 new companies a month, a 70% hit rate on provider A, and a 10% Filter skip rate. That breaks down into three groups:
 
-To tag enrichment quality with an AI block such as [Classify record](/reference/ai/classify-record), gate it behind the same Filter. Its cost is variable and token-based, so run a test batch of about 10 records and read the per-run AI cost in the run viewer rather than assuming a fixed number.
+- 80 skipped runs at 0 credits.
+- 504 runs that stop on provider A at 2 credits each, for 1,008 credits.
+- 216 runs that fall through to provider B at 3 credits each, for 648 credits.
+
+The total is roughly **1,656 Attio credits a month**, plus whatever each provider bills you per call. Compare that against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+
+You can also tag enrichment quality with an AI block such as [Classify record](/reference/ai/classify-record). Gate it behind the same Filter. Its cost is variable and token-based, so do not assume a fixed number. Run a test batch of about 10 records and read the per-run AI cost in the run viewer.
 
 ## Test plan
 
-1. In the workflow editor, open the test panel and pick a real Companies record that has a `domain` but an empty `Enriched industry`, for example `acme.com`. Fire a test run.
+1. In the workflow editor, open the test panel. Pick a real Companies record that has a `domain` but an empty `Enriched industry`, for example `acme.com`. Fire a test run.
 2. Confirm the [Filter](/reference/conditions/filter) shows **continue** in run history. It should pass because both conditions are true.
 3. Confirm the provider A [Send HTTP request](/reference/utilities/send-http-request) returns a `200` and a body, and that [Parse JSON](/reference/utilities/parse-json) populates `{{step_4.industry}}` with `Software`.
 4. Confirm the [If](/reference/conditions/if) routed straight to [Update record](/reference/records/update-record) and that provider B never ran. Open the company and verify `Enriched industry`, `Enriched employee count`, and `Enriched source` are set, while the human `Industry` attribute is untouched.
 5. Test the miss branch. Pick a company whose domain provider A does not cover, such as a stealth or very new company. Confirm the run falls through to provider B and the write still lands.
 6. **Run a deliberately failing input.** Fire the workflow on a company whose `Industry verified` checkbox is already ticked. The Filter stops the run at the gate, no HTTP call fires, no credits are spent, and run history shows the run ending at the Filter. This proves the waterfall never overwrites verified data.
-7. Read each block's output in the run viewer under run history to confirm credits were charged only for the steps that actually executed.
+7. Read each block's output in the run viewer under run history. Confirm credits were charged only for the steps that actually executed.
 
 ## Failure modes
 
@@ -172,11 +184,11 @@ To tag enrichment quality with an AI block such as [Classify record](/reference/
 
 ### Three-tier waterfall
 
-Add a third provider for the records the first two both miss. Duplicate the [If](/reference/conditions/if), [Send HTTP request](/reference/utilities/send-http-request), and [Parse JSON](/reference/utilities/parse-json) trio on the second miss branch, ordered cheapest to priciest. The economics hold: each tier runs only on what the tier above could not fill, so a record that the first provider covers still costs 2 credits.
+Add a third provider for the records the first two both miss. Duplicate the [If](/reference/conditions/if), [Send HTTP request](/reference/utilities/send-http-request), and [Parse JSON](/reference/utilities/parse-json) trio on the second miss branch, ordered cheapest to priciest. The economics still hold. Each tier runs only on what the tier above could not fill. A record that the first provider covers still costs 2 credits.
 
 ### Command trigger instead of create
 
-Swap the [Record created](/reference/triggers/record-created) trigger for a [Record command](/reference/triggers/record-command) so a rep enriches a single company on demand from its actions menu. This avoids spending credits on bulk imports you do not care about, and it lets you re-run the waterfall after a company changes domains. Everything from the Filter down stays the same.
+Swap the [Record created](/reference/triggers/record-created) trigger for a [Record command](/reference/triggers/record-command). Now a rep enriches a single company on demand from its actions menu. This avoids spending credits on bulk imports you do not care about. It also lets you re-run the waterfall after a company changes domains. Everything from the Filter down stays the same.
 
 ## See also
 

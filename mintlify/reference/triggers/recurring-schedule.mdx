@@ -4,12 +4,12 @@ description: The Recurring schedule trigger (scheduled) starts a workflow on a d
 icon: clock
 ---
 
-The **Recurring schedule** trigger (scheduled) starts a workflow on a daily, weekly, monthly, or cron-based schedule in a fixed timezone. It carries no triggering record, so scheduled workflows almost always begin by fetching their own data with [Find records](/reference/records/find-records) or [Find list entries](/reference/lists/find-list-entries). The trigger fires in the workflow's configured timezone, which is the single most common source of "it ran an hour early" surprises.
+The **Recurring schedule** trigger (scheduled) starts a workflow on a daily, weekly, monthly, or cron-based schedule in a fixed timezone. It carries no triggering record, so a scheduled workflow has no data to start from. Most scheduled workflows fix this by fetching their own data in the first step, using [Find records](/reference/records/find-records) or [Find list entries](/reference/lists/find-list-entries). The trigger fires in the workflow's configured timezone. That timezone is the single most common source of "it ran an hour early" surprises.
 
 | | |
 | --- | --- |
 | **Category** | Trigger (scheduled) |
-| **Credit cost** | Free — triggers consume no credits |
+| **Credit cost** | Free. Triggers consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | None documented. |
@@ -18,9 +18,9 @@ The **Recurring schedule** trigger (scheduled) starts a workflow on a daily, wee
 
 | Input | Type | Required | Default | Notes |
 | --- | --- | --- | --- | --- |
-| Frequency | Enum | Yes | — | Daily, weekly, monthly, or advanced cron. |
-| Timezone | Timezone | Yes | — | The zone the schedule fires in. A daily 09:00 run means 09:00 in this zone, not in each viewer's local time. |
-| Frequency settings | Mixed | Yes | — | Time of day, day of week, day of month, or a cron expression, depending on the chosen frequency. |
+| Frequency | Enum | Yes | None | Daily, weekly, monthly, or advanced cron. |
+| Timezone | Timezone | Yes | None | The zone the schedule fires in. A daily 09:00 run means 09:00 in this zone, not in each viewer's local time. |
+| Frequency settings | Mixed | Yes | None | Time of day, day of week, day of month, or a cron expression, depending on the chosen frequency. |
 
 ## Outputs
 
@@ -28,19 +28,19 @@ The **Recurring schedule** trigger (scheduled) starts a workflow on a daily, wee
 | --- | --- | --- | --- |
 | Timestamp | Datetime | `2026-06-15T09:00:00Z` | The moment the run fired. |
 
-Reference the fire time in a later block as `{{ steps.recurring_schedule.timestamp }}` — for example, to label a daily digest with its run date.
+You can reference the fire time in a later block as `{{ steps.recurring_schedule.timestamp }}`. For example, use it to label a daily digest with its run date.
 
 ## Behavior
 
-The trigger fires on each scheduled occurrence, evaluated in the configured timezone.
+The trigger fires on each scheduled occurrence. Attio evaluates the schedule in the configured timezone.
 
-Because no record or list entry enters the run, the downstream variable picker exposes only the timestamp. To act on data, add a lookup block as the first step and set its limit while you build, since [Find records](/reference/records/find-records) and [Find list entries](/reference/lists/find-list-entries) return at most 100 results each.
+No record or list entry enters the run. As a result, the downstream variable picker exposes only the timestamp. To act on data, add a lookup block as the first step. Set its limit while you build, because [Find records](/reference/records/find-records) and [Find list entries](/reference/lists/find-list-entries) return at most 100 results each.
 
 ## Gotchas
 
 - **The run fires in the wrong hour.** The schedule uses the workflow's configured timezone, not the viewer's or the workspace owner's. Open the trigger and confirm the *Timezone* field matches the time you mean before you publish.
-- **A scheduled sweep silently processes only part of the pipeline.** [Find records](/reference/records/find-records) and [Find list entries](/reference/lists/find-list-entries) cap at 100 results, so a daily sweep over a larger pipeline misses everything past the cap. Narrow the filter so each run's working set stays under 100, or split the work across more frequent runs.
-- **A looping sweep burns far more credits than expected.** A schedule that fans out across many records with [Loop](/reference/utilities/loop) multiplies every paid block inside the loop by the record count. Estimate worst-case credits — record count multiplied by the per-record paid blocks — before you publish, and keep the limit low while testing.
+- **A scheduled sweep silently processes only part of the pipeline.** [Find records](/reference/records/find-records) and [Find list entries](/reference/lists/find-list-entries) cap at 100 results. A daily sweep over a larger pipeline misses everything past that cap. Narrow the filter so each run's working set stays under 100, or split the work across more frequent runs.
+- **A looping sweep burns far more credits than expected.** A schedule that fans out across many records with [Loop](/reference/utilities/loop) multiplies every paid block inside the loop by the record count. Estimate the worst case before you publish: take the record count and multiply it by the per-record paid blocks. Keep the limit low while testing.
 
 ## Examples
 

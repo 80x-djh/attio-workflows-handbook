@@ -4,7 +4,7 @@ description: The Classify text block (AI) uses AI to sort a text input into one 
 icon: tags
 ---
 
-The **Classify text** block (AI) uses AI to sort a text input into one or more tags you define. It reads any string — a form answer, an email snippet, a parsed webhook field — and returns the matching tag rather than the whole record, which is what separates it from [Classify record](/reference/ai/classify-record). The block computes the tag but never writes it anywhere, so an [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) block must follow it to make the result persist.
+The **Classify text** block (AI) uses AI to sort a text input into one or more tags you define. It reads any string, such as a form answer, an email snippet, or a parsed webhook field. It then returns the matching tag rather than the whole record, which is what separates it from [Classify record](/reference/ai/classify-record). The block works out the tag but never writes it anywhere. So you must follow it with an [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) block to save the result.
 
 | | |
 | --- | --- |
@@ -18,8 +18,8 @@ The **Classify text** block (AI) uses AI to sort a text input into one or more t
 
 | Input | Type | Required | Default | Notes |
 | --- | --- | --- | --- | --- |
-| `Input` | Text | Yes | — | The text to classify. Map a trigger field, a parsed JSON value, or an earlier block's output. |
-| `Tags` | List of text | Yes | — | The allowed tag options the model may choose from. The model cannot return a tag outside this list. |
+| `Input` | Text | Yes | None | The text to classify. Map a trigger field, a parsed JSON value, or an earlier block's output. |
+| `Tags` | List of text | Yes | None | The allowed tag options the model may choose from. The model cannot return a tag outside this list. |
 | `Allow multiple tags` | Boolean | No | Off | When on, the model may return more than one tag for a single input. |
 
 ## Outputs
@@ -32,24 +32,24 @@ Reference the chosen tag in a later block as `{{ steps.classify_text.text_classi
 
 ## Behavior
 
-The block sends the `Input` text and your `Tags` list to the model on each run, then returns whichever tag fits best. The model is constrained to your list, so it never invents a category — but it always returns something, even for vague or off-topic text, so a junk input still produces a tag rather than an error.
+On each run, the block sends the `Input` text and your `Tags` list to the model, then returns whichever tag fits best. The model is limited to your list, so it never invents a category. It always returns something, though, even for vague or off-topic text. A junk input still produces a tag rather than an error.
 
-With `Allow multiple tags` off, the output is a single tag. With it on, the output can hold several tags, and a downstream block must be ready to receive more than one value — write the result to a multi-select attribute, not a single-select one.
+With `Allow multiple tags` off, the output is a single tag. With it on, the output can hold several tags. A downstream block must then be ready to receive more than one value, so write the result to a multi-select attribute, not a single-select one.
 
-The block is read-and-compute only. It does not save its result to any record or list entry; the `Text classification` output lives in the run until a write block consumes it. Cost is token-based, so longer inputs and longer tag lists consume more credits per run.
+The block only reads and computes. It does not save its result to any record or list entry. The `Text classification` output lives in the run until a write block consumes it. Cost is token-based, which means it scales with the amount of text the model reads. Longer inputs and longer tag lists consume more credits per run.
 
 ## Gotchas
 
 - **The result vanishes if nothing saves it.** The block computes a tag but writes nothing on its own. Follow it with [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) and map `{{ steps.classify_text.text_classification }}` into the target attribute.
-- **A select attribute drops unmatched tags.** Writing to a single-select or multi-select attribute requires the option to already exist. Create the matching options on the attribute first, with names that match your `Tags` values exactly, or the write silently keeps nothing.
-- **Overlapping tag definitions make the result unstable.** When two tags mean nearly the same thing — `Pricing` and `Cost` — the model splits ambiguous inputs between them run to run. Keep tag names mutually exclusive when you need one reliable answer.
-- **You are paying the model to do a keyword match.** If a deterministic rule decides the tag — a substring, a sender domain, a known value — a free [Filter](/reference/conditions/filter) or [Switch](/reference/conditions/switch) does the same job for zero credits. Reserve this block for genuinely fuzzy text.
+- **A select attribute drops unmatched tags.** Writing to a single-select or multi-select attribute requires the option to already exist. Create the matching options on the attribute first, with names that match your `Tags` values exactly. Otherwise the write silently keeps nothing.
+- **Overlapping tag definitions make the result unstable.** Suppose two tags mean nearly the same thing, like `Pricing` and `Cost`. The model then splits ambiguous inputs between them from run to run. Keep tag names mutually exclusive when you need one reliable answer.
+- **You are paying the model to do a keyword match.** Sometimes a fixed rule decides the tag, such as a substring, a sender domain, or a known value. In that case a free [Filter](/reference/conditions/filter) or [Switch](/reference/conditions/switch) does the same job for zero credits. Reserve this block for genuinely fuzzy text.
 
 ## Examples
 
 ### Tagging inbound form answers by pain point
 
-A contact form asks "What's the main problem you're hoping to solve?" and you want the free-text answer sorted into a fixed set of pain categories before routing.
+A contact form asks "What's the main problem you're hoping to solve?" You want the free-text answer sorted into a fixed set of pain categories before you send the lead to a rep.
 
 | Field | Value |
 | --- | --- |
@@ -61,7 +61,7 @@ For the answer "We can't get our Salesforce data to sync cleanly," the block ret
 
 ### Sorting a parsed webhook field into several themes
 
-A support tool posts ticket text to a [Webhook received](/reference/triggers/webhook-received) trigger. You first run [Parse JSON](/reference/utilities/parse-json) to pull the `message` field, then classify it into one or more themes so a single ticket can carry every relevant tag.
+A support tool posts ticket text to a [Webhook received](/reference/triggers/webhook-received) trigger. You first run [Parse JSON](/reference/utilities/parse-json) to pull out the `message` field. Then you classify that text into one or more themes. This way a single ticket can carry every relevant tag.
 
 ```json
 {
@@ -75,7 +75,7 @@ For the message "The export button throws an error and honestly we're reconsider
 
 ## Credit cost worked example
 
-Classify text is priced by tokens, so cost rises with input length and tag-list size rather than a flat per-run figure. Suppose a 60-word inbound form answer against a five-tag list runs roughly 0.3 credits per call, and the form receives 400 submissions a month. That is about 120 credits a month for classification alone — comfortably inside a paid plan's allowance, but worth confirming against the exact per-run figure shown in the run viewer before wiring it to a high-volume trigger. Filter out submissions you do not need to classify first, since every record that reaches an AI block costs credits. For plan allowances and how token pricing is billed, see [Credits & pricing explained](/reference/credits-and-pricing).
+Classify text is priced by tokens. Cost rises with input length and tag-list size rather than a flat per-run figure. Suppose a 60-word inbound form answer against a five-tag list runs roughly 0.3 credits per call, and the form receives 400 submissions a month. That is about 120 credits a month for classification alone. That sits comfortably inside a paid plan's allowance. Still, confirm it against the exact per-run figure shown in the run viewer before you wire it to a high-volume trigger. Filter out submissions you do not need to classify first. Every record that reaches an AI block costs credits. For plan allowances and how token pricing is billed, see [Credits & pricing explained](/reference/credits-and-pricing).
 
 ## Source
 

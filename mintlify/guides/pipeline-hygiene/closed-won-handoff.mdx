@@ -3,7 +3,7 @@ title: Hand off closed-won deals to Customer Success
 description: When a deal reaches Closed won, this workflow summarizes it, creates an onboarding record and task, lists it, and pings Customer Success (CS) in Slack.
 ---
 
-When a deal reaches Closed won, this workflow summarizes it, creates an onboarding record and task, lists it, and pings Customer Success (CS) in Slack. The build fires on [Attribute value changed](/reference/triggers/attribute-value-changed) when a deal's Stage becomes Closed won, guards against re-fires with an [If](/reference/conditions/if) condition, drafts a handoff brief with [Summarize record](/reference/ai/summarize-record), then chains [Create record](/reference/records/create-record), [Create task](/reference/tasks/create-task), [Add record to list](/reference/lists/add-record-to-list), and a [Slack](/reference/integrations) message. The result is that no won deal slips through the gap between Sales and CS.
+When a deal reaches Closed won, this workflow summarizes it, creates an onboarding record and task, lists it, and pings Customer Success (CS) in Slack. The build starts with the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger. It fires when a deal's Stage becomes Closed won. An [If](/reference/conditions/if) condition then guards against re-fires. This stops the same won deal from being handed off twice. Next it drafts a handoff brief with [Summarize record](/reference/ai/summarize-record). Finally it chains four actions: [Create record](/reference/records/create-record), [Create task](/reference/tasks/create-task), [Add record to list](/reference/lists/add-record-to-list), and a [Slack](/reference/integrations) message. The result is that no won deal slips through the gap between Sales and CS.
 
 | | |
 | --- | --- |
@@ -19,30 +19,30 @@ When a deal reaches Closed won, this workflow summarizes it, creates an onboardi
 - A workspace on the **Plus** plan or higher.
 - The **Slack** integration connected, with a Customer Success channel such as `#cs-onboarding`.
 - A **Deals** object whose **Stage** status attribute includes a **Closed won** option.
-- An **Onboarding** object with at least a **Name** attribute, a **Deal** record-reference attribute pointing back to Deals, and an **Owner** attribute. A CS list can stand in if you prefer not to model a separate object.
+- An **Onboarding** object with three attributes: a **Name**, a **Deal** record-reference attribute pointing back to Deals, and an **Owner**. A record-reference attribute links one record to another. A CS list can stand in if you prefer not to model a separate object.
 - A list named **Active onboarding** that tracks in-flight handoffs.
 
 No API key is needed. The [Slack](/reference/integrations) block posts through the connected integration, not a raw token.
 
 ## How it works
 
-The workflow watches one attribute on a deal and acts only when that attribute settles on the right value. When Stage flips to Closed won, an [If](/reference/conditions/if) guard confirms the value actually changed, so re-saving an already-won deal does not replay the whole handoff. The run then summarizes the deal for CS, creates an onboarding record, assigns the CS owner a task, files the deal on the active-onboarding list, and announces the win in Slack with the summary inline.
+The workflow watches one attribute on a deal. It acts only when that attribute settles on the right value. When Stage flips to Closed won, an [If](/reference/conditions/if) guard confirms the value actually changed. That way, re-saving an already-won deal does not replay the whole handoff. The run then summarizes the deal for CS, creates an onboarding record, and assigns the CS owner a task. It also files the deal on the active-onboarding list. Finally it announces the win in Slack with the summary inline.
 
 The blocks run in this order:
 
-1. [Attribute value changed](/reference/triggers/attribute-value-changed) — fires when Deals, Stage changes to Closed won.
-2. [If](/reference/conditions/if) — checks that the old Stage value differs from the new one (the re-fire guard).
-3. [Summarize record](/reference/ai/summarize-record) — drafts the deal brief for CS.
-4. [Create record](/reference/records/create-record) — creates the onboarding record.
-5. [Create task](/reference/tasks/create-task) — assigns a kickoff task to the CS owner.
-6. [Add record to list](/reference/lists/add-record-to-list) — adds the deal to Active onboarding.
-7. [Slack](/reference/integrations) — posts the summary to the CS channel.
+1. [Attribute value changed](/reference/triggers/attribute-value-changed): fires when Deals, Stage changes to Closed won.
+2. [If](/reference/conditions/if): checks that the old Stage value differs from the new one. This is the re-fire guard.
+3. [Summarize record](/reference/ai/summarize-record): drafts the deal brief for CS.
+4. [Create record](/reference/records/create-record): creates the onboarding record.
+5. [Create task](/reference/tasks/create-task): assigns a kickoff task to the CS owner.
+6. [Add record to list](/reference/lists/add-record-to-list): adds the deal to Active onboarding.
+7. [Slack](/reference/integrations): posts the summary to the CS channel.
 
 ## Build steps
 
 <Steps>
 <Step title="Add the attribute-value-changed trigger">
-Create a new workflow and add the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger. Scope it to the Deals object and the Stage attribute so the workflow wakes only when a deal's stage moves.
+Create a new workflow and add the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger. Scope it to the Deals object and the Stage attribute. The workflow then wakes only when a deal's stage moves.
 
 | Field | Value |
 | --- | --- |
@@ -52,7 +52,7 @@ Create a new workflow and add the [Attribute value changed](/reference/triggers/
 </Step>
 
 <Step title="Guard against re-fires with If">
-Add an [If](/reference/conditions/if) condition immediately after the trigger. Compare the old Stage value to the new one so a re-save or bulk edit of an already-won deal cannot replay the handoff. Only the **true** branch continues.
+Add an [If](/reference/conditions/if) condition immediately after the trigger. Compare the old Stage value to the new one. A re-save or bulk edit of an already-won deal then cannot replay the handoff. Only the **true** branch continues.
 
 | Field | Value |
 | --- | --- |
@@ -73,12 +73,12 @@ Add a [Summarize record](/reference/ai/summarize-record) block on the true branc
 </Step>
 
 <Step title="Create the onboarding record">
-Add a [Create record](/reference/records/create-record) block targeting your Onboarding object. Link it back to the deal and seed the owner so CS has a single home for the engagement.
+Add a [Create record](/reference/records/create-record) block targeting your Onboarding object. Link it back to the deal and seed the owner. CS then has a single home for the engagement.
 
 | Field | Value |
 | --- | --- |
 | Object | Onboarding |
-| Name | Acme — Onboarding |
+| Name | Acme: Onboarding |
 | Deal | Trigger, Deal |
 | Owner | Priya Sharma |
 | Status | Kickoff pending |
@@ -91,7 +91,7 @@ Add a [Create task](/reference/tasks/create-task) block so the handoff lands in 
 | --- | --- |
 | Title | Kick off onboarding for Acme |
 | Assignee | Priya Sharma |
-| Linked record | Create record, Onboarding (Acme — Onboarding) |
+| Linked record | Create record, Onboarding (Acme: Onboarding) |
 | Due date | 2 business days from today |
 </Step>
 
@@ -106,7 +106,7 @@ Add an [Add record to list](/reference/lists/add-record-to-list) block so the de
 </Step>
 
 <Step title="Post the summary to Slack">
-Add a [Slack](/reference/integrations) block to announce the win and paste the brief inline. Reference the summary output with the variable shown so CS reads the brief without opening Attio.
+Add a [Slack](/reference/integrations) block to announce the win and paste the brief inline. Reference the summary output with the variable shown. CS then reads the brief without opening Attio.
 
 | Field | Value |
 | --- | --- |
@@ -123,16 +123,16 @@ Add a [Slack](/reference/integrations) block to announce the win and paste the b
 | Old stage | [Attribute value changed](/reference/triggers/attribute-value-changed) | Stage (old value) | Proposal |
 | New stage | [Attribute value changed](/reference/triggers/attribute-value-changed) | Stage (new value) | Closed won |
 | CS summary | [Summarize record](/reference/ai/summarize-record) | `summary` | Acme bought the Growth plan; primary contact Priya Sharma; promised EMEA data residency. |
-| Onboarding record | [Create record](/reference/records/create-record) | `record` | Acme — Onboarding |
+| Onboarding record | [Create record](/reference/records/create-record) | `record` | Acme: Onboarding |
 | Owner | [Create record](/reference/records/create-record) | Owner | Priya Sharma |
 
 ## Credit cost worked example
 
-The fixed per-run costs come from four write blocks. The trigger is free, and the [If](/reference/conditions/if) guard is free because a condition that stops a run consumes no credits. [Create record](/reference/records/create-record), [Create task](/reference/tasks/create-task), [Add record to list](/reference/lists/add-record-to-list), and the [Slack](/reference/integrations) message each cost 1 credit, so a completed handoff spends **4 write credits**.
+The fixed per-run costs come from four write blocks. The trigger is free. The [If](/reference/conditions/if) guard is also free, because a condition that stops a run consumes no credits. [Create record](/reference/records/create-record), [Create task](/reference/tasks/create-task), [Add record to list](/reference/lists/add-record-to-list), and the [Slack](/reference/integrations) message each cost 1 credit. So a completed handoff spends **4 write credits**.
 
-The [Summarize record](/reference/ai/summarize-record) block is variable and token-based. Its cost depends on how much deal context the model reads and writes, so a fixed number is misleading. Fire the workflow on roughly 10 representative deals, read the actual per-run AI cost in the run viewer, then multiply by your volume.
+The [Summarize record](/reference/ai/summarize-record) block is variable and token-based. Its cost depends on how much deal context the model reads and writes, so a fixed number is misleading. To find your real cost, fire the workflow on roughly 10 representative deals. Read the actual per-run AI cost in the run viewer, then multiply by your volume.
 
-At a realistic 40 closed-won deals per month, the writes cost 40 × 4 = **160 write credits per month**, plus the AI cost (about 40 × your sampled per-summary figure). Check that combined total against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing). Per-workflow credit caps were removed in the new engine, so the allowance lives at the plan level, not on this workflow.
+Take a realistic 40 closed-won deals per month. The writes cost 40 × 4 = **160 write credits per month**, plus the AI cost (about 40 × your sampled per-summary figure). Check that combined total against your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing). Per-workflow credit caps were removed in the new engine, so the allowance lives at the plan level, not on this workflow.
 
 ## Test plan
 
@@ -140,8 +140,8 @@ At a realistic 40 closed-won deals per month, the writes cost 40 × 4 = **160 wr
 2. Move the deal's Stage to **Closed won**. The [Attribute value changed](/reference/triggers/attribute-value-changed) trigger should fire once.
 3. Confirm the [If](/reference/conditions/if) guard resolves **true** (old `Proposal` differs from new `Closed won`) and the run continues down the true branch.
 4. Confirm [Summarize record](/reference/ai/summarize-record) returns a non-empty CS brief, and read its output in run history.
-5. Confirm a new Onboarding record exists, a task is assigned to the CS owner, the deal appears on **Active onboarding**, and the Slack message lands in `#cs-onboarding` with the summary text.
-6. **Deliberately failing input:** re-save the same already-won deal, setting Stage to Closed won again without a real change. The [If](/reference/conditions/if) guard should resolve **false** and stop the run, producing no second onboarding record, task, list entry, or Slack message. Verify the stopped run in run history.
+5. Confirm a new Onboarding record exists and a task is assigned to the CS owner. Check that the deal appears on **Active onboarding**. Confirm the Slack message lands in `#cs-onboarding` with the summary text.
+6. **Deliberately failing input:** re-save the same already-won deal, setting Stage to Closed won again without a real change. The [If](/reference/conditions/if) guard should resolve **false** and stop the run. That produces no second onboarding record, task, list entry, or Slack message. Verify the stopped run in run history.
 
 ## Failure modes
 
@@ -157,11 +157,11 @@ At a realistic 40 closed-won deals per month, the writes cost 40 × 4 = **160 wr
 
 ### Skip the summary for small deals
 
-Add a free [Filter](/reference/conditions/filter) condition before [Summarize record](/reference/ai/summarize-record) that passes only deals above a threshold, such as annual contract value (ACV) of $25,000 or more. Small deals still get the record, task, list entry, and Slack ping; they simply skip the variable AI cost. Gating the AI block behind a free Filter keeps token spend on the deals that warrant a written brief.
+Add a free [Filter](/reference/conditions/filter) condition before [Summarize record](/reference/ai/summarize-record). Let it pass only deals above a threshold, such as annual contract value (ACV) of $25,000 or more. ACV is the yearly revenue a deal is worth. Small deals still get the record, task, list entry, and Slack ping. They simply skip the variable AI cost. Gating the AI block behind a free Filter keeps token spend on the deals that warrant a written brief.
 
 ### Route by segment
 
-Add a [Switch](/reference/conditions/switch) condition after the guard, keyed on the deal's Segment attribute (for example, EMEA, AMER, or SMB). Each branch sets a different owner, Slack channel, and list, so the handoff lands with the right team automatically.
+Add a [Switch](/reference/conditions/switch) condition after the guard, keyed on the deal's Segment attribute (for example, EMEA, AMER, or SMB). Each branch sets a different owner, Slack channel, and list. The handoff then lands with the right team automatically.
 
 ## See also
 
@@ -171,4 +171,4 @@ Add a [Switch](/reference/conditions/switch) condition after the guard, keyed on
 - [Credits & pricing explained](/reference/credits-and-pricing)
 - [Attio: Workflows overview](https://attio.com/help/workflows)
 
-_Source: [Attio Help Center — Workflows overview](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026._
+_Source: [Attio Help Center: Workflows overview](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026._

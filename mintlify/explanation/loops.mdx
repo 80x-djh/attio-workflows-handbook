@@ -3,17 +3,17 @@ title: Loops & processing many records
 description: A loop is how a workflow acts on every item in a multi-valued result instead of silently stopping at the first one.
 ---
 
-A **loop** is how a workflow acts on every item in a multi-valued result instead of silently stopping at the first one. Attio workflows process one thing at a time by default, so the moment a block hands you *many* things — search results, a multi-reference relationship, a multi-select — a downstream block sees only the first of them unless you wrap your work in a [Loop](/reference/utilities/loop) block.
+A **loop** is how a workflow acts on every item in a multi-valued result instead of silently stopping at the first one. A multi-valued result is any output that holds more than one thing at once. By default, Attio workflows process one thing at a time. So the moment a block hands you *many* things, a downstream block sees only the first of them. That happens with search results, a multi-reference relationship (one record linked to several others), or a multi-select value. To act on all of them, you wrap your work in a [Loop](/reference/utilities/loop) block.
 
-For a revenue operations engineer, this is the difference between a workflow that creates a follow-up task for one stale deal and one that creates a task for all thirty-eight. The failure is quiet: no error, no failed run, just incomplete work that surfaces weeks later when a forecast is wrong. Understanding loops is mostly about recognizing where the one-record default bites and reaching for the same fix every time.
+For a revenue operations engineer, this is the difference between two workflows. One creates a follow-up task for a single stale deal. The other creates a task for all thirty-eight. The failure is quiet. There is no error and no failed run, just incomplete work that surfaces weeks later when a forecast comes out wrong. Understanding loops is mostly about spotting where the one-record default bites you. The fix is the same every time.
 
-This page covers what you can iterate over, how iterations behave on the canvas, and how loop contents drive your credit bill. After reading it you can spot the one-record trap before it ships, build a working loop over search results, and decide when a loop is the wrong tool. The block's input and output spec lives in the [Loop](/reference/utilities/loop) reference.
+This page covers three things. It covers what you can loop over, how loops behave on the canvas, and how the blocks inside a loop drive your credit bill. After reading it, you can spot the one-record trap before it ships, build a working loop over search results, and decide when a loop is the wrong tool. The block's input and output spec lives in the [Loop](/reference/utilities/loop) reference.
 
 ## Spotting the one-record default
 
-Connect a block directly to the output of a [Find records](/reference/records/find-records) block and the workflow acts on the first match only. The [run viewer](/explanation/runs-and-debugging) confirms it, and the builder shows a warning icon on the downstream block at design time. Treat that icon as the symptom and a loop as the cure.
+Connect a block directly to the output of a [Find records](/reference/records/find-records) block, and the workflow acts on the first match only. The [run viewer](/explanation/runs-and-debugging) confirms this after a run. While you are still designing, the builder shows a warning icon on the downstream block. Treat that icon as the symptom and a loop as the cure.
 
-The fix is always the same shape: send the multi-valued output into a [Loop](/reference/utilities/loop), then put the per-item work inside the loop container. Consider a workflow that finds stale deals and creates a follow-up task for each owner.
+The fix is always the same shape. Send the multi-valued output into a [Loop](/reference/utilities/loop). Then put the per-item work inside the loop container. Consider a workflow that finds stale deals and creates a follow-up task for each owner.
 
 | Field | Value |
 | --- | --- |
@@ -21,55 +21,55 @@ The fix is always the same shape: send the multi-valued output into a [Loop](/re
 | Iterable | `{{ steps.find_records.records }}` from Find records |
 | Inside the loop | Create task, assigned to `{{ loop.current_item.owner }}` |
 
-With the [Create task](/reference/tasks/create-task) block inside the loop container, a Find that returns thirty-eight stale deals produces thirty-eight tasks — one per deal — instead of one.
+Put the [Create task](/reference/tasks/create-task) block inside the loop container. Now a Find that returns thirty-eight stale deals produces thirty-eight tasks, one per deal, instead of one.
 
 ## Choosing what to iterate
 
-The Loop block's **Iterable** input accepts any output that holds more than one value, which is most of the multi-valued data a workflow ever touches.
+The Loop block has an **Iterable** input. This is the list you want to loop over, and it accepts any output that holds more than one value. That covers most of the multi-valued data a workflow ever touches.
 
 - Matching records or entries from [Find records](/reference/records/find-records) and [Find list entries](/reference/lists/find-list-entries).
-- Multi-reference relationship attributes — every person linked to a company, every deal linked to a fund.
+- Multi-reference relationship attributes, such as every person linked to a company, or every deal linked to a fund.
 - Multi-select attribute values.
 - Arrays pulled out of a webhook payload by [Parse JSON](/reference/utilities/parse-json).
 
-Inside the loop, each iteration exposes loop-scoped variables you reference in nested blocks: **Current item** (the record or value for this pass), **Item position**, **Count**, and **Total count**. As an example, a workflow that triggered on a deal reaching a late stage can enroll every contact on that deal into a follow-up sequence.
+Inside the loop, each pass exposes loop-scoped variables. These are values that exist only inside the loop, and you reference them in the blocks nested within it. They are **Current item** (the record or value for this pass), **Item position**, **Count**, and **Total count**. As an example, take a workflow that triggered when a deal reached a late stage. It can enroll every contact on that deal into a follow-up sequence.
 
 | Field | Value |
 | --- | --- |
 | Iterable | The deal's contacts relationship attribute |
 | Inside the loop | Enroll in sequence, person = `{{ loop.current_item }}` |
 
-Because [Enroll in sequence](/reference/sequences/enroll-in-sequence) takes exactly one person per call, looping over the relationship enrolls all four champions on a deal rather than rejecting the list as the wrong type.
+[Enroll in sequence](/reference/sequences/enroll-in-sequence) takes exactly one person per call. Looping over the relationship enrolls all four champions on a deal, one at a time. Without the loop, the block would reject the whole list as the wrong type.
 
 ## Reading iterations on the canvas
 
-Blocks that should repeat go *inside* the loop container — the dotted boundary on the canvas — and the new builder lets you drag existing blocks straight into it. The Loop block has two exits, and keeping work on the right one is the difference between running per item and running once.
+Blocks that should repeat go *inside* the loop container. The container is the dotted boundary on the canvas. The new builder lets you drag existing blocks straight into it. The Loop block has two exits. Putting work on the right one is the difference between running once per item and running once in total.
 
 - **Next step** begins each iteration and holds the per-item work.
-- **Complete** runs a single time after every iteration finishes, so a summary message such as "Swept 38 deals" belongs here, not inside the loop.
+- **Complete** runs a single time after every iteration finishes. A summary message such as "Swept 38 deals" belongs here, not inside the loop.
 
-When a run misbehaves, the loop is also where you debug. In the [run viewer](/explanation/runs-and-debugging), the `<` and `>` arrows above the Loop step through individual iterations, so you can jump to iteration 17 of 40 — the one that actually failed — instead of rereading the whole run. The arrows surface the exact Current item that broke, which is usually a record with an empty attribute the nested block assumed was set.
+When a run misbehaves, the loop is also where you debug. In the [run viewer](/explanation/runs-and-debugging), the `<` and `>` arrows above the Loop step through individual iterations. You can jump straight to iteration 17 of 40, the one that actually failed, instead of rereading the whole run. The arrows surface the exact Current item that broke. That item is usually a record with an empty attribute that the nested block assumed was filled in.
 
 ## Budgeting loop credits
 
-The Loop block itself is free; its contents run once per iteration, so the per-item blocks are where a workflow's cost actually lives. Multiply the cost of each nested block by the number of items and you have the run cost. A sweep that creates one task per stale deal, over thirty-eight deals, looks like this.
+The Loop block itself is free. Its contents run once per iteration. So the per-item blocks are where a workflow's cost actually lives. Multiply the cost of each nested block by the number of items, and you have the run cost. Here is a sweep that creates one task per stale deal, over thirty-eight deals.
 
 | Block | Cost per iteration | Iterations | Run cost |
 | --- | --- | --- | --- |
-| Loop | Free | — | 0 credits |
+| Loop | Free | n/a | 0 credits |
 | [Create task](/reference/tasks/create-task) | 1 credit | 38 | 38 credits |
 
-That single workflow costs 38 credits per run, all of it from the nested write. Two levers keep that number honest. The **Limit** input on the Loop caps iterations, so setting it low while testing stops a bad filter from fanning out into hundreds of writes before you notice. A [Filter](/reference/conditions/filter) on **Current item** inside the loop is free and skips iterations you do not want, which avoids every write it prevents.
+That single workflow costs 38 credits per run, all of it from the nested write. Two levers keep that number honest. The first is the **Limit** input on the Loop, which caps the number of iterations. Set it low while testing. Then a bad filter cannot fan out into hundreds of writes before you notice. The second is a [Filter](/reference/conditions/filter) on **Current item** inside the loop. The filter is free, and it skips iterations you do not want. Every iteration it skips is a write you do not pay for.
 
-The lever matters most when the nested block is expensive. Putting a [Web agent](/reference/agents/web-agent) inside a loop over fifty records means fifty variable-cost agent runs, not one — test it against a small **Limit** and read the real per-run cost in the run viewer before lifting the cap. The full rates and plan allowances are on the [Credits & pricing explained](/reference/credits-and-pricing) page.
+These levers matter most when the nested block is expensive. Put a [Web agent](/reference/agents/web-agent) inside a loop over fifty records, and you get fifty variable-cost agent runs, not one. Test it against a small **Limit** first. Then read the real per-run cost in the run viewer before you lift the cap. The full rates and plan allowances are on the [Credits & pricing explained](/reference/credits-and-pricing) page.
 
 ## Knowing when not to loop
 
-A loop is the right tool for *acting on* many items, but it is not a bulk-data engine, and two limits decide whether your design will hold.
+A loop is the right tool for *acting on* many items. It is not a bulk-data engine, though. Two limits decide whether your design will hold.
 
-[Find records](/reference/records/find-records) returns at most 100 results, so a workflow meant to "sweep everything" over a larger set will quietly miss the overflow. Keep matches under 100 with tighter filters, run the sweep more often — daily instead of weekly, so fewer records qualify each time — or, for a genuine one-time backfill of thousands of records, script against the Attio REST API instead. Workflows are not a migration tool.
+The first limit is on results. [Find records](/reference/records/find-records) returns at most 100 results. So a workflow meant to "sweep everything" over a larger set will quietly miss the rest. You have three ways out. Keep matches under 100 with tighter filters. Run the sweep more often, daily instead of weekly, so fewer records qualify each time. Or, for a genuine one-time backfill of thousands of records, script against the Attio REST API instead. A backfill loads a large batch of existing records in one pass, and workflows are not built for that.
 
-A loop also gives you one level of iteration, not nested loops, so reshape the data upstream rather than fighting the canvas for a loop-within-a-loop. An [Execute code](/reference/calculations/execute-code) block can flatten a nested array into a single list before the Loop reads it. And when the goal is a single rolled-up number rather than a per-item action, one [Aggregate values](/reference/calculations/aggregate-values) block beats a loop with a running total — aggregation is free, simpler, and built for exactly that.
+The second limit is on nesting. A loop gives you one level of iteration, not loops inside loops. So reshape the data upstream rather than fighting the canvas for a loop-within-a-loop. An [Execute code](/reference/calculations/execute-code) block can flatten a nested array into a single flat list before the Loop reads it. And sometimes the goal is a single rolled-up number, not a per-item action. For that, one [Aggregate values](/reference/calculations/aggregate-values) block beats a loop with a running total. Aggregation is free, simpler, and built for exactly that.
 
 *Source: [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.*
 

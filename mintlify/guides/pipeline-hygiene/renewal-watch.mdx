@@ -4,7 +4,7 @@ description: A daily renewal watch flags every account approaching renewal at 90
 icon: clock
 ---
 
-A **daily renewal watch** flags every account approaching renewal at 90, 60, and 30 days so no contract slips past its owner. Customer success and account teams get a task on the right day and a single digest of what is at risk, instead of discovering a lapsed contract after the fact. A [Recurring schedule](/reference/triggers/recurring-schedule) fires once a day, [Find records](/reference/records/find-records) pulls accounts that have a renewal date, a [Loop](/reference/utilities/loop) walks each one, [Adjust time](/reference/calculations/adjust-time) computes the three window boundaries, an [If](/reference/conditions/if) condition gates the matches, and [Create task](/reference/tasks/create-task), [Update record](/reference/records/update-record), and a [Broadcast message](/reference/workspace/broadcast-message) digest do the work.
+A **daily renewal watch** flags every account approaching renewal at 90, 60, and 30 days so no contract slips past its owner. Each day, the people who manage customer accounts get a task on the right day and one digest of what is at risk. They no longer find out about a lapsed contract after it is too late. The build chains a few free blocks together. A [Recurring schedule](/reference/triggers/recurring-schedule) fires once a day. [Find records](/reference/records/find-records) pulls the accounts that have a renewal date. A [Loop](/reference/utilities/loop) walks each one. [Adjust time](/reference/calculations/adjust-time) works out the three window dates. An [If](/reference/conditions/if) condition keeps only the accounts that match. Then [Create task](/reference/tasks/create-task), [Update record](/reference/records/update-record), and a [Broadcast message](/reference/workspace/broadcast-message) digest do the work.
 
 | | |
 | --- | --- |
@@ -18,15 +18,15 @@ A **daily renewal watch** flags every account approaching renewal at 90, 60, and
 ## Prerequisites
 
 - An Attio plan on the **Plus** tier or higher.
-- An **Accounts** object, or your equivalent customer object, with a `renewal_date` date attribute populated on active contracts.
-- An `owner` attribute on the account that resolves to a workspace member who can receive tasks, such as Priya Sharma.
-- A `renewal_notified_window` attribute on the account. Use a single-select or text attribute that records which window has already fired, for example `90`, `60`, or `30`. Create this attribute before you build, because the workflow reads and writes it on every match.
-- The Slack integration connected, if you want the digest posted to a channel. Otherwise the built-in [Broadcast message](/reference/workspace/broadcast-message) block notifies in-app.
+- An **Accounts** object, or your equivalent customer object. It needs a `renewal_date` date attribute that is filled in on active contracts.
+- An `owner` attribute on the account. It must point to a workspace member who can receive tasks, such as Priya Sharma.
+- A `renewal_notified_window` attribute on the account. This records which window has already fired. Use a single-select or text attribute that stores a value like `90`, `60`, or `30`. Create this attribute before you build, because the workflow reads and writes it on every match.
+- The Slack integration connected, if you want the digest posted to a channel. Without it, the built-in [Broadcast message](/reference/workspace/broadcast-message) block notifies in-app instead.
 - No API keys or scopes are needed, because every block in this workflow runs inside Attio.
 
 ## How it works
 
-The workflow runs once a day, loads every account that has a renewal date, and checks each account against three fixed windows. An account whose renewal lands in a window it has not been notified about gets a task for its owner, a stamp on the account so the window never fires twice, and a line in the daily digest. The flow runs in this order:
+The workflow runs once a day. It loads every account that has a renewal date, then checks each account against three fixed windows: 90, 60, and 30 days out. A window is a single target date, today plus that many days. An account matches when its renewal lands in a window it has not been told about yet. When that happens, three things follow. The owner gets a task. The record gets a stamp so the same window never fires twice. The account also gets a line in the daily digest. The flow runs in this order:
 
 1. [Recurring schedule](/reference/triggers/recurring-schedule) fires daily at a fixed time.
 2. [Find records](/reference/records/find-records) loads accounts where `renewal_date` is not empty.
@@ -41,7 +41,7 @@ The workflow runs once a day, loads every account that has a renewal date, and c
 
 <Steps>
   <Step title="Add the recurring schedule trigger">
-    Add a [Recurring schedule](/reference/triggers/recurring-schedule) trigger and set it to run once per day, early enough that owners see tasks before their morning standup. Pick the team's primary timezone so the windows line up with how people read dates.
+    Add a [Recurring schedule](/reference/triggers/recurring-schedule) trigger and set it to run once per day. Pick a time early enough that owners see their tasks before the morning standup. Set the team's primary timezone so the windows line up with how people read dates.
 
     | Field | Value |
     | --- | --- |
@@ -51,7 +51,7 @@ The workflow runs once a day, loads every account that has a renewal date, and c
   </Step>
 
   <Step title="Find accounts with a renewal date">
-    Add a [Find records](/reference/records/find-records) block on the **Accounts** object. Filter to accounts that actually have a renewal date so the loop never walks the whole book.
+    Add a [Find records](/reference/records/find-records) block on the **Accounts** object. Filter to accounts that actually have a renewal date. That way the loop never walks the whole book of accounts.
 
     | Field | Value |
     | --- | --- |
@@ -72,7 +72,7 @@ The workflow runs once a day, loads every account that has a renewal date, and c
   </Step>
 
   <Step title="Compute the window boundaries">
-    Add an [Adjust time](/reference/calculations/adjust-time) block inside the loop to compute the 90-, 60-, and 30-day boundary dates from today. Add the block once per window, or compute all three and compare them in the next step. Each window is today plus N days, and an account matches when its `renewal_date` equals that boundary.
+    Add an [Adjust time](/reference/calculations/adjust-time) block inside the loop. It computes the 90-, 60-, and 30-day boundary dates from today. Add the block once per window, or compute all three and compare them in the next step. Each window is today plus N days. An account matches when its `renewal_date` equals that boundary date.
 
     | Field | Value |
     | --- | --- |
@@ -84,7 +84,7 @@ The workflow runs once a day, loads every account that has a renewal date, and c
   </Step>
 
   <Step title="Gate on the window and the notified flag">
-    Add an [If](/reference/conditions/if) block so the run continues only for an account whose renewal lands in a window it has not been notified about. This gate stops duplicate tasks across days, it is free, and it does the real hygiene work.
+    Add an [If](/reference/conditions/if) block so the run continues only for the right accounts. An account passes when its renewal lands in a window it has not been notified about. This gate stops duplicate tasks across days. It is free, and it does the real hygiene work.
 
     | Field | Value |
     | --- | --- |
@@ -94,18 +94,18 @@ The workflow runs once a day, loads every account that has a renewal date, and c
   </Step>
 
   <Step title="Create the renewal task">
-    Add a [Create task](/reference/tasks/create-task) block so the work is assigned to the account owner when the **If** block passes. Name the window in the task text so the owner reads the urgency at a glance.
+    Add a [Create task](/reference/tasks/create-task) block. It assigns the work to the account owner when the **If** block passes. Name the window in the task text so the owner reads the urgency at a glance.
 
     | Field | Value |
     | --- | --- |
-    | Task text | `Renewal in 60 days — {{account.name}} (renews {{account.renewal_date}})` |
+    | Task text | `Renewal in 60 days: {{account.name}} (renews {{account.renewal_date}})` |
     | Assignee | `{{account.owner}}`, for example Priya Sharma |
     | Linked record | `{{account.record_id}}` |
     | Due date | Today |
   </Step>
 
   <Step title="Stamp the notified window">
-    Add an [Update record](/reference/records/update-record) block right after the task so the matched window cannot fire again tomorrow. This single write guarantees that each window fires once.
+    Add an [Update record](/reference/records/update-record) block right after the task. It stamps the matched window so the window cannot fire again tomorrow. This single write guarantees that each window fires once.
 
     | Field | Value |
     | --- | --- |
@@ -121,7 +121,7 @@ The workflow runs once a day, loads every account that has a renewal date, and c
     | Field | Value |
     | --- | --- |
     | Channel | `#customer-success` |
-    | Message | `Renewal watch — {{matched_count}} account(s) flagged today: {{matched_list}}` |
+    | Message | `Renewal watch: {{matched_count}} account(s) flagged today: {{matched_list}}` |
   </Step>
 </Steps>
 
@@ -140,11 +140,11 @@ The workflow runs once a day, loads every account that has a renewal date, and c
 
 ## Credit cost worked example
 
-The schedule, [Find records](/reference/records/find-records), [Loop](/reference/utilities/loop), [Adjust time](/reference/calculations/adjust-time), and the [If](/reference/conditions/if) condition are all free logic and lookup blocks. They consume no credits, even across hundreds of loop iterations. A condition that stops a run is free, so accounts that do not match cost nothing.
+The schedule, [Find records](/reference/records/find-records), [Loop](/reference/utilities/loop), [Adjust time](/reference/calculations/adjust-time), and the [If](/reference/conditions/if) condition are all free. They are logic and lookup blocks, so they consume no credits, even across hundreds of loop iterations. A condition that stops a run is also free. Accounts that do not match cost nothing.
 
-Cost is incurred only on a matched window. Two writes run per account there: one [Create task](/reference/tasks/create-task) and one [Update record](/reference/records/update-record), at 1 credit each, for 2 credits per matched window. The [Broadcast message](/reference/workspace/broadcast-message) digest is free, so the daily post adds nothing.
+You only pay on a matched window. Two writes run per account there. One is the [Create task](/reference/tasks/create-task) and one is the [Update record](/reference/records/update-record), at 1 credit each, for 2 credits per matched window. The [Broadcast message](/reference/workspace/broadcast-message) digest is free, so the daily post adds nothing.
 
-Suppose 25 accounts cross a window in a typical month. The writes cost 25 × 2 = 50 credits. The daily schedule, the lookups, the loop, and the digest all add nothing, so the workflow costs about 50 credits a month. Check your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing) before you scale the volume of accounts you watch.
+Suppose 25 accounts cross a window in a typical month. The writes cost 25 × 2 = 50 credits. The daily schedule, the lookups, the loop, and the digest all add nothing. So the workflow costs about 50 credits a month. Check your plan's monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing) before you scale the volume of accounts you watch.
 
 ## Test plan
 
@@ -174,7 +174,7 @@ Branch the task text and digest copy by window so a 30-day renewal reads more ur
 
 ### Customer success versus account executive owner
 
-Route the task to a customer success manager for existing-customer renewals and to an account executive for expansion-eligible accounts. Add a [Filter](/reference/conditions/filter) or [Switch](/reference/conditions/switch) block on an account segment attribute, then set the [Create task](/reference/tasks/create-task) assignee accordingly. Only the assignee mapping changes; the windows and the notified flag are untouched.
+Route the task to a customer success manager for existing-customer renewals and to an account executive for expansion-eligible accounts. Add a [Filter](/reference/conditions/filter) or [Switch](/reference/conditions/switch) block on an account segment attribute, then set the [Create task](/reference/tasks/create-task) assignee accordingly. Only the assignee mapping changes. The windows and the notified flag are untouched.
 
 ## See also
 

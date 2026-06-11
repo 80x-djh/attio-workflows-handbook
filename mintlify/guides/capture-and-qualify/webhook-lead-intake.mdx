@@ -1,10 +1,12 @@
 ---
 title: Webhook lead intake with safe upsert
-description: A webhook front door parses inbound JSON, dedupes on email or domain, and upserts a lead without ever creating a duplicate.
+description: A webhook front door parses inbound JSON, dedupes on email or domain, and upserts a lead without creating a duplicate.
 icon: webhook
 ---
 
-**A webhook front door** parses inbound JSON, dedupes on email or domain, and upserts a lead without ever creating a duplicate. This is the intake every revenue operations (RevOps) team eventually wants: form fills, product sign-ups, and partner feeds all POST to one endpoint, and the [Webhook received](/reference/triggers/webhook-received) trigger fans them into a clean, idempotent path. You [parse the JSON](/reference/utilities/parse-json) field by field, [filter](/reference/conditions/filter) out anything missing a usable identity, look the contact up with [Find records](/reference/records/find-records) on a dedup key, write with [Create or update record](/reference/records/create-or-update-record), tag the source with [Add record to list](/reference/lists/add-record-to-list), and confirm the intake in a [Slack](/reference/integrations) channel.
+**A webhook front door** parses inbound JSON, dedupes on email or domain, and upserts a lead without creating a duplicate. A webhook is just a URL that other systems can POST data to. This is the intake that every revenue operations (RevOps) team eventually wants. Form fills, product sign-ups, and partner feeds all POST to one endpoint. The [Webhook received](/reference/triggers/webhook-received) trigger then sends each one down a clean, repeatable path.
+
+That path has six steps. First you [parse the JSON](/reference/utilities/parse-json) field by field. Then you [filter](/reference/conditions/filter) out anything missing a usable identity. Next you look the contact up with [Find records](/reference/records/find-records) on a dedup key. A dedup key is the one stable field, like email, that you match on. It is what stops you from creating two copies of the same person. Finally you write with [Create or update record](/reference/records/create-or-update-record), tag the source with [Add record to list](/reference/lists/add-record-to-list), and confirm the intake in a [Slack](/reference/integrations) channel.
 
 | | |
 | --- | --- |
@@ -12,24 +14,26 @@ icon: webhook
 | **Time to build** | About 20 minutes |
 | **Trigger** | [Webhook received](/reference/triggers/webhook-received) |
 | **Blocks used** | [Parse JSON](/reference/utilities/parse-json), [Filter](/reference/conditions/filter), [Find records](/reference/records/find-records), [Create or update record](/reference/records/create-or-update-record), [Add record to list](/reference/lists/add-record-to-list), [Slack](/reference/integrations) |
-| **Credit cost per run** | 3 credits — see the worked example |
+| **Credit cost per run** | 3 credits. See the worked example. |
 | **Plan required** | Plus and above |
 
 ## Prerequisites
 
-- An Attio plan on the **Plus** tier or higher, which is where the new Workflows engine and the [Webhook received](/reference/triggers/webhook-received) trigger are available.
+- An Attio plan on the **Plus** tier or higher. The new Workflows engine and the [Webhook received](/reference/triggers/webhook-received) trigger are available there.
 - A connected Slack integration with a channel the team watches, such as `#new-leads`.
 - A **Person** object with an `email_addresses` attribute, and a **Company** object with a `domains` attribute. These two attributes are your dedup keys.
 - A list to tag intake against. This recipe uses one called **Inbound leads** with a single-select `source` attribute.
-- Permission to read and write records in the workspace. The Attio side needs no API key or external scope; the source system needs only the webhook URL.
+- Permission to read and write records in the workspace. The Attio side needs no API key or external scope. The source system needs only the webhook URL.
 
 ## How it works
 
-The webhook accepts a single JSON payload, you validate it before any write, and the upsert matches on a stable key so a repeat submission updates the existing record instead of cloning it. Free logic blocks do all the qualifying, so credits are spent only on the writes at the end. The run flows through these blocks in order:
+The webhook accepts one JSON payload, you check it before any write, and the upsert matches on a stable key. An upsert means update the record if it already exists, or create it if it does not. Because you match on a stable key, a repeat submission updates the existing record instead of cloning it.
+
+The free logic blocks do all the qualifying. That way credits are spent only on the writes at the end. The run flows through these blocks in order:
 
 1. [Webhook received](/reference/triggers/webhook-received) accepts the inbound POST.
 2. [Parse JSON](/reference/utilities/parse-json) extracts `email`, `name`, `company_domain`, and `source` field by field.
-3. [Filter](/reference/conditions/filter) requires an email or a domain, and stops the run otherwise.
+3. [Filter](/reference/conditions/filter) requires an email or a domain. It stops the run otherwise.
 4. [Find records](/reference/records/find-records) looks up an existing Person by the dedup key.
 5. [Create or update record](/reference/records/create-or-update-record) performs the safe upsert on `email_addresses`.
 6. [Add record to list](/reference/lists/add-record-to-list) tags the lead with its source.
@@ -50,7 +54,7 @@ The webhook accepts a single JSON payload, you validate it before any write, and
   </Step>
 
   <Step title="Parse the payload field by field">
-    Add the **Parse JSON** block and point it at the webhook body. Define each field you depend on, and mark only the fields you truly need as required, so a thin payload fails loudly at this step instead of writing garbage downstream.
+    Add the **Parse JSON** block and point it at the webhook body. Define each field you depend on. Mark only the fields you truly need as required, so a thin payload fails loudly at this step instead of writing garbage downstream.
 
     | Field | Value |
     | --- | --- |
@@ -62,7 +66,7 @@ The webhook accepts a single JSON payload, you validate it before any write, and
   </Step>
 
   <Step title="Filter out unusable payloads">
-    Add the **Filter** block. Require a usable identity — at minimum an email or a domain — so spam and empty pings stop at the Filter block before any credit is spent. A condition that stops a run is free.
+    Add the **Filter** block. Require a usable identity, meaning at minimum an email or a domain. That way spam and empty pings stop at the Filter block before any credit is spent. A condition that stops a run is free.
 
     | Field | Value |
     | --- | --- |
@@ -131,9 +135,9 @@ The webhook accepts a single JSON payload, you validate it before any write, and
 
 ## Credit cost worked example
 
-The trigger, **Parse JSON**, **Filter**, and **Find records** are free logic and lookup blocks. The two writes cost 1 credit each: **Create or update record** is 1 credit, and **Add record to list** is 1 credit. The **Slack** confirmation is an integration block at 1 credit. A fully successful run that reaches Slack therefore costs 3 credits, and a run that upserts and tags but skips Slack costs 2 credits.
+The trigger, **Parse JSON**, **Filter**, and **Find records** are free logic and lookup blocks. The two writes cost 1 credit each: **Create or update record** is 1 credit, and **Add record to list** is 1 credit. The **Slack** confirmation is an integration block at 1 credit. So a fully successful run that reaches Slack costs 3 credits. A run that upserts and tags but skips Slack costs 2 credits.
 
-At a realistic 800 valid intakes per month, that comes to about 800 × 3 = 2,400 credits, plus 0 credits for any payloads the **Filter** rejects. Compare that figure against your plan's monthly allowance on [Credits and pricing](/reference/credits-and-pricing) before you turn the workflow on. This recipe contains no AI blocks, so it carries no token-based cost to estimate.
+At a realistic 800 valid intakes per month, that comes to about 800 × 3 = 2,400 credits. Any payloads the **Filter** rejects add 0 credits. Compare that figure against your plan's monthly allowance on [Credits and pricing](/reference/credits-and-pricing) before you turn the workflow on. This recipe contains no AI blocks, so it carries no token-based cost to estimate.
 
 ## Test plan
 
@@ -149,7 +153,7 @@ At a realistic 800 valid intakes per month, that comes to about 800 × 3 = 2,400
    ```
 
 2. Open the run in run history. **Parse JSON** outputs the four fields, **Filter** passes, **Find records** returns empty on the first submission, and **Create or update record** reports a created Person.
-3. POST the exact same payload again. This is the duplicate test: **Find records** now returns the existing Person, and **Create or update record** reports an update rather than a second record. Confirm in the Person list that there is still only one `jane@acme.com`.
+3. POST the exact same payload again. This is the duplicate test. **Find records** now returns the existing Person, and **Create or update record** reports an update rather than a second record. Confirm in the Person list that there is still only one `jane@acme.com`.
 4. Check `#new-leads` for two confirmation messages, one per run.
 5. POST a deliberately failing payload with no identity:
 
@@ -164,7 +168,7 @@ At a realistic 800 valid intakes per month, that comes to about 800 × 3 = 2,400
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | Webhook fires but Parse JSON outputs nothing | Payload sent as form-encoded, not JSON | Set the source to send `Content-Type: application/json` |
-| Source system reports a timeout or retries the POST | The outbound caller expects a response within about 5 seconds and retries on a missed or late acknowledgment | Keep the path lean. Attio acknowledges fast, but a slow source treats a missed acknowledgment as a retry, so make the upsert idempotent and retries stay safe |
+| Source system reports a timeout or retries the POST | The outbound caller expects a response within about 5 seconds and retries on a missed or late acknowledgment | Keep the path lean. Attio acknowledges fast, but a slow source treats a missed acknowledgment as a retry. Make the upsert idempotent so retries stay safe. Idempotent means running the same request twice has the same result as running it once. |
 | Duplicate records appear on resubmission | The match attribute on the upsert differs from the Find key, or no match attribute is set | Set the **Create or update record** match attribute to the same `email_addresses` key you searched on |
 | Run stops at Filter on valid leads | A required field is marked too strictly in Parse JSON | Require only `email` or `company_domain`, and mark the rest optional |
 | Lead created but no source on the list entry | The `source` value is unmapped, or the source string is not a valid single-select option | Map Parse JSON → `source` into the list attribute, and add the option if it is new |
@@ -173,11 +177,11 @@ At a realistic 800 valid intakes per month, that comes to about 800 × 3 = 2,400
 
 ### Tagging each source to its own list
 
-Route each source to its own list instead of one shared **Inbound leads** list. Add a [Switch](/reference/conditions/switch) on the `source` field after the upsert, with one branch per source (`pricing_page`, `partner_feed`, `webinar`), and give each branch its own **Add record to list** block. The **Switch** block is free, so this variation adds no credit cost beyond the writes you would already make.
+Route each source to its own list instead of one shared **Inbound leads** list. Add a [Switch](/reference/conditions/switch) on the `source` field after the upsert, with one branch per source (`pricing_page`, `partner_feed`, `webinar`). Give each branch its own **Add record to list** block. The **Switch** block is free, so this variation adds no credit cost beyond the writes you would already make.
 
 ### Rejecting spam early
 
-Tighten the [Filter](/reference/conditions/filter) to drop obvious junk before any write. Add conditions that stop the run when `email` ends in a disposable domain, or when `company_domain` is on a blocklist. Because the **Filter** block is free and stops the run, rejected spam costs zero credits and never reaches the upsert.
+Tighten the [Filter](/reference/conditions/filter) to drop obvious junk before any write. Add conditions that stop the run when `email` ends in a disposable domain, or when `company_domain` is on a blocklist. The **Filter** block is free and stops the run, so rejected spam costs zero credits and never reaches the upsert.
 
 ## See also
 

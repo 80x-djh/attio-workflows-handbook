@@ -4,7 +4,7 @@ description: The Execute code block runs custom JavaScript inside a workflow and
 icon: braces
 ---
 
-The **Execute code** block (Calculations) runs custom JavaScript inside a workflow and exposes the value it returns to later blocks. Reach for it when a [Formula](/reference/calculations/formula) or [Aggregate values](/reference/calculations/aggregate-values) block cannot express the transformation you need, such as reshaping a payload, deriving a score from several attributes, or normalizing inconsistent source data. The block runs your code with a 100-second timeout, so it suits short transformations rather than long-running jobs.
+The **Execute code** block (Calculations) runs custom JavaScript inside a workflow and exposes the value it returns to later blocks. Reach for it when a [Formula](/reference/calculations/formula) or [Aggregate values](/reference/calculations/aggregate-values) block cannot express the change you need. Common cases are reshaping incoming data into the format a later block expects, building a score from several attributes, or cleaning up inconsistent source data. The block runs your code with a 100-second timeout. That makes it a good fit for short transformations, not long-running jobs.
 
 | | |
 | --- | --- |
@@ -18,10 +18,10 @@ The **Execute code** block (Calculations) runs custom JavaScript inside a workfl
 
 | Input | Type | Required | Default | Notes |
 | --- | --- | --- | --- | --- |
-| Code | JavaScript | Yes | — | Must export a function named `main` that receives a single `inputs` object. The function can be synchronous or asynchronous. |
-| Variables | Any | No | — | Workflow variables you map into the `inputs` object. Each becomes a key on `inputs`, addressable as `inputs.<key>` inside `main`. |
+| Code | JavaScript | Yes | None | Must export a function named `main` that receives a single `inputs` object. The function can be synchronous or asynchronous. |
+| Variables | Any | No | None | Workflow variables you map into the `inputs` object. Each becomes a key on `inputs`, addressable as `inputs.<key>` inside `main`. |
 
-The block passes every variable you map into the block as one `inputs` object. Whatever `main` returns becomes the block's output. A minimal function reads its inputs and returns a plain object:
+The block passes every variable you map into it as one `inputs` object. Whatever `main` returns becomes the block's output. A minimal function reads its inputs and returns a plain object:
 
 ```js
 export async function main(inputs) {
@@ -35,26 +35,26 @@ export async function main(inputs) {
 | --- | --- | --- | --- |
 | Result | Any | `{ "score": 70 }` | The exact value returned by `main`. Return an object to expose several named fields downstream. |
 
-Reference the returned value in a later block as `{{ steps.execute_code.result }}`. If `main` returns an object, address each field by key, such as `{{ steps.execute_code.result.score }}`.
+Reference the returned value in a later block as `{{ steps.execute_code.result }}`. If `main` returns an object, address each field by its key, such as `{{ steps.execute_code.result.score }}`.
 
 ## Behavior
 
-The block invokes the exported `main` function once per run and waits for it to resolve before continuing. An `async` function is awaited, so you can `await` inside `main`, but the work must finish within the 100-second timeout. Code that exceeds the timeout fails the block rather than returning a partial result.
+The block runs the exported `main` function once per run and waits for it to finish before continuing. An `async` function is awaited, so you can `await` inside `main`. The work still has to finish within the 100-second timeout. Code that runs past the timeout fails the block instead of returning a partial result.
 
-The return value passes through verbatim, including `null`, an empty object, or an empty array. Downstream blocks receive exactly what `main` returned, so a missing field is `undefined` rather than an error. Because the credit cost is variable and complexity-based, heavier code costs more than a light transformation; keep functions small and single-purpose.
+The return value passes through exactly as written, including `null`, an empty object, or an empty array. Downstream blocks receive exactly what `main` returned, so a missing field reads as `undefined` rather than an error. The credit cost is variable and complexity-based, so heavier code costs more than a light transformation. Keep functions small and single-purpose.
 
 ## Gotchas
 
-- **The function must be named `main`.** The block calls `main(inputs)` by name, so an unnamed function, a differently named export, or a default export fails to run. Export `main` exactly, and pass your inputs through its `inputs` parameter rather than reading any outer scope.
-- **A thrown error fails the whole block.** Any uncaught exception inside `main` stops the run at this block, so a single malformed field can halt the workflow. Wrap risky parsing in a `try`/`catch` and return a sentinel value, such as `{ error: true }`, that a later [If](/reference/conditions/if) block can branch on.
-- **Non-deterministic code makes runs hard to trust.** When the result drives a write, calls to `Date.now()`, `Math.random()`, or an external service can produce a different value on every run and on every retry. Keep code that controls writes deterministic, and move randomness to the [Random number](/reference/calculations/random-number) block so the value is captured in run history.
-- **Long jobs hit the 100-second timeout.** The block stops execution at 100 seconds and fails, so polling loops and large batch loops are the wrong fit. Split the work across a [Loop](/reference/utilities/loop) block, or call an external service with [Send HTTP request](/reference/utilities/send-http-request).
+- **The function must be named `main`.** The block calls `main(inputs)` by name. An unnamed function, a differently named export, or a default export will not run. Export `main` exactly, and read your data through its `inputs` parameter rather than from any outer scope.
+- **A thrown error fails the whole block.** Any uncaught exception inside `main` stops the run at this block, so a single bad field can halt the workflow. Wrap risky parsing in a `try`/`catch` and return a marker value, such as `{ error: true }`, that a later [If](/reference/conditions/if) block can branch on.
+- **Non-deterministic code makes runs hard to trust.** Non-deterministic means the same input can produce a different result. When the result drives a write, calls to `Date.now()`, `Math.random()`, or an external service can each return a different value on every run and every retry. Keep code that controls writes deterministic. Move randomness to the [Random number](/reference/calculations/random-number) block so the value is recorded in run history.
+- **Long jobs hit the 100-second timeout.** The block stops at 100 seconds and fails, so polling loops and large batch loops are the wrong fit. Split the work across a [Loop](/reference/utilities/loop) block, or call an external service with [Send HTTP request](/reference/utilities/send-http-request).
 
 ## Examples
 
 ### Normalizing a lead source field
 
-This function maps inconsistent source labels onto a single canonical value before the workflow writes the record.
+This function maps inconsistent source labels onto one canonical value before the workflow writes the record. Canonical means the single agreed-on spelling you store, such as `Paid search` for every variant of that source.
 
 ```js
 export async function main(inputs) {
@@ -69,7 +69,7 @@ export async function main(inputs) {
 }
 ```
 
-With `inputs.source` set to `LI Ads`, the block returns `{ "source": "Social" }`, which an [Update record](/reference/records/update-record) block writes to the lead's source attribute as `{{ steps.execute_code.result.source }}`.
+With `inputs.source` set to `LI Ads`, the block returns `{ "source": "Social" }`. An [Update record](/reference/records/update-record) block then writes that value to the lead's source attribute as `{{ steps.execute_code.result.source }}`.
 
 ### Scoring a record from several attributes
 
@@ -92,11 +92,11 @@ export async function main(inputs) {
 }
 ```
 
-The block returns `{ "score": 70 }`, which a downstream [If](/reference/conditions/if) block reads as `{{ steps.execute_code.result.score }}` to route deals scoring 50 or higher to a sales-ready stage.
+The block returns `{ "score": 70 }`. A downstream [If](/reference/conditions/if) block reads it as `{{ steps.execute_code.result.score }}` to route deals scoring 50 or higher to a sales-ready stage.
 
 ## Credit cost worked example
 
-Execute code is priced as **Variable (complexity-based)**, so a single fixed-per-run figure does not apply; a heavier function costs more than a light one. Estimate spend by sampling a few real runs in run history, then multiplying the observed cost by your monthly volume. For a lead-normalization workflow that fires on 2,000 inbound leads a month, measure the cost of one representative run, multiply by 2,000, and compare the total to your monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing). Logic and lookup blocks elsewhere in the same workflow stay free, so only the Execute code step and any write blocks contribute to the total.
+Execute code is priced as **Variable (complexity-based)**, so there is no single fixed-per-run figure. A heavier function costs more than a light one. To estimate spend, sample a few real runs in run history. Then multiply the cost you observe by your monthly volume. Take a lead-normalization workflow that fires on 2,000 inbound leads a month. Measure the cost of one representative run and multiply by 2,000. Compare that total to your monthly allowance on [Credits & pricing explained](/reference/credits-and-pricing). Logic and lookup blocks elsewhere in the same workflow stay free. Only the Execute code step and any write blocks add to the total.
 
 ## Source
 

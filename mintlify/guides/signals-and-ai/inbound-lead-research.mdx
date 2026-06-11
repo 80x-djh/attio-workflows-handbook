@@ -4,7 +4,7 @@ description: High-intent inbound leads get researched, scored against your ideal
 icon: bot
 ---
 
-High-intent inbound leads get researched, scored against your ideal customer profile, and routed to a rep only when they clear the bar. This recipe fires on [Record added to list](/reference/triggers/record-added-to-list), gates a read-only [Web agent](/reference/agents/web-agent) behind a free [Filter](/reference/conditions/filter) so research runs only on companies that clear your ideal customer profile (ICP) threshold, assigns an A, B, or C fit band with [Classify record](/reference/ai/classify-record), branches on that band with [Switch](/reference/conditions/switch), saves the research with [Update record](/reference/records/update-record), assigns qualified leads with [Round robin](/reference/workspace/round-robin), and notifies the owner over a [Slack](/reference/integrations) message.
+High-intent inbound leads get researched, scored against your ideal customer profile, and routed to a rep only when they clear the bar. A high-intent lead is one that shows real buying interest, such as a demo request or a pricing-page visit. This recipe fires on [Record added to list](/reference/triggers/record-added-to-list). It then runs a read-only [Web agent](/reference/agents/web-agent) behind a free [Filter](/reference/conditions/filter). Research only runs on companies that clear your ideal customer profile (ICP) threshold. Your ICP is the kind of company you most want to sell to. From there, [Classify record](/reference/ai/classify-record) assigns an A, B, or C fit band. [Switch](/reference/conditions/switch) branches on that band, and [Update record](/reference/records/update-record) saves the research. The recipe then assigns qualified leads with [Round robin](/reference/workspace/round-robin) and notifies the owner with a [Slack](/reference/integrations) message.
 
 | | |
 | --- | --- |
@@ -12,47 +12,49 @@ High-intent inbound leads get researched, scored against your ideal customer pro
 | **Time to build** | ~25 minutes |
 | **Trigger** | [Record added to list](/reference/triggers/record-added-to-list), or [Webhook received](/reference/triggers/webhook-received) |
 | **Blocks used** | [Filter](/reference/conditions/filter), [Web agent](/reference/agents/web-agent), [Classify record](/reference/ai/classify-record), [Switch](/reference/conditions/switch), [Update record](/reference/records/update-record), [Round robin](/reference/workspace/round-robin), [Slack](/reference/integrations) |
-| **Credit cost per run** | Variable — the Web agent is token-based, and each write costs 1 credit. See [Credits & pricing explained](/reference/credits-and-pricing) |
+| **Credit cost per run** | Variable. The Web agent is token-based, and each write costs 1 credit. See [Credits & pricing explained](/reference/credits-and-pricing) |
 | **Plan required** | Pro recommended |
 
 ## Prerequisites
 
 - An Attio plan that includes the agent and AI blocks. Pro is recommended for the volume this recipe assumes. Confirm current plan availability on [Credits & pricing explained](/reference/credits-and-pricing).
 - The Slack integration connected to your workspace, with the workflow authorized to post in your routing channel.
-- A list for high-intent inbound — for example, `Inbound — high intent` — that a form, a product event, or a routing rule adds leads to.
-- Three attributes on the Companies object: a long-text attribute for the research summary (slug `icp_research`), a single-select attribute for the fit band (slug `fit_band`, with options `A`, `B`, and `C`), and an owner attribute (slug `owner`).
+- A list for high-intent inbound leads. For example, a list named `Inbound: high intent` that a form, a product event, or a routing rule adds leads to.
+- Three attributes on the Companies object. Add a long-text attribute for the research summary (slug `icp_research`). Add a single-select attribute for the fit band (slug `fit_band`, with options `A`, `B`, and `C`). Add an owner attribute (slug `owner`).
 - A read-only **Run as** identity for the Web agent. The agent reads records and the public web but cannot write back. See [Permissions & workflow access](/explanation/permissions-and-access).
 
 ## How it works
 
-The trigger fires the moment a lead enters the high-intent list. A free Filter checks the lead against your ICP threshold and stops the run when it does not qualify, so the token-priced Web agent never touches raw, low-fit traffic. Each qualifying company reaches the Web agent, which answers two to four specific qualification questions read-only. Classify record turns that research into an A, B, or C fit band. A Switch branches on the band. Update record saves the summary and band to the company. Round robin assigns an owner to A and B leads. A Slack message notifies that owner.
+The trigger fires the moment a lead enters the high-intent list. A free Filter checks the lead against your ICP threshold and stops the run when it does not qualify. This means the token-priced Web agent never touches raw, low-fit traffic. Each qualifying company reaches the Web agent, which answers two to four specific qualification questions read-only.
+
+Classify record turns that research into an A, B, or C fit band. A Switch then branches on the band. Update record saves the summary and band to the company. Round robin assigns an owner to A and B leads, and a Slack message notifies that owner.
 
 The blocks run in this order:
 
-1. [Record added to list](/reference/triggers/record-added-to-list) — a high-intent lead enters the list.
-2. [Filter](/reference/conditions/filter) — continue only when the lead clears the ICP threshold; the run stops otherwise.
-3. [Web agent](/reference/agents/web-agent) — research the company read-only against two to four qualification questions.
-4. [Classify record](/reference/ai/classify-record) — assign an A, B, or C fit band from the research.
-5. [Switch](/reference/conditions/switch) — branch on the fit band.
-6. [Update record](/reference/records/update-record) — save the research summary and band to the company.
-7. [Round robin](/reference/workspace/round-robin) — assign an owner to A and B leads only.
-8. [Slack](/reference/integrations) — notify the assigned owner.
+1. [Record added to list](/reference/triggers/record-added-to-list): a high-intent lead enters the list.
+2. [Filter](/reference/conditions/filter): continue only when the lead clears the ICP threshold. The run stops otherwise.
+3. [Web agent](/reference/agents/web-agent): research the company read-only against two to four qualification questions.
+4. [Classify record](/reference/ai/classify-record): assign an A, B, or C fit band from the research.
+5. [Switch](/reference/conditions/switch): branch on the fit band.
+6. [Update record](/reference/records/update-record): save the research summary and band to the company.
+7. [Round robin](/reference/workspace/round-robin): assign an owner to A and B leads only.
+8. [Slack](/reference/integrations): notify the assigned owner.
 
 ## Build steps
 
 <Steps>
   <Step title="Add the trigger">
-    Create a new workflow. Click the **Add trigger** button, choose [Record added to list](/reference/triggers/record-added-to-list), and select your high-intent inbound list. If your leads arrive from an external form or product event, use [Webhook received](/reference/triggers/webhook-received) instead and resolve the payload to a company record before the Filter.
+    Create a new workflow. Click the **Add trigger** button, choose [Record added to list](/reference/triggers/record-added-to-list), and select your high-intent inbound list. If your leads arrive from an external form or product event, use [Webhook received](/reference/triggers/webhook-received) instead. In that case, resolve the payload to a company record before the Filter.
 
     | Field | Value |
     | --- | --- |
     | Trigger | Record added to list |
-    | List | `Inbound — high intent` |
+    | List | `Inbound: high intent` |
     | Object | Companies |
   </Step>
 
   <Step title="Gate the agent with a Filter">
-    Add a [Filter](/reference/conditions/filter) immediately after the trigger. The Filter is the cost guard: it is free, and it stops every below-threshold run before the Web agent spends a token. Set conditions that approximate your ICP.
+    Add a [Filter](/reference/conditions/filter) immediately after the trigger. The Filter is the cost guard. It is free, and it stops every below-threshold run before the Web agent spends a token. Set conditions that approximate your ICP.
 
     | Field | Value |
     | --- | --- |
@@ -68,7 +70,7 @@ The blocks run in this order:
   </Step>
 
   <Step title="Research with a read-only Web agent">
-    Add a [Web agent](/reference/agents/web-agent) after the Filter. Set its **Run as** identity to a read-only research user so the agent reads the record and the public web but cannot write back. Keep the prompt to two to four specific questions.
+    Add a [Web agent](/reference/agents/web-agent) after the Filter. Set its **Run as** identity to a read-only research user. The agent then reads the record and the public web but cannot write back. Keep the prompt to two to four specific questions.
 
     | Field | Value |
     | --- | --- |
@@ -97,7 +99,7 @@ The blocks run in this order:
     | --- | --- |
     | Block | Classify record |
     | Input | `{{ web_agent.summary }}` plus company attributes |
-    | Categories | A — strong ICP fit; B — partial fit; C — weak or out of ICP |
+    | Categories | A is strong ICP fit; B is partial fit; C is weak or out of ICP |
     | Output | `fit_band` |
   </Step>
 
@@ -159,26 +161,26 @@ The blocks run in this order:
 
 Assume 400 leads enter the high-intent list each month, and the ICP Filter passes about 30% of them (120 leads). The Filter, Switch, and Round robin are free logic blocks. The token-based cost of this recipe is the Web agent, plus Classify record and the writes.
 
-- **Filter** — free, runs on all 400 leads.
-- **Web agent** — variable, token-based; runs only on the ~120 leads that pass the Filter. Do not assume a fixed number. Sample about 10 representative leads, run them, and read the actual per-run credit cost in the run viewer before you scale. Gating with the Filter is what keeps this line from running on all 400.
-- **Classify record** — variable, token-based; about 120 runs. Sample and read the per-run cost the same way.
-- **Update record** — 1 credit each, about 120 runs.
-- **Round robin** — free, A and B leads only.
-- **Slack** — 1 credit each, A and B leads only.
+- **Filter**: free, runs on all 400 leads.
+- **Web agent**: variable and token-based. It runs only on the ~120 leads that pass the Filter. Do not assume a fixed number. Sample about 10 representative leads, run them, and read the actual per-run credit cost in the run viewer before you scale. Gating with the Filter is what keeps this line from running on all 400.
+- **Classify record**: variable and token-based, about 120 runs. Sample and read the per-run cost the same way.
+- **Update record**: 1 credit each, about 120 runs.
+- **Round robin**: free, A and B leads only.
+- **Slack**: 1 credit each, A and B leads only.
 
 So the fixed-rate floor is roughly 120 Update writes plus one Slack message per assigned A or B lead. The variable ceiling is the Web agent and Classify record totals you measure in the run viewer. Compare that monthly total against your plan allowance on [Credits & pricing explained](/reference/credits-and-pricing).
 
 <Note>
-  Per-workflow credit caps were removed in the new engine, so the Filter — not a cap — is your spend control. The tighter the Filter, the fewer leads reach the token-based blocks.
+  Per-workflow credit caps were removed in the new engine, so the Filter is your spend control. There is no cap to fall back on. The tighter the Filter, the fewer leads reach the token-based blocks.
 </Note>
 
 ## Test plan
 
-1. Add a real ICP-fit company to the high-intent list to fire the trigger — for example, a 200-person EMEA SaaS firm with a populated `domain`.
+1. Add a real ICP-fit company to the high-intent list to fire the trigger. For example, use a 200-person EMEA SaaS firm with a populated `domain`.
 2. Open the run in run history and confirm the **Filter** passed. Expect a green continue.
 3. Confirm the **Web agent** returned a research summary keyed to your four questions, and that its **Run as** identity is read-only.
 4. Confirm **Classify record** output an `A`, `B`, or `C` band.
-5. Confirm the **Switch** entered the matching branch, **Update record** wrote `icp_research` and `fit_band` to the company, and — for A and B — **Round robin** set an owner and **Slack** posted to that owner.
+5. Confirm the **Switch** entered the matching branch, and that **Update record** wrote `icp_research` and `fit_band` to the company. For A and B, also confirm that **Round robin** set an owner and **Slack** posted to that owner.
 6. Now add a deliberately failing input: a lead with an empty `domain` and an `employee_count` of 5. Expect the **Filter** to stop the run before the Web agent. Verify in run history that no agent or write block executed and that no tokens were spent.
 
 ## Failure modes
@@ -196,11 +198,11 @@ So the fixed-rate floor is roughly 120 Update writes plus one Slack message per 
 
 ### Command trigger to control spend
 
-Swap [Record added to list](/reference/triggers/record-added-to-list) for [Record command](/reference/triggers/record-command) so a human chooses when a lead is worth researching. Everything downstream stays identical. This puts the token-priced Web agent behind an explicit click instead of an automatic list event, which is the safest way to cap spend while you tune the Filter.
+Swap [Record added to list](/reference/triggers/record-added-to-list) for [Record command](/reference/triggers/record-command) so a human chooses when a lead is worth researching. Everything downstream stays identical. This puts the token-priced Web agent behind an explicit click instead of an automatic list event. That is the safest way to cap spend while you tune the Filter.
 
 ### Summarize record for a cheaper tier
 
-For high volume, or for B-tier leads where public-web research is not worth the cost, replace the [Web agent](/reference/agents/web-agent) with [Summarize record](/reference/ai/summarize-record). It is still token-based, but it works only from data already in Attio — no web browsing — so it costs less per run. Keep the Filter, Classify record, Switch, and routing unchanged; only the research block changes.
+For high volume, or for B-tier leads where public-web research is not worth the cost, replace the [Web agent](/reference/agents/web-agent) with [Summarize record](/reference/ai/summarize-record). It is still token-based, but it works only from data already in Attio with no web browsing. That means it costs less per run. Keep the Filter, Classify record, Switch, and routing unchanged. Only the research block changes.
 
 ## See also
 

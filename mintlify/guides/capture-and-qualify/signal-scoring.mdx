@@ -3,7 +3,7 @@ title: Score leads into explainable bands
 description: A visible Formula combines fit, intent, and engagement into one lead score, writes it back to Attio, and routes each band to the right action.
 ---
 
-A visible [Formula](/reference/calculations/formula) combines fit, intent, and engagement into one lead score, writes it back to Attio, and routes each band to the right action. A product or analytics event arrives on a [Webhook received](/reference/triggers/webhook-received) trigger, [Parse JSON](/reference/utilities/parse-json) unpacks the payload, the Formula reduces the three signals to a single number, [Switch](/reference/conditions/switch) reads the band, [Update record](/reference/records/update-record) writes it back, and the A band flows through [Round robin](/reference/workspace/round-robin) and [Enroll in sequence](/reference/sequences/enroll-in-sequence). Because the score is arithmetic and not an opaque model output, a sales development rep can open the run and read exactly why a lead is an A.
+A visible [Formula](/reference/calculations/formula) combines fit, intent, and engagement into one lead score, writes it back to Attio, and routes each band to the right action. Here is the flow in plain terms. A product or analytics event arrives on a [Webhook received](/reference/triggers/webhook-received) trigger. [Parse JSON](/reference/utilities/parse-json) unpacks the payload, the Formula reduces the three signals to a single number, and [Switch](/reference/conditions/switch) reads the band. [Update record](/reference/records/update-record) writes the result back to Attio, and the A band flows through [Round robin](/reference/workspace/round-robin) and [Enroll in sequence](/reference/sequences/enroll-in-sequence). The score is plain arithmetic, not an opaque model output. That means a sales development rep can open the run and read exactly why a lead is an A.
 
 | | |
 | --- | --- |
@@ -17,14 +17,16 @@ A visible [Formula](/reference/calculations/formula) combines fit, intent, and e
 ## Prerequisites
 
 - Attio **Plus** plan or higher, which runs the new Workflows engine.
-- A `Person` object (or `Company`) with three attributes already created: `lead_score` as a number, `lead_band` as a single-select with options `A`, `B`, and `C`, and a matching key such as `email` or `domain`.
-- A source for the event payload. The webhook path needs a product-analytics or reverse-ETL (extract, transform, load) tool that can POST JSON to Attio's generated webhook URL. The attribute path needs the signal fields to already be writing to the record.
+- A `Person` object (or `Company`) with three attributes already created. You need `lead_score` as a number, and `lead_band` as a single-select with options `A`, `B`, and `C`. You also need a matching key such as `email` or `domain`.
+- A source for the event payload. The webhook path needs a product-analytics or reverse-ETL tool that can POST JSON to Attio's generated webhook URL. Reverse-ETL means extract, transform, load. The attribute path needs the signal fields to already be writing to the record.
 - An active sequence to enroll A-band leads into, and a sales team configured for round-robin assignment.
-- Workspace member access with permission to publish workflows. The webhook source is the only external credential you need; no API keys are required inside Attio.
+- Workspace member access with permission to publish workflows. The webhook source is the only external credential you need. No API keys are required inside Attio.
 
 ## How it works
 
-The trigger fires on one event, Parse JSON turns the raw payload into typed variables, and the Formula reduces fit, intent, and engagement to one number on a 0–100 scale. Switch reads the resulting band and sends the run down exactly one branch. Every branch writes the score and band back to the record so the value is durable and filterable. The A band additionally picks an owner and starts outreach, while the C band stops after the write. Each step passes its output to the next through the engine's variables, which the [Variables & data passing](/explanation/variables) concept explains in full.
+The trigger fires on one event. Parse JSON turns the raw payload into typed variables. That means each value carries its proper type, such as a number rather than text. The Formula then reduces fit, intent, and engagement to one number on a 0 to 100 scale. Switch reads the resulting band and sends the run down exactly one branch.
+
+Every branch writes the score and band back to the record, so the value is durable and filterable. The A band also picks an owner and starts outreach. The C band stops after the write. Each step passes its output to the next through the engine's variables, which the [Variables & data passing](/explanation/variables) concept explains in full.
 
 1. [Webhook received](/reference/triggers/webhook-received) fires on the inbound event, or [Attribute value changed](/reference/triggers/attribute-value-changed) fires on a signal field.
 2. [Parse JSON](/reference/utilities/parse-json) extracts `fit`, `intent`, and `engagement`.
@@ -37,7 +39,7 @@ The trigger fires on one event, Parse JSON turns the raw payload into typed vari
 
 <Steps>
   <Step title="Add the trigger">
-    Create a new workflow and add the **Webhook received** trigger. Copy the generated webhook URL into your analytics tool so it can POST events to the workflow. When your signals already live in Attio, swap in the **Attribute value changed** trigger scoped to the `Person` object and the signal attribute instead.
+    Create a new workflow and add the **Webhook received** trigger. Copy the generated webhook URL into your analytics tool so it can POST events to the workflow. When your signals already live in Attio, swap in the **Attribute value changed** trigger instead. Scope it to the `Person` object and the signal attribute.
 
     | Field | Value |
     | --- | --- |
@@ -48,7 +50,7 @@ The trigger fires on one event, Parse JSON turns the raw payload into typed vari
   </Step>
 
   <Step title="Parse the payload">
-    Add the **Parse JSON** block. Point its **Source** field at the trigger body and define a schema with the three signal inputs and the matching key. Mark anything your source may omit as optional so a missing field does not fail the run.
+    Add the **Parse JSON** block. Point its **Source** field at the trigger body, then define a schema with the three signal inputs and the matching key. Mark anything your source may omit as optional, so a missing field does not fail the run.
 
     | Field | Value |
     | --- | --- |
@@ -60,7 +62,7 @@ The trigger fires on one event, Parse JSON turns the raw payload into typed vari
   </Step>
 
   <Step title="Compute the score with a visible Formula">
-    Add the **Formula** block. Keep the expression readable so reps trust the result, since transparency is the entire point of this recipe versus a black-box machine-learning score. Each component is capped so the total lands on a clean 0–100 scale.
+    Add the **Formula** block. Keep the expression readable so reps trust the result. Transparency is the entire point of this recipe, unlike a black-box machine-learning score where the math is hidden. Each component is capped, so the total lands on a clean 0 to 100 scale.
 
     | Field | Value |
     | --- | --- |
@@ -71,7 +73,7 @@ The trigger fires on one event, Parse JSON turns the raw payload into typed vari
   </Step>
 
   <Step title="Branch on the band with Switch">
-    Add the **Switch** block and create one branch per band, reading the score from the Formula step. Order matters: Switch takes the first matching branch, so put the highest threshold first.
+    Add the **Switch** block and create one branch per band, reading the score from the Formula step. Order matters here. Switch takes the first matching branch, so put the highest threshold first.
 
     | Field | Value |
     | --- | --- |
@@ -82,7 +84,7 @@ The trigger fires on one event, Parse JSON turns the raw payload into typed vari
   </Step>
 
   <Step title="Write the score and band on every branch">
-    On each Switch branch, add an **Update record** block targeting the matched `Person`. Write both the numeric score and the band so the value is filterable and visible in the record. The band string differs per branch.
+    On each Switch branch, add an **Update record** block targeting the matched `Person`. Write both the numeric score and the band, so the value is filterable and visible in the record. The band string differs per branch.
 
     | Field | Value |
     | --- | --- |
@@ -92,13 +94,13 @@ The trigger fires on one event, Parse JSON turns the raw payload into typed vari
   </Step>
 
   <Step title="Route the A band">
-    On Branch A only, after Update record, add a **Round robin** block to assign an owner from your sales pool, then an **Enroll in sequence** block to start outreach. Branch B adds the lead to a nurture sequence or list; Branch C ends after the score write.
+    On Branch A only, after Update record, add a **Round robin** block to assign an owner from your sales pool. Then add an **Enroll in sequence** block to start outreach. Branch B adds the lead to a nurture sequence or list. Branch C ends after the score write.
 
     | Field | Value |
     | --- | --- |
-    | Round robin pool | Account executives — EMEA |
+    | Round robin pool | Account executives, EMEA |
     | Assignment target | `Owner` on the matched record |
-    | Sequence | Proposal — outbound A leads |
+    | Sequence | Proposal outbound, A leads |
     | Enrolled record | `{{ trigger.record }}` |
   </Step>
 </Steps>
@@ -127,18 +129,20 @@ Parse JSON, Formula, and Switch are free logic blocks, so they cost nothing no m
 
 ¹ Round robin is a free workspace block. The 3 credits on the A branch come from the Update record and Enroll in sequence writes.
 
-Say you process 2,000 events a month with a typical split of 10 percent A, 30 percent B, and 60 percent C. The monthly cost is `(200 × 3) + (600 × 2) + (1,200 × 1) = 3,000` credits. Compare that against your plan's monthly credit allowance on [Credits & pricing explained](/reference/credits-and-pricing), and adjust the band thresholds if the A branch enrolls more leads than your team can work. None of this involves an AI block. If you later add a [Classify record](/reference/ai/classify-record) step behind a [Filter](/reference/conditions/filter), sample about ten records and read the per-run cost in the run viewer, because AI cost is variable and token-based rather than a fixed number.
+Say you process 2,000 events a month with a typical split of 10 percent A, 30 percent B, and 60 percent C. The monthly cost is `(200 × 3) + (600 × 2) + (1,200 × 1) = 3,000` credits. Compare that against your plan's monthly credit allowance on [Credits & pricing explained](/reference/credits-and-pricing). Adjust the band thresholds if the A branch enrolls more leads than your team can work. None of this involves an AI block.
+
+If you later add a [Classify record](/reference/ai/classify-record) step behind a [Filter](/reference/conditions/filter), sample about ten records and read the per-run cost in the run viewer. AI cost is variable and token-based, so it is not a fixed number you can read off a table.
 
 ## Test plan
 
 1. Open the trigger in the workflow editor and click the **Run test** button. For the webhook path, paste a sample payload with `email`, `fit`, `intent`, and `engagement`. For the attribute path, edit the signal field on a test `Person`.
-2. Confirm **Parse JSON** outputs typed values — `fit: 38`, `intent: 32`, `engagement: 12` — and not raw strings.
+2. Confirm **Parse JSON** outputs typed values, such as `fit: 38`, `intent: 32`, and `engagement: 12`, and not raw strings.
 3. Confirm the **Formula** output `lead_score` reads `82` for those inputs.
 4. Confirm **Switch** routes the run down Branch A, because `82 >= 75`.
 5. Open the matched record and confirm **Update record** wrote `lead_score = 82` and `lead_band = A`.
 6. Confirm **Round robin** assigned an owner and **Enroll in sequence** shows the lead enrolled.
 7. Open the run in run history and read each block's input and output to confirm the score is explainable end to end. The [Runs, debugging & publishing](/explanation/runs-and-debugging) concept shows where each value appears.
-8. Fire one deliberately failing input: send a payload where `intent` is the string `"high"` instead of a number. Parse JSON fails the schema and stops the run before any write. Confirm in run history that no credits were spent and no record was updated.
+8. Fire one deliberately failing input. Send a payload where `intent` is the string `"high"` instead of a number. Parse JSON fails the schema and stops the run before any write. Confirm in run history that no credits were spent and no record was updated.
 
 ## Failure modes
 
@@ -154,11 +158,11 @@ Say you process 2,000 events a month with a typical split of 10 percent A, 30 pe
 
 ### Separate fit and intent scores
 
-Output two Formula values instead of one combined number — `fit_score` and `intent_score` — and write both to the record. Switch on a two-by-two matrix, where high fit and high intent together earn an A, so reps can see whether a lead is a good fit, actively buying, or both. Everything else stays the same.
+Output two Formula values instead of one combined number. Name them `fit_score` and `intent_score`, and write both to the record. Switch on a two-by-two matrix, where high fit and high intent together earn an A. That way, reps can see whether a lead is a good fit, actively buying, or both. Everything else stays the same.
 
 ### Recompute on a schedule
 
-Swap the trigger for [Recurring schedule](/reference/triggers/recurring-schedule), add a [Find records](/reference/records/find-records) block to pull the leads to rescore, and wrap the Formula, Switch, and Update record steps in a [Loop](/reference/utilities/loop). The loop multiplies cost by the number of records, so gate it with a [Filter](/reference/conditions/filter) that rescores only leads whose signals changed since the last run.
+Swap the trigger for [Recurring schedule](/reference/triggers/recurring-schedule). Add a [Find records](/reference/records/find-records) block to pull the leads to rescore. Then wrap the Formula, Switch, and Update record steps in a [Loop](/reference/utilities/loop). The loop multiplies cost by the number of records. Gate it with a [Filter](/reference/conditions/filter) that rescores only leads whose signals changed since the last run.
 
 ## See also
 
@@ -168,4 +172,4 @@ Swap the trigger for [Recurring schedule](/reference/triggers/recurring-schedule
 - [Switch](/reference/conditions/switch)
 - [Formula](/reference/calculations/formula)
 
-_Source: [Attio Help Center — Workflows](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026._
+_Source: [Attio Help Center, Workflows](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026._

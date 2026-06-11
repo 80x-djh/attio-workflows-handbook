@@ -4,12 +4,12 @@ description: The Delay block pauses a workflow run for a fixed, relative duratio
 icon: clock
 ---
 
-The **Delay** block (Delay) pauses a workflow run for a fixed, relative duration before the next block runs. You set a number and a unit — three days, two hours, thirty minutes — and the run resumes from where it paused once that time elapses. Use it to space out steps in a sequence, not to paper over a timing bug elsewhere in the flow.
+The **Delay** block pauses a workflow run for a fixed, relative duration before the next block runs. Relative means the clock starts when the run reaches the block, not at a set calendar time. You set a number and a unit, such as three days, two hours, or thirty minutes. The run resumes from where it paused once that time elapses. Use it to space out steps in a sequence. Do not use it to paper over a timing bug elsewhere in the flow.
 
 | | |
 | --- | --- |
 | **Category** | Delay |
-| **Credit cost** | Free — timing blocks consume no credits |
+| **Credit cost** | Free. Timing blocks consume no credits. |
 | **Engine** | New Workflows engine (June 2026+) |
 | **Plan availability** | All plans |
 | **Limits** | Units range from seconds to weeks. No documented maximum duration. |
@@ -24,20 +24,20 @@ The duration is always relative to the moment the run reaches the block. To paus
 
 ## Outputs
 
-None. The **Delay** block pauses the run and then continues; it produces no value for later blocks to consume.
+None. The **Delay** block pauses the run and then continues. It produces no value for later blocks to consume.
 
 ## Behavior
 
-The **Delay** block suspends the run at this step and schedules it to resume after the configured duration. The run holds its place in the flow, so every variable and output captured before the delay is still available to blocks that run afterward.
+The **Delay** block suspends the run at this step and schedules it to resume after the configured duration. The run holds its place in the flow. Every variable and output captured before the delay is still available to blocks that run afterward.
 
-A paused run keeps the workflow version it started on. If you edit and publish the workflow while a run is mid-delay, that in-flight run finishes on the version that was live when it triggered, not your newly published version. Only runs that trigger after you publish use the new version.
+A paused run keeps the workflow version it started on. Say you edit and publish the workflow while a run is mid-delay. That in-flight run still finishes on the version that was live when it triggered, not your newly published version. Only runs that trigger after you publish use the new version.
 
-The unit list stops at weeks. There is no months or years option, which is the main difference from [Adjust time](/reference/calculations/adjust-time) — that block offers seconds through years. To wait longer than the **Delay** block's units cover cleanly, compute a target timestamp and pause to it with [Delay until](/reference/delays/delay-until) instead.
+The unit list stops at weeks. There is no months or years option. This is the main difference from [Adjust time](/reference/calculations/adjust-time), which offers seconds through years. To wait longer than weeks, work out the exact date you want to resume on. Then pause to that date with [Delay until](/reference/delays/delay-until) instead.
 
 ## Gotchas
 
-- **A published edit does not reach runs already waiting.** A run paused on the **Delay** block completes on its original workflow version, because Attio pins each in-flight run to the version that was live when it triggered. You cannot patch a currently-delayed run; let it finish, then rely on the new version for the next trigger.
-- **Long delays hide operational problems.** A multi-day delay can mask a misconfigured upstream block, because the failure surfaces days later and far from its cause. Reach for a delay when the timing itself is the requirement, not as a patch for a flaky step earlier in the flow.
+- **A published edit does not reach runs already waiting.** A run paused on the **Delay** block completes on its original workflow version. Attio pins each in-flight run to the version that was live when it triggered. You cannot patch a currently-delayed run. Let it finish, then rely on the new version for the next trigger.
+- **Long delays hide operational problems.** A multi-day delay can mask a misconfigured upstream block, because the failure surfaces days later and far from its cause. Reach for a delay when the timing itself is the requirement. Do not use it as a patch for a flaky step earlier in the flow.
 - **There is no months or years unit.** The **Delay** block tops out at weeks, so a "wait three months" requirement has no single matching unit. Compute the target date with [Adjust time](/reference/calculations/adjust-time) and pause to it with [Delay until](/reference/delays/delay-until).
 
 ## Examples
@@ -60,7 +60,7 @@ A workflow has just sent the first touch and should hold for four hours before t
 | --- | --- |
 | Delay | `4` hours |
 
-The run holds for four hours, then resumes at the next block to send the second message, preserving every variable captured before the pause.
+The run holds for four hours, then resumes at the next block to send the second message. Every variable captured before the pause is preserved.
 
 ## Source
 
