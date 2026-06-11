@@ -34,14 +34,14 @@ page-type: trigger-reference
 
 ## Gotchas
 
-- Batch-running from a view enrolls each selected record as a **separate run** — 50 records × a 2-credit path = 100 credits. Eyeball the [credit math](/start/credits-and-pricing/) before selecting-all.
+- Batch-running from a view enrolls each selected record as a **separate run** — 50 records × a 2-credit path = 100 credits. Eyeball the [credit math](/reference/credits-and-pricing/) before selecting-all.
 - The button is visible to members who can see the workflow — name the workflow for operators, not builders ("Enrich + route this lead", not "WF-7 v2 final").
 - Because runs only happen on click, this trigger is the **low-risk way to ship a new automation**: run it manually for a week before swapping in an automatic trigger like [Attribute value changed](/reference/triggers/attribute-value-changed/).
 
 ## Example
 
-"Research on demand": Record command on Companies → [Web agent](/reference/agents/web-agent/) asks three qualification questions → [Update record](/reference/records/update-record/) saves answers → Slack DM to the runner. AE clicks the button only on accounts they're about to call — AI spend stays tied to human intent ([full recipe](/recipes/inbound-lead-research/)).
+"Research on demand": Record command on Companies → [Web agent](/reference/agents/web-agent/) asks three qualification questions → [Update record](/reference/records/update-record/) saves answers → Slack DM to the runner. AE clicks the button only on accounts they're about to call — AI spend stays tied to human intent ([full recipe](/guides/signals-and-ai/inbound-lead-research/)).
 
 ## Related
 
-[List entry command](/reference/triggers/list-entry-command/) (same idea for lists) · [Manual run](/reference/triggers/manual-run/) (no record context) · [Trigger guide](/concepts/triggers/)
+[List entry command](/reference/triggers/list-entry-command/) (same idea for lists) · [Manual run](/reference/triggers/manual-run/) (no record context) · [Trigger guide](/explanation/triggers/)

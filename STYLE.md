@@ -21,13 +21,17 @@ Every page declares a `page-type` in its frontmatter. The value is one of:
 
 Directory-to-type mapping:
 
+The site is organised by the four Diátaxis modes — **Learn** (tutorial), **Guides** (how-to), **Reference**, **Explanation** — plus Troubleshooting and Pro. Page type is declared in frontmatter and is what CI validates; the directory is the convention:
+
 | Directory | `page-type` |
 | --- | --- |
 | `src/content/docs/reference/triggers/*` | `trigger-reference` |
-| `src/content/docs/reference/*/` (all other reference subdirectories) | `block-reference` |
-| `src/content/docs/recipes/*` | `recipe` |
-| `src/content/docs/concepts/*` | `concept` |
-| `src/content/docs/migration*`, `advanced/*`, `troubleshooting/*`, `start/*` | `guide` |
+| `src/content/docs/reference/*/` (all other block subdirectories) | `block-reference` |
+| `src/content/docs/reference/credits-and-pricing` | `guide` (canonical fact page) |
+| `src/content/docs/guides/<category>/*` (the follow-along builds) | `recipe` |
+| `src/content/docs/explanation/*` | `concept` |
+| `src/content/docs/learn/*` (ordered tutorial lessons) | `guide` |
+| `src/content/docs/guides/migrating-from-legacy*`, `troubleshooting/*` | `guide` |
 | Index and landing pages (`index.md`/`index.mdx` at any level) | `landing` |
 | Privacy page | `legal` |
 | Future glossary entries | `glossary` |
@@ -133,7 +137,7 @@ These are the things readers come back for. Protect them:
 
 ## Fact discipline
 
-Volatile facts — the credit table, plan allowances, timeouts, renames — live on exactly **one** page each. Every other page links to that page and never restates the number. The canonical credit page is `/start/credits-and-pricing/`.
+Volatile facts — the credit table, plan allowances, timeouts, renames — live on exactly **one** page each. Every other page links to that page and never restates the number. The canonical credit page is `/reference/credits-and-pricing/`.
 
 Every behavioral or cost claim either cites an official Attio page or carries "Verified in workspace on \<date\>."
 

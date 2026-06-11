@@ -27,7 +27,7 @@ page-type: trigger-reference
 
 ## Gotchas
 
-- Fires for **workflow-added records too** — if another automation adds records to this list, the two workflows chain. Sometimes that's the design; when it isn't, filter on the actor (Updated by → Type → is not → Workflow). See [infinite loops](/advanced/infinite-loops-and-safety/).
+- Fires for **workflow-added records too** — if another automation adds records to this list, the two workflows chain. Sometimes that's the design; when it isn't, filter on the actor (Updated by → Type → is not → Workflow). See [infinite loops](/explanation/infinite-loops-and-safety/).
 - A record can only be in a list **once**, so this fires once per record per membership — but remove-and-re-add fires it again. Re-adding is a legitimate "recycle this lead" signal if you design for it; chaos if you don't.
 - List attributes on the new entry are usually **empty at add time** (stage might default, the rest won't). If your logic depends on a list attribute getting its first value, trigger on [Attribute value changed](/reference/triggers/attribute-value-changed/) pointed at the list instead — it fires when the value is set during the add.
 
@@ -37,4 +37,4 @@ Deal intake: Record added to list "Investment pipeline" → [Update list entry](
 
 ## Related
 
-[List entry updated](/reference/triggers/list-entry-updated/) · [Add record to list](/reference/lists/add-record-to-list/) (the step that often feeds this trigger) · [Trigger guide](/concepts/triggers/)
+[List entry updated](/reference/triggers/list-entry-updated/) · [Add record to list](/reference/lists/add-record-to-list/) (the step that often feeds this trigger) · [Trigger guide](/explanation/triggers/)

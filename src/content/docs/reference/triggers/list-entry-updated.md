@@ -30,7 +30,7 @@ page-type: trigger-reference
 ## When it does NOT fire
 
 1. **Values set while adding the record to the list** — entry created with stage already set? Not an update. Use [Attribute value changed](/reference/triggers/attribute-value-changed/) pointed at the list.
-2. **Object attribute changes** — ARR changing on the company is invisible here; that's [Record updated](/reference/triggers/record-updated/) territory. See [records vs list entries](/concepts/records-vs-list-entries/).
+2. **Object attribute changes** — ARR changing on the company is invisible here; that's [Record updated](/reference/triggers/record-updated/) territory. See [records vs list entries](/explanation/records-vs-list-entries/).
 
 ## Gotchas
 
@@ -40,7 +40,7 @@ page-type: trigger-reference
 
 ## Example
 
-The stage router: List entry updated on "Sales pipeline" scoped to **Stage** → Switch on New value: *Demo booked* → create prep task; *Proposal* → notify #deals with [Aggregate values](/reference/calculations/aggregate-values/) total; *Won* → [Celebration](/reference/workspace/celebration/) + enroll champion in onboarding sequence; *Lost* → exit sequences + set nurture flag. ([Slack alert recipe](/recipes/slack-deal-alerts/).)
+The stage router: List entry updated on "Sales pipeline" scoped to **Stage** → Switch on New value: *Demo booked* → create prep task; *Proposal* → notify #deals with [Aggregate values](/reference/calculations/aggregate-values/) total; *Won* → [Celebration](/reference/workspace/celebration/) + enroll champion in onboarding sequence; *Lost* → exit sequences + set nurture flag. ([Slack alert recipe](/guides/route-and-sequence/slack-deal-alerts/).)
 
 ## Related
 

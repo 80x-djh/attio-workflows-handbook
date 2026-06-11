@@ -33,8 +33,8 @@ page-type: trigger-reference
 
 ## Example
 
-Webhook-free lead intake: Record created on People → Filter (email **not empty** and Updated by is not Workflow) → [Create or update record](/reference/records/create-or-update-record/) for the company by domain → [Add record to list](/reference/lists/add-record-to-list/) "Inbound" → [Round robin](/reference/workspace/round-robin/) owner → Slack ping. ([Routing recipe](/recipes/round-robin-routing/).)
+Webhook-free lead intake: Record created on People → Filter (email **not empty** and Updated by is not Workflow) → [Create or update record](/reference/records/create-or-update-record/) for the company by domain → [Add record to list](/reference/lists/add-record-to-list/) "Inbound" → [Round robin](/reference/workspace/round-robin/) owner → Slack ping. ([Routing recipe](/guides/route-and-sequence/round-robin-routing/).)
 
 ## Related
 
-[Attribute value changed](/reference/triggers/attribute-value-changed/) · [Record added to list](/reference/triggers/record-added-to-list/) · [Trigger guide](/concepts/triggers/)
+[Attribute value changed](/reference/triggers/attribute-value-changed/) · [Record added to list](/reference/triggers/record-added-to-list/) · [Trigger guide](/explanation/triggers/)

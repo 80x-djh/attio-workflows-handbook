@@ -29,7 +29,7 @@ These phrasings are canonical. Use them verbatim; do not paraphrase.
 
 ## Facts and sourcing
 
-- **One canonical fact layer:** the full credit table lives ONLY on `/start/credits-and-pricing/`. Every other page links to it; never duplicate the table.
+- **One canonical fact layer:** the full credit table lives ONLY on `/reference/credits-and-pricing/`. Every other page links to it; never duplicate the table.
 - Every claim needs an official source (Attio docs, changelog, help center) or the marker "verified in workspace on <date>".
 - attio.com 404s non-browser user agents. Always check with a browser UA, e.g. `curl -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"`.
 - All screenshots and workflow tests come from Dan's own workspace (`customobject`) — NEVER from client workspaces.

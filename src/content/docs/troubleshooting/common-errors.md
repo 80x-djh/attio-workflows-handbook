@@ -14,7 +14,7 @@ Likely causes:
 - workflow not published
 - trigger scoped to the wrong object/list/attribute
 
-Fix: compare the event to [choosing the right trigger](/concepts/triggers/).
+Fix: compare the event to [choosing the right trigger](/explanation/triggers/).
 
 ## Variable is empty
 

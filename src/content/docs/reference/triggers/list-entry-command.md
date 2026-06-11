@@ -33,9 +33,9 @@ page-type: trigger-reference
 
 ## Gotchas
 
-- The trigger outputs a **list entry**, not a record. Entry-typed blocks ([Update list entry](/reference/lists/update-list-entry/)) take it directly; record-typed blocks need the entry's **parent record** from the variable picker. The type rules live in [records vs list entries](/concepts/records-vs-list-entries/).
+- The trigger outputs a **list entry**, not a record. Entry-typed blocks ([Update list entry](/reference/lists/update-list-entry/)) take it directly; record-typed blocks need the entry's **parent record** from the variable picker. The type rules live in [records vs list entries](/explanation/records-vs-list-entries/).
 - Choose this over Record command when the workflow needs **list attributes** (stage, priority, next step) — Record command runs can't see them without a [Find list entries](/reference/lists/find-list-entries/) detour.
-- Batch-select runs one workflow run per entry — same [credit multiplication](/start/credits-and-pricing/) as Record command.
+- Batch-select runs one workflow run per entry — same [credit multiplication](/reference/credits-and-pricing/) as Record command.
 
 ## Example
 
@@ -43,4 +43,4 @@ Pipeline-review prep: List entry command on "Sales pipeline" → [Summarize reco
 
 ## Related
 
-[Record command](/reference/triggers/record-command/) · [Record added to list](/reference/triggers/record-added-to-list/) · [Records vs list entries](/concepts/records-vs-list-entries/)
+[Record command](/reference/triggers/record-command/) · [Record added to list](/reference/triggers/record-added-to-list/) · [Records vs list entries](/explanation/records-vs-list-entries/)
