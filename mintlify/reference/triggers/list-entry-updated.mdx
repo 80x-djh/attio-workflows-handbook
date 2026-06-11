@@ -1,0 +1,97 @@
+---
+title: List entry updated
+description: The List entry updated trigger fires when a list attribute changes on an entry in a specific list.
+icon: git-branch
+---
+
+The **List entry updated** trigger (Triggers) fires when a list attribute changes on an entry in a specific list. Because a pipeline stage is almost always a list attribute, this is the trigger you reach for when a deal moves from one stage to the next. It does not fire for object attributes, and it does not fire for values set at the moment an entry is created.
+
+| | |
+| --- | --- |
+| **Category** | Triggers |
+| **Credit cost** | Free — triggers consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| List | List | Yes | None | The list to monitor. |
+| Attribute | List attribute | No | None | If set, the trigger fires only when this list attribute updates. If unset, the trigger fires on any list-attribute change on any entry in the list. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| List entry | List entry | `Acme renewal` on `Sales pipeline` | The full entry that was updated. |
+| Actor | Actor | `Priya Sharma` | Who performed the change. |
+| Timestamp | Datetime | `2026-06-11T14:32:00Z` | When the change happened. |
+| New value | Attribute value | `Proposal` | Present only when an attribute is selected on the trigger. |
+| Previous value | Attribute value | `Demo booked` | Present only when an attribute is selected on the trigger. |
+
+Reference the new stage downstream as `{{ steps.trigger.new_value }}` and the prior stage as `{{ steps.trigger.previous_value }}`.
+
+## Behavior
+
+The trigger fires once per matching change on a single entry. When you scope it to one attribute, only changes to that attribute fire it, and the run carries both the new value and the previous value. When you leave the attribute unset, every list-attribute change on every entry fires it — including priority tweaks, owner reassignments, and any other list attribute — and the new and previous values are not available.
+
+The new and previous values exist only when an attribute is selected. True-transition filters such as `New value is X` and `Previous value is not X` depend on these outputs, so leaving the attribute unset removes the values your downstream conditions need.
+
+A re-save of the same stage still counts as an update. Setting an entry's stage to `Proposal` when it is already `Proposal` produces a run where the new value and the previous value are identical, which is why transition logic should test both.
+
+## Gotchas
+
+- **Unset attribute floods the workflow.** With no attribute selected, every priority tweak, owner change, and note edit on the list fires the trigger. Scope the trigger to the one list attribute you care about — usually the stage attribute.
+- **Same-stage re-saves re-fire downstream actions.** Saving the current stage again sends a run through with the new value equal to the previous value, which re-runs your alerts and tasks. Filter for a real transition with `New value is X` and `Previous value is not X`; duplicate Slack alerts are usually how you discover this.
+- **Creation-time values are not updates.** An entry added to the list with its stage already set never fires this trigger, because no update occurred. Catch creation-time values with [Attribute value changed](/reference/triggers/attribute-value-changed) pointed at the list.
+- **Object attributes never fire this trigger.** Annual recurring revenue changing on the company record does not fire this trigger, because that is an object attribute, not a list attribute. Use [Record updated](/reference/triggers/record-updated) for object attributes, and read [Records vs list entries](/explanation/records-vs-list-entries) to see why the two are separate.
+
+## Examples
+
+### Routing a deal by its new stage
+
+Scope the trigger to the stage attribute, then branch on the new value with a single [Switch](/reference/conditions/switch) so that one workflow owns every stage instead of five single-stage workflows.
+
+| Field | Value |
+| --- | --- |
+| List | `Sales pipeline` |
+| Attribute | `Stage` |
+
+A [Switch](/reference/conditions/switch) on `{{ steps.trigger.new_value }}` then sends `Demo booked` to a prep task via [Create task](/reference/tasks/create-task), `Proposal` to a `#deals` alert, `Won` to a [Celebration](/reference/workspace/celebration), and `Lost` to [Exit from sequence](/reference/sequences/exit-from-sequence). One run history holds every path, so debugging a misrouted deal happens in a single place.
+
+### Alerting only on a real stage transition
+
+Filter out same-stage re-saves so a deal moving into `Won` notifies the team exactly once.
+
+```json
+{
+  "trigger": {
+    "list": "Sales pipeline",
+    "attribute": "Stage"
+  },
+  "filter": {
+    "all": [
+      { "field": "new_value", "operator": "is", "value": "Won" },
+      { "field": "previous_value", "operator": "is_not", "value": "Won" }
+    ]
+  }
+}
+```
+
+A rep who re-saves the deal while it is already `Won` produces a run whose new value and previous value both read `Won`, so the second filter condition fails and no duplicate alert fires.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Attribute value changed](/reference/triggers/attribute-value-changed)
+- [Record updated](/reference/triggers/record-updated)
+- [Records vs list entries](/explanation/records-vs-list-entries)
+- [Slack deal alerts on stage change](/guides/route-and-sequence/slack-deal-alerts)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

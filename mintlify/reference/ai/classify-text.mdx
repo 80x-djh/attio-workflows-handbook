@@ -1,0 +1,90 @@
+---
+title: Classify text
+description: The Classify text block (AI) uses AI to sort a text input into one or more tags you define.
+icon: tags
+---
+
+The **Classify text** block (AI) uses AI to sort a text input into one or more tags you define. It reads any string — a form answer, an email snippet, a parsed webhook field — and returns the matching tag rather than the whole record, which is what separates it from [Classify record](/reference/ai/classify-record). The block computes the tag but never writes it anywhere, so an [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) block must follow it to make the result persist.
+
+| | |
+| --- | --- |
+| **Category** | AI |
+| **Credit cost** | Variable (token-based) |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans; AI blocks draw on your monthly workspace credit allowance |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| `Input` | Text | Yes | — | The text to classify. Map a trigger field, a parsed JSON value, or an earlier block's output. |
+| `Tags` | List of text | Yes | — | The allowed tag options the model may choose from. The model cannot return a tag outside this list. |
+| `Allow multiple tags` | Boolean | No | Off | When on, the model may return more than one tag for a single input. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| `Text classification` | Text (one or more tags) | `Pricing` | One of the tags you supplied, or several when `Allow multiple tags` is on. |
+
+Reference the chosen tag in a later block as `{{ steps.classify_text.text_classification }}`.
+
+## Behavior
+
+The block sends the `Input` text and your `Tags` list to the model on each run, then returns whichever tag fits best. The model is constrained to your list, so it never invents a category — but it always returns something, even for vague or off-topic text, so a junk input still produces a tag rather than an error.
+
+With `Allow multiple tags` off, the output is a single tag. With it on, the output can hold several tags, and a downstream block must be ready to receive more than one value — write the result to a multi-select attribute, not a single-select one.
+
+The block is read-and-compute only. It does not save its result to any record or list entry; the `Text classification` output lives in the run until a write block consumes it. Cost is token-based, so longer inputs and longer tag lists consume more credits per run.
+
+## Gotchas
+
+- **The result vanishes if nothing saves it.** The block computes a tag but writes nothing on its own. Follow it with [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) and map `{{ steps.classify_text.text_classification }}` into the target attribute.
+- **A select attribute drops unmatched tags.** Writing to a single-select or multi-select attribute requires the option to already exist. Create the matching options on the attribute first, with names that match your `Tags` values exactly, or the write silently keeps nothing.
+- **Overlapping tag definitions make the result unstable.** When two tags mean nearly the same thing — `Pricing` and `Cost` — the model splits ambiguous inputs between them run to run. Keep tag names mutually exclusive when you need one reliable answer.
+- **You are paying the model to do a keyword match.** If a deterministic rule decides the tag — a substring, a sender domain, a known value — a free [Filter](/reference/conditions/filter) or [Switch](/reference/conditions/switch) does the same job for zero credits. Reserve this block for genuinely fuzzy text.
+
+## Examples
+
+### Tagging inbound form answers by pain point
+
+A contact form asks "What's the main problem you're hoping to solve?" and you want the free-text answer sorted into a fixed set of pain categories before routing.
+
+| Field | Value |
+| --- | --- |
+| `Input` | `{{ trigger.form_answer }}` |
+| `Tags` | `Onboarding`, `Pricing`, `Integrations`, `Reporting`, `Other` |
+| `Allow multiple tags` | Off |
+
+For the answer "We can't get our Salesforce data to sync cleanly," the block returns `Integrations`. A following [Update record](/reference/records/update-record) writes that tag to the `Primary pain` attribute on the person record.
+
+### Sorting a parsed webhook field into several themes
+
+A support tool posts ticket text to a [Webhook received](/reference/triggers/webhook-received) trigger. You first run [Parse JSON](/reference/utilities/parse-json) to pull the `message` field, then classify it into one or more themes so a single ticket can carry every relevant tag.
+
+```json
+{
+  "Input": "{{ steps.parse_json.message }}",
+  "Tags": ["Bug", "Billing", "Feature request", "Churn risk"],
+  "Allow multiple tags": true
+}
+```
+
+For the message "The export button throws an error and honestly we're reconsidering the renewal," the block returns `Bug` and `Churn risk`. An [Update list entry](/reference/lists/update-list-entry) writes both into a multi-select `Ticket themes` attribute on the support list.
+
+## Credit cost worked example
+
+Classify text is priced by tokens, so cost rises with input length and tag-list size rather than a flat per-run figure. Suppose a 60-word inbound form answer against a five-tag list runs roughly 0.3 credits per call, and the form receives 400 submissions a month. That is about 120 credits a month for classification alone — comfortably inside a paid plan's allowance, but worth confirming against the exact per-run figure shown in the run viewer before wiring it to a high-volume trigger. Filter out submissions you do not need to classify first, since every record that reaches an AI block costs credits. For plan allowances and how token pricing is billed, see [Credits & pricing explained](/reference/credits-and-pricing).
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Classify record](/reference/ai/classify-record)
+- [Summarize record](/reference/ai/summarize-record)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+- [AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

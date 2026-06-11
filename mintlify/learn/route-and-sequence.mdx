@@ -1,0 +1,77 @@
+---
+title: "Track 2 — Route and sequence"
+description: Route and sequence moves a qualified lead to the right owner, enrolls it in a sequence, and exits the instant the lead replies.
+icon: "route"
+---
+
+**Route and sequence** moves a qualified lead to the right owner, enrolls it in a sequence, and exits the instant the lead replies. You build the system in the order a lead actually moves through it: routing decides *who* owns an account, sequencing decides *what* that account receives, and clean enroll/exit hygiene makes sure nobody is still being sequenced after they have already booked.
+
+<Note>
+  **Prerequisites:** finish [Track 1 — Capture and qualify](/learn/capture-and-qualify), or know how to filter and score a lead, and skim [Choosing the right trigger](/explanation/triggers).
+
+  **By the end you can:** auto-route a qualified lead to its owner, enroll it in the matching sequence, alert that owner, and exit the sequence the moment the lead replies or converts.
+</Note>
+
+This track is for a seed-stage founder running founder-led sales who wants enterprise-grade routing and follow-up without hiring a revenue-operations (RevOps) team. You build the system before you write a single message. Each module maps to one complete recipe in Guides, so you can stop at any point and ship what you have.
+
+## The mental model
+
+Routing and sequencing are two decisions, not one. Routing answers *who owns this account*, and sequencing answers *what that account receives next*. The unglamorous third decision — enroll and exit hygiene — is the one that keeps the motion from embarrassing you, because every enrollment needs a matching exit. A rep and an automated touch must never land on the same person in the same hour.
+
+Hold one rule through the whole track: every enroll needs an exit. If you build the enrollment without its paired exit, a lead who replies on Tuesday still gets the Wednesday outbound step, and the prospect learns that nobody on your side is reading their messages.
+
+## Build the track
+
+Work these modules in order. Each module is a complete build you can ship on its own, and together they form the routing-into-enrollment system you wire up in the challenge.
+
+<Steps>
+  <Step title="Route inbound by territory and seniority">
+    Start with deterministic routing, where a known attribute decides the owner. [Inbound routing by territory and seniority](/guides/route-and-sequence/territory-routing) fires on [Record added to list](/reference/triggers/record-added-to-list), screens out noise with a free [Filter](/reference/conditions/filter), and branches on region and title with a [Switch](/reference/conditions/switch) before it writes an owner.
+
+    Use this pattern when the right owner is a function of the data — for example, every lead from Madrid with a director-level title goes to the Europe, Middle East, and Africa (EMEA) enterprise rep, Priya Sharma. The branch is explicit, so the routing is auditable.
+  </Step>
+
+  <Step title="Distribute evenly with round-robin">
+    Add fairness on top of routing. [Round-robin lead routing](/guides/route-and-sequence/round-robin-routing) hands each new qualified lead to the next rep in a pool with the [Round robin](/reference/workspace/round-robin) block, writes the owner with [Update record](/reference/records/update-record), and books a first touch with [Create task](/reference/tasks/create-task) so no inbound goes cold.
+
+    Use round-robin when the owner is *not* a function of the data and you just need even distribution with a guaranteed first touch. The block remembers its cursor across runs, so assignment stays even over time — list Priya Sharma, Marcus Lee, and Dana Okoro once each and the rotation does the rest.
+  </Step>
+
+  <Step title="Make stage changes visible in Slack">
+    Give the team a heartbeat. [Slack deal alerts on stage change](/guides/route-and-sequence/slack-deal-alerts) watches the **Stage** attribute on Deals with the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger and posts the deal name, value, owner, and Attio URL to `#revenue` with the [Slack](/reference/integrations) block.
+
+    This module retires the "what happened to that deal?" archaeology. Sales leaders see momentum the moment a deal moves, not at the next pipeline review.
+  </Step>
+
+  <Step title="Enroll, then exit, cleanly">
+    Finish with the paired build that stops double-touching. [Enroll and auto-exit sequences](/guides/route-and-sequence/sequence-enrollment) is two workflows that share one piece of state. Workflow A fires on [Attribute value changed](/reference/triggers/attribute-value-changed), runs a free [Filter](/reference/conditions/filter), and calls [Enroll in sequence](/reference/sequences/enroll-in-sequence). Workflow B fires on the reply or meeting-booked signal and calls [Exit from sequence](/reference/sequences/exit-from-sequence) plus [Update record](/reference/records/update-record).
+
+    Build both halves, or you double-touch. The exit half is the one everyone forgets, so it is the one you test on purpose.
+  </Step>
+</Steps>
+
+## What this costs
+
+Routing logic is cheap because the blocks that make the decision are free. The trigger, [Filter](/reference/conditions/filter), [Switch](/reference/conditions/switch), and [Round robin](/reference/workspace/round-robin) are logic blocks that consume no credits, so a run that gets filtered out costs nothing. You pay only when a write actually happens: setting the owner, creating the first-touch task, posting to Slack, and enrolling or exiting a sequence each consume credits.
+
+That makes the cost of this track fixed and predictable, because no module calls an artificial-intelligence (AI) block. Before you scale the rep pool or add channels, check your monthly allowance against your expected routed volume on [Credits & pricing explained](/reference/credits-and-pricing).
+
+## The challenge
+
+Wire routing into enrollment as one motion. A qualified lead is round-robined to an owner, gets a first-touch task, and is enrolled in the matching sequence — then, through a second, paired workflow, exits that sequence the instant the lead replies. Build it, fire a real test lead through it, and watch the owner, task, and enrollment all land.
+
+Then test the exit path on purpose. Reply to the test lead, or flip its status to `Replied`, and confirm the person leaves the sequence before the next step can send. The exit is the half everyone forgets, so it is the half you verify by hand. Build the capstone from [Enroll and auto-exit sequences](/guides/route-and-sequence/sequence-enrollment).
+
+## Where this goes next
+
+Once routing and sequencing run themselves, the next track moves from reacting to leads to maintaining the pipeline they create. [Track 3 — Keep the pipeline honest](/learn/keep-the-pipeline-honest) shows you how to make the pipeline self-clean, self-summarize, and hand off on a schedule, with no false positives and no manual work.
+
+## See also
+
+- [Enroll and auto-exit sequences](/guides/route-and-sequence/sequence-enrollment)
+- [Round-robin lead routing](/guides/route-and-sequence/round-robin-routing)
+- [Track 3 — Keep the pipeline honest](/learn/keep-the-pipeline-honest)
+- [Choosing the right trigger](/explanation/triggers)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+
+*Sources: [Attio: Workflows](https://attio.com/help/apps/other-apps/workflows) and [Sequences in Attio](https://attio.com/help/apps/sequences). Last reviewed against the Attio Help Center, June 2026.*

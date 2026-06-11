@@ -1,0 +1,120 @@
+---
+title: Infinite loops and safety
+description: An infinite loop happens when a workflow writes data that re-triggers itself, duplicating writes and burning credits on every pass.
+---
+
+An infinite loop happens when a workflow writes data that re-triggers itself, duplicating writes and burning credits on every pass. The shape is almost always the same: a workflow listens for a change on an object, then makes a change to that same object, and that change satisfies its own trigger again. Nothing in the engine stops a workflow from feeding itself, so the loop runs until you notice the credit graph or disable the workflow.
+
+For a RevOps engineer, this is the difference between a quiet automation and a 2 a.m. incident. The good news is that loops are entirely preventable with two cheap, free building blocks — a scoped trigger and an early [Filter](/reference/conditions/filter) — plus a duplicate-write mindset for anything that creates tasks, list entries, or sequence enrollments. This page shows the loop shapes that bite people, the guards that stop them, and the steps to take when one is already running.
+
+These guards cost no credits and no real build time. After reading, you can recognize a self-triggering design before you publish it, add the standard guard to any workflow that writes to the object it watches, and shut down a runaway in under a minute.
+
+## Recognizing the loop shape
+
+The most common loop is a single workflow that both listens to and writes to the same object. A [Record updated](/reference/triggers/record-updated) trigger fires, the workflow runs an [Update record](/reference/records/update-record) block on that same record, and the update satisfies the trigger, which fires the workflow again.
+
+```text
+Record updated on Companies
+  -> Update record on the same Company
+  -> Record updated fires again
+  -> Update record runs again ...
+```
+
+Run this once and the [Runs tab](/explanation/runs-and-debugging) fills with back-to-back executions on a single record, each one billing for the write inside it. The fix in the rest of this page is to make at least one link in that chain impossible — either the write no longer satisfies the trigger, or an early filter rejects the workflow's own writes.
+
+## Scoping the trigger
+
+The first guard is to stop the trigger from watching the attribute the workflow writes. A [Record updated](/reference/triggers/record-updated) trigger left unscoped fires on every change to any attribute, so any write you make loops straight back into it. Scoping the trigger to a single attribute — and never writing that attribute from inside the workflow — breaks the chain at the source.
+
+Configure the trigger so its watched attribute and its written attributes never overlap.
+
+| Field | Value |
+| --- | --- |
+| Trigger | Record updated on Companies |
+| Watched attribute | `owner` |
+| Block | Update record on the same Company |
+| Attribute written | `last_touched_at` |
+
+Because the workflow updates `last_touched_at` and the trigger only watches `owner`, the write can never re-fire the trigger, and the loop cannot start.
+
+## Adding an early filter
+
+The second guard catches the case where you cannot fully separate the watched and written attributes. An early [Filter](/reference/conditions/filter) that checks who made the change lets human edits through and stops the run when the workflow itself authored the change. Filter on `Updated by` so a workflow-authored update no longer satisfies the trigger.
+
+Place the filter immediately after the trigger, before any write block.
+
+| Field | Value |
+| --- | --- |
+| Block | Filter |
+| Condition | `Updated by` → Type → is not → Workflow |
+
+A run started by Priya Sharma editing the record passes the filter and continues; a run started by the workflow's own write fails the filter and stops, so the loop ends after a single free, no-op pass. A stopped filter is not an error — it is the guard doing its job.
+
+## Guarding against duplicate writes
+
+Loops are not the only re-run hazard. Retries, manual re-runs, and overlapping triggers can all execute a workflow twice on the same record, so for every write ask: what happens if this runs twice? A second pass that creates another task, adds another list entry, or enrolls the contact again produces silent duplicates rather than an obvious loop.
+
+The cure is idempotency — designing the write so a second run is a no-op. For records, the [Create or update record](/reference/records/create-or-update-record) block matches on a unique attribute and updates the existing record instead of creating a duplicate.
+
+| Field | Value |
+| --- | --- |
+| Block | Create or update record |
+| Object | People |
+| Matching attribute | `email` |
+| Value | jane@acme.com |
+
+Run this twice for `jane@acme.com` and the second pass updates the record found by the first, so you end with one person, not two. For tasks, list entries, and sequence enrollments — which have no built-in upsert — add a [Filter](/reference/conditions/filter) that first checks whether the task, entry, or enrollment already exists, or stamp processed records with a `workflow_processed_at` timestamp and skip records that already carry one.
+
+## Limiting blast radius while testing
+
+The cheapest insurance is to make a misbehaving workflow small before it can grow. A [Record command](/reference/triggers/record-command) trigger adds a manual Run workflow button instead of firing automatically, so you can run a risky workflow on one record at a time and watch the result before swapping in an automatic trigger. For workflows that fan out over many records, the [Loop](/reference/utilities/loop) block's Limit input caps how many iterations run.
+
+Set a low Limit on any loop while you are still testing.
+
+| Field | Value |
+| --- | --- |
+| Block | Loop |
+| Iterable | matching deals from Find records |
+| Limit | 3 |
+
+With the Limit set to 3, a loop that should touch 200 deals touches only 3 on each test run, so a bad filter or a self-triggering write costs three operations instead of two hundred. Raise the Limit only once a full trace in the [run viewer](/explanation/runs-and-debugging) looks correct. The new engine removed per-workflow credit caps, so the Loop Limit and a scoped trigger are your real spend controls, not a cap setting.
+
+## Responding to a runaway
+
+When a loop is already running, stop the bleeding first and diagnose second. The order matters: every second the workflow stays live, it bills for another pass.
+
+<Steps>
+  <Step title="Disable or archive the workflow">
+    Disabling stops new runs; in-progress runs still complete. This halts the loop before you investigate anything.
+  </Step>
+  <Step title="Open the Runs tab and read the loop path">
+    The [Runs tab](/explanation/runs-and-debugging) lists every execution and the credits each one consumed, so you can confirm the loop and measure the cost.
+  </Step>
+  <Step title="Identify the write that re-triggered the workflow">
+    Trace from the trigger to the write block whose output satisfies the trigger again — that overlap is the loop.
+  </Step>
+  <Step title="Add a guard">
+    Scope the trigger off the written attribute, or add an early [Filter](/reference/conditions/filter) on `Updated by` → Type → is not → Workflow.
+  </Step>
+  <Step title="Test on one record before republishing">
+    Re-run the workflow on a single record through a [Record command](/reference/triggers/record-command) trigger and confirm in the run viewer that it fires exactly once.
+  </Step>
+</Steps>
+
+After the guard is in place and a single-record test fires once and stops, republish. Check the Runs tab again the next day to confirm the run volume on that object has returned to normal.
+
+<Warning>
+Loops bill for real. Every pass that includes a credited block — an [Update record](/reference/records/update-record) write, an enrollment, an AI block — charges again, so a loop left running overnight can consume a large share of your monthly allowance. Disable first, diagnose second. See [credits and pricing](/reference/credits-and-pricing) for the full cost table.
+</Warning>
+
+## See also
+
+- [Record updated](/reference/triggers/record-updated)
+- [Filter](/reference/conditions/filter)
+- [Loops & processing many records](/explanation/loops)
+- [Runs, debugging & publishing](/explanation/runs-and-debugging)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+
+---
+
+*Source: [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library) and [Attio Workflows triggers](https://attio.com/help/reference/automations/workflows/triggers). Last reviewed against the Attio Help Center, June 2026.*

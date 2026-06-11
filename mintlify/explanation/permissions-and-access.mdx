@@ -1,0 +1,107 @@
+---
+title: Permissions & workflow access
+description: Three separate permission systems decide whether a workflow can run — its data access, who can edit it, and what its agents may read.
+icon: lock
+---
+
+Three separate permission systems decide whether a workflow can run — its data access, who can edit it, and what its agents may read. The first governs what data the workflow itself can read and write. The second governs which people can see and edit the workflow. The third governs what any AI agent inside the workflow is allowed to touch. A single error message rarely tells you which one is biting you, so a confusing failure stays confusing until you know which model to check.
+
+For a RevOps engineer, the practical cost of confusing these three models is wasted debugging time on automations that touch live revenue data. A workflow that reads a deal perfectly can still fail to update it, a teammate who built a workflow can suddenly find it invisible to a colleague, and an [agent](/reference/agents/custom-agent) can return empty answers about records it should obviously know. Each symptom maps to exactly one of the three models.
+
+This page explains each model in the order you meet it when a workflow breaks, gives you a minimal reproduction of the most common failure, and ends with a triage routine that turns the error text into the right fix. After reading it, you can grant a workflow the narrowest access it needs, share a workflow without accidentally exposing production deploy rights, and decide whether an agent should run as the workflow or as a person.
+
+## Granting the workflow's own data access
+
+A workflow has no write access to objects by default, even though it can read them freely. This is the model behind the most common permission error, and it is the one to check first. A workflow that reads a deal without trouble can still fail the moment it tries to update that deal, returning *"This workflow does not have permission to write for this object."*
+
+The fix is to grant write access deliberately, object by object, rather than handing the workflow broad access across the workspace. An admin, or any member with full access to the object, makes the grant in the object's access settings. This minimal grant resolves a failing [Update record](/reference/records/update-record) step on the Deals object.
+
+| Field | Value |
+| --- | --- |
+| Object | Deals |
+| Granted to | This workflow |
+| Access level | Read and write |
+| Granted by | An admin or a member with full access to Deals |
+
+After this grant, the workflow's `Update record` step writes to Deals on its next run instead of returning the write-permission error.
+
+Grant write access narrowly because a workflow combines broad write access with the ability to act at automation speed. A wiring mistake in a workflow that can write to every object can corrupt many records before anyone notices, so each granted object is a deliberate decision rather than a default.
+
+## Writing across relationship attributes
+
+Relationship attributes need write access on both sides of the link, not just the object you think you are editing. Updating a "Deals ↔ Companies" relationship requires write access on Deals *and* on Companies, because the workflow touches a record on each side. This is the same permission model as the previous section, but it produces a nastier symptom.
+
+The trap is that a half-granted relationship fails intermittently rather than every time. A run that only needs to read the linked Companies record succeeds, while a run that needs to update it fails with the same write-permission error — so the workflow looks healthy until a specific input path exercises the missing grant. This complete grant covers a step that links a deal to its company.
+
+| Field | Value |
+| --- | --- |
+| Attribute being written | Associated company (Deals ↔ Companies) |
+| Write access needed on | Deals and Companies |
+| Common mistake | Granting write on Deals only |
+| Resulting symptom | Intermittent write-permission errors on some runs |
+
+After granting write on both objects, the relationship update succeeds on every run instead of only the runs that avoid the ungranted side.
+
+## Sharing the workflow with people
+
+Workflow sharing controls which people can see and edit the workflow, and it is a separate system from data access. The **Share** button exposes four levels: **Full access** (edit plus manage access), **Read and write** (edit plus publish), **Read only**, and **No access**. Managing access requires a paid plan, and team-level and member-level grants are available on Pro and Enterprise.
+
+The rule that surprises people is that more specific settings can only grant *additional* access, never reduce it. If the workspace-wide level is **Full access**, an individual **No access** assignment on one member does nothing — the broad grant already covers them. So the only configuration that actually restricts anyone is to set the floor low and raise specific people up.
+
+<Steps>
+  <Step title="Set the workspace floor to the lowest sensible level">
+    Set workspace-wide access to the lowest level anyone should have, which is often **Read only**.
+  </Step>
+  <Step title="Raise specific maintainers past the floor">
+    Grant **Full access** or **Read and write** to the named people who maintain automations, such as `jane@acme.com` on your RevOps team.
+  </Step>
+</Steps>
+
+After this configuration, only your named maintainers can edit the workflow, while everyone else inherits the read-only floor.
+
+Treat edit rights on a workflow the way you treat production deploy rights, because anyone with edit access can change a live revenue automation. The same caution that governs who can ship code to production should govern who can publish a workflow that moves deals or sends customer-facing messages. The page on [Runs, debugging & publishing](/explanation/runs-and-debugging) covers what publishing actually changes.
+
+## Choosing what agents can read
+
+The [Custom agent](/reference/agents/custom-agent) block adds a third model on top of the first two, called **Run as**. An agent's tool access is read-only, so this model decides whose readable data the agent sees, not whether it can write. The choice is between running the agent as the workflow or running it as a specific workspace member.
+
+Running as the workflow is the narrower option and the right default. The agent reads workspace-visible data such as notes and call recordings, plus whatever objects and lists the workflow itself can read under the first model. Running as a workspace member is wider: the agent reads *everything that member can access*, which makes it suitable only for genuinely personal contexts such as a digest of one person's own meetings. This table contrasts the two settings for an agent that summarizes account activity.
+
+| Setting | Reads | Use when | Cost of choosing it |
+| --- | --- | --- | --- |
+| Run as the workflow | Workspace-visible data plus the workflow's readable objects | The task is account-wide, not personal | Narrowest access; nothing breaks at offboarding |
+| Run as a workspace member | Everything that member, such as Priya Sharma, can access | The task is genuinely personal, like a digest of her own meetings | Offboarding Priya later breaks the workflow |
+
+After choosing **Run as the workflow**, the agent answers from shared data and keeps working even when an individual member leaves the workspace.
+
+Running as a member carries two extra requirements before the agent works. The member must explicitly approve the request through **Share access** in their Ask Attio settings, and they must connect their own apps before the agent can use their Model Context Protocol (MCP) tools. Until both happen, an agent set to run as that member returns empty answers about data it appears to have access to — which is the third model's signature failure.
+
+Enable web access on an agent only when the task genuinely needs the web, because external page content can then influence the agent's behavior. The [Web agent](/reference/agents/web-agent) block exists for tasks that require browsing, and keeping web access off elsewhere narrows the surface that outside content can affect.
+
+## Triaging a permission error
+
+The three models share overlapping error text, so the fastest path is to read the symptom rather than the message. Each of the three common symptoms maps to exactly one model and one fix.
+
+<Steps>
+  <Step title="The error mentions permission to write">
+    This is the data-access model. Have an admin grant the workflow write access to the object, and check both sides of any relationship attribute involved, since a half-granted relationship fails only on some runs.
+  </Step>
+  <Step title="A teammate cannot see or edit the workflow">
+    This is the sharing model. Check the **Share** settings, remembering that access only escalates from the workspace floor, so a low floor plus an explicit grant is the only way to restrict anyone.
+  </Step>
+  <Step title="An agent returns empty answers it should know">
+    This is the agent model. Check the agent's tool access list, and confirm that its **Run as** member ever approved the access request and connected the needed apps.
+  </Step>
+</Steps>
+
+After matching the symptom to its model, you change exactly one setting instead of guessing across three systems.
+
+*Sources: Attio Help Center, [Manage access to objects](https://attio.com/help/reference/managing-your-data/objects/manage-access-to-objects). Last reviewed against the Attio Help Center, June 2026.*
+
+## See also
+
+- [Custom agent](/reference/agents/custom-agent)
+- [Web agent](/reference/agents/web-agent)
+- [Runs, debugging & publishing](/explanation/runs-and-debugging)
+- [Workflow governance](/explanation/workflow-governance)
+- [Manage access to objects](https://attio.com/help/reference/managing-your-data/objects/manage-access-to-objects)

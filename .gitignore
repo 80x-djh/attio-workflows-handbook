@@ -1,17 +1,12 @@
-# build output
-dist/
-# generated types
-.astro/
-
 # dependencies
 node_modules/
 
+# Mintlify CLI local cache
+.mint/
+mintlify/.mint/
+
 # logs
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
 
 # environment variables
 .env
@@ -27,3 +22,8 @@ research/
 
 # internal outreach drafts — never publish
 outreach/
+
+# stray build artifacts (legacy Astro/Vercel — never commit)
+.astro/
+dist/
+.vercel/

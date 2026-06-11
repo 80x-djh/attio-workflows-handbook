@@ -1,0 +1,88 @@
+---
+title: Task created
+description: The Task created trigger starts a workflow whenever a new task is created anywhere in the workspace.
+icon: square-check
+---
+
+The **Task created** trigger (Trigger) starts a workflow whenever a new task is created anywhere in the workspace. It fires for every task, regardless of who created it or which record the task is linked to, so most workflows pair it with a [Filter](/reference/conditions/filter) to narrow scope before doing any work. Because tasks created by a workflow also count as new tasks, this trigger is a common source of accidental loops.
+
+| | |
+| --- | --- |
+| **Category** | Trigger (automatic) |
+| **Credit cost** | Free — triggers consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+None. The **Task created** trigger has no configurable inputs; it watches every task in the workspace and cannot be scoped to a single object, list, or assignee from the trigger itself. Narrow the scope with a [Filter](/reference/conditions/filter) as the first step instead.
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Task | Object | `{ "content": "Send renewal deck", "is_completed": false }` | The created task, including its text, due date, linked records, and assignees. |
+| Actor | Object | `Priya Sharma` | Who created the task — a workspace member, the API, or a workflow. |
+| Timestamp | Datetime | `2026-06-11T14:32:00Z` | When the task was created. |
+
+Reference the new task's text in a later block as `{{ steps.task_created.task.content }}`, the actor as `{{ steps.task_created.actor }}`, and the creation time as `{{ steps.task_created.timestamp }}`.
+
+## Behavior
+
+The trigger fires once per task, the moment the task is created. A workflow that creates several tasks in a single run therefore produces several separate **Task created** runs, one per task.
+
+The actor reflects the true origin of the task. A task a teammate adds by hand shows that person as the actor; a task created by another workflow shows the workflow as the actor. Use this distinction to keep automated tasks from re-triggering automated work by filtering on the actor.
+
+The trigger carries the task's data as it exists at creation time. If a later step or person edits the task — changing its due date or assignee — those edits do not re-fire this trigger, because **Task created** responds only to creation, not to updates.
+
+## Gotchas
+
+- **The trigger is workspace-wide.** It fires for every task in the workspace, including tasks unrelated to the process you care about. Add a [Filter](/reference/conditions/filter) as the first step to keep only the tasks you want, for example tasks whose text contains `handoff` or tasks linked to a deal.
+- **Creating tasks from this workflow can loop.** A workflow triggered by **Task created** that itself runs [Create task](/reference/tasks/create-task) will re-trigger itself, producing noisy task chains or an [infinite loop](/explanation/infinite-loops-and-safety). Filter the actor so the workflow ignores tasks created by a workflow, or branch with an [If](/reference/conditions/if) block before any [Create task](/reference/tasks/create-task) step.
+- **It does not fire on task completion.** Marking a task complete is an update, not a creation, so this trigger stays silent. **Task created** responds only to the moment a task is created; to mark a task done from inside a workflow, use [Complete task](/reference/tasks/complete-task) in a workflow driven by whatever signal you act on.
+
+## Examples
+
+### Notifying an owner when a handoff task appears
+
+This workflow watches for handoff tasks and pings the linked account owner so nothing stalls in the queue.
+
+| Field | Value |
+| --- | --- |
+| Trigger | Task created |
+| Filter | `{{ steps.task_created.task.content }}` contains `handoff` |
+| Filter | Actor is not a workflow |
+| Action | [Broadcast message](/reference/workspace/broadcast-message) to the linked record's owner |
+
+When a member creates a task reading `Customer handoff: Acme renewal`, the account owner receives a message in `#revenue` naming the task, and tasks created by other workflows are ignored.
+
+### Classifying new tasks by type
+
+This workflow reads each new task's text and routes it down a branch based on what kind of work it describes.
+
+```json
+{
+  "trigger": "Task created",
+  "steps": [
+    { "block": "Classify text", "input": "{{ steps.task_created.task.content }}", "categories": ["renewal", "onboarding", "support"] },
+    { "block": "If", "condition": "category == 'renewal'", "then": "Add record to list 'Renewals at risk'" }
+  ]
+}
+```
+
+When a teammate creates the task `Renewal check-in: jane@acme.com`, [Classify text](/reference/ai/classify-text) labels it `renewal`, and the [If](/reference/conditions/if) branch adds the linked company to the `Renewals at risk` list.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Create task](/reference/tasks/create-task)
+- [Complete task](/reference/tasks/complete-task)
+- [Choosing the right trigger](/explanation/triggers)
+- [Infinite loops and safety](/explanation/infinite-loops-and-safety)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

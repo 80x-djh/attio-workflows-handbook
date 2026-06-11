@@ -1,0 +1,88 @@
+---
+title: Record added to list
+description: The Record added to list trigger (List triggers) starts a workflow whenever a record joins the selected list.
+icon: list-plus
+---
+
+The **Record added to list** trigger (List triggers) starts a workflow whenever a record joins the selected list. It fires no matter how the record was added — by a person dragging it in, by another workflow, or by the API. Treat it as the "something just entered this process" signal for pipeline-entry automation such as intake checklists, owner assignment, and stage-zero hygiene.
+
+| | |
+| --- | --- |
+| **Category** | List triggers |
+| **Credit cost** | Free — triggers consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| List | List | Yes | None | The list to monitor. The workflow fires once for each record added to this list. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| List entry | List entry | `Acme — Investment pipeline` | The new entry, including its list attributes and its parent record. |
+| Actor | Actor | `Priya Sharma` | Who or what added the record — a member, a workflow, or the API. |
+| Timestamp | Datetime | `2026-06-11T14:32:00Z` | When the record joined the list. |
+
+Reference the new entry's parent record downstream as `{{ steps.record_added_to_list.record }}`, and the actor as `{{ steps.record_added_to_list.actor }}`.
+
+## Behavior
+
+The trigger fires once each time a record is added to the chosen list, in the order the additions happen. Each addition starts its own independent run, so adding ten records to the list starts ten runs.
+
+The actor reflects whatever performed the addition. A workflow that adds records to this list counts as an actor, so this trigger fires for workflow-added records exactly as it does for manual ones. That is the mechanism behind chained automations, and the cause of the first gotcha below.
+
+List attributes on a brand-new entry are usually empty at the moment the record is added. A stage attribute may apply its default, but the rest of the entry's list attributes have no value yet, because most values land a beat later when a person or a follow-up workflow fills them in.
+
+A record can occupy a given list only once at a time, so the trigger fires once per record per membership. Removing the record from the list and adding it again starts a fresh run. (Historically Attio's API allowed a record to hold more than one entry in the same list; the current workflows model treats membership as a single entry, which is why remove-and-re-add — not double-add — is the way to re-fire this trigger.)
+
+## Gotchas
+
+- **Workflow-added records re-trigger this workflow.** Because a workflow counts as the actor, any automation that runs [Add record to list](/reference/lists/add-record-to-list) on the monitored list fires this trigger too, chaining the two workflows. When that chain is the design, leave it; when it is not, filter on the actor — set *Updated by → Type → is not → Workflow* right after the trigger. See [Infinite loops and safety](/explanation/infinite-loops-and-safety).
+- **Re-adding a recycled record fires the trigger again.** Removing a record from the list and adding it back starts a new run, since each membership is a separate add. Re-adding is a deliberate "recycle this lead" signal when you design for it, and a source of duplicate tasks and Slack pings when you do not. Add a [Filter](/reference/conditions/filter) on entry state if a recycled record should follow a different path.
+- **List attributes are empty at add time.** If your logic reads a list attribute that gets its first value during the add, the read returns nothing, because the value is not set yet when the trigger fires. Trigger on [Attribute value changed](/reference/triggers/attribute-value-changed) pointed at that list attribute instead — it fires when the value is set, including at add time.
+
+## Examples
+
+### Running an intake checklist on a new pipeline entry
+
+This example screens every company that enters an investment pipeline and assigns the first task automatically.
+
+| Field | Value |
+| --- | --- |
+| Trigger | Record added to list |
+| List | `Investment pipeline` |
+| Step 1 | [Update list entry](/reference/lists/update-list-entry) — set `stage` to `New`, set `source` to its default |
+| Step 2 | [Create task](/reference/tasks/create-task) — `Initial screen`, assigned to the analyst, due in 2 days |
+| Step 3 | Slack message to `#dealflow` with the parent company's name and domain |
+
+A company added to `Investment pipeline` lands on stage `New`, gets an `Initial screen` task due in two days, and posts a one-line alert to `#dealflow`.
+
+### Ignoring records that another workflow added
+
+This example runs the intake checklist only for records a person added, so a feeder workflow that bulk-adds records does not trigger a second round of tasks.
+
+| Field | Value |
+| --- | --- |
+| Trigger | Record added to list |
+| List | `Investment pipeline` |
+| Step 1 | [Filter](/reference/conditions/filter) — `Updated by → Type → is not → Workflow` |
+| Step 2 | [Create task](/reference/tasks/create-task) — `Initial screen`, assigned to the analyst |
+
+A record dragged in by `Priya Sharma` reaches the [Create task](/reference/tasks/create-task) step and produces an `Initial screen` task; a record added by a feeding workflow stops at the [Filter](/reference/conditions/filter) and creates nothing.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [List entry updated](/reference/triggers/list-entry-updated)
+- [Add record to list](/reference/lists/add-record-to-list)
+- [Records vs list entries](/explanation/records-vs-list-entries)
+- [Choosing the right trigger](/explanation/triggers)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

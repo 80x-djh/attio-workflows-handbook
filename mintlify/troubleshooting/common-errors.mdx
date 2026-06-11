@@ -1,0 +1,100 @@
+---
+title: Common errors
+description: Most Attio workflow failures fall into a handful of patterns you can diagnose by symptom and fix in the run viewer.
+icon: triangle-alert
+---
+
+Most Attio workflow failures fall into a handful of patterns you can diagnose by symptom and fix in the run viewer. Each section names one observable symptom — a workflow that never fired, an empty variable, a typed-input error — lists the causes worth checking first, and ends with the concrete repair. Work top to bottom; the order roughly matches how often each failure shows up in a production workspace.
+
+Before you change any block, open the failed run. The [run viewer](/explanation/runs-and-debugging) shows each block's actual inputs and outputs, so you diagnose from real run data instead of reasoning in the abstract. Most of the fixes that follow start in that viewer.
+
+## Workflow never fires
+
+A workflow that never fires is almost always a trigger mismatch, not a broken block. Check these causes in order.
+
+- The trigger type is wrong for the event. A [Record updated](/reference/triggers/record-updated) trigger never sees a value set during record creation; for that, use [Record created](/reference/triggers/record-created).
+- The change happened on a list entry, but [Record updated](/reference/triggers/record-updated) watches object attributes. List-membership and list-entry attribute changes fire [List entry updated](/reference/triggers/list-entry-updated), not the record trigger.
+- The workflow is still a draft. Nothing triggers until you click **Publish**.
+- The trigger is scoped to the wrong object, list, or attribute, so the event you expect falls outside its scope.
+
+**Fix.** Compare the event you expect against [choosing the right trigger](/explanation/triggers), then confirm the workflow is published and its trigger scope matches the object, list, or attribute that actually changed.
+
+## Variable output is empty
+
+An empty variable means the output you referenced never produced a value on the path this run took. The reference points at a real block; the block just had nothing to hand it.
+
+- The output you selected sits on a branch the run never executed. A [Switch](/reference/conditions/switch) or [If](/reference/conditions/if) block sent the run down a different path, so the upstream block never produced its output.
+- A [Find records](/reference/records/find-records) or [Find list entries](/reference/lists/find-list-entries) block returned zero matches, so its record output is empty.
+- A multi-trigger workflow is missing a data-source fallback, so the input reads from a trigger that did not fire this run.
+- An AI or [agent](/reference/agents/custom-agent) output was expected to save itself. It does not — AI blocks return text into the run and nowhere else.
+
+**Fix.** Open the [run viewer](/explanation/runs-and-debugging) and inspect the upstream block's outputs on the executed path. Where an input can read from more than one trigger, add data sources in order with a static fallback, following [variables & data passing](/explanation/variables). To persist an AI result, follow the AI block with [Update record](/reference/records/update-record) and map the output into an attribute.
+
+## "Please provide a List Entry, not a Record"
+
+This error means a block expecting a list entry received the parent record instead. A record and its [list entry](/explanation/records-vs-list-entries) are different entities in the engine, and typed inputs reject the wrong one outright.
+
+<Steps>
+  <Step title="Confirm which type the block expects">
+    Open the failing block in the [run viewer](/explanation/runs-and-debugging) and read its input. A block such as [Update list entry](/reference/lists/update-list-entry) requires a list entry, while [Update record](/reference/records/update-record) requires a record.
+  </Step>
+  <Step title="Look up the matching entry">
+    Add a [Find list entries](/reference/lists/find-list-entries) block. Configure it to locate the entry for the triggering record on the target list — for example, the `Inbound` list entry for the company `acme.com`.
+  </Step>
+  <Step title="Pass the entry output downstream">
+    Wire the entry output from [Find list entries](/reference/lists/find-list-entries) into the block that raised the error, replacing the record reference. The error clears once the input type matches.
+  </Step>
+</Steps>
+
+The reverse error — "Please provide a Record, not a List Entry" — has the mirror fix: reach the record through the list entry's parent. Both directions are covered in [records vs list entries](/explanation/records-vs-list-entries).
+
+## Sequence enrollment fails
+
+[Enroll in sequence](/reference/sequences/enroll-in-sequence) is strict about who it enrolls and who sends, so an enrollment failure is usually a typed-input or permission problem rather than a sequence bug.
+
+- The recipient is not a person record. The block takes a person record — not a company, not a list entry. Reach the person through a relationship attribute on the triggering record.
+- The sender does not have delegated sending enabled, so Attio cannot send on their behalf.
+- The workflow lacks sequence access under its [permissions](/explanation/permissions-and-access).
+
+**Fix.** Validate the recipient type and the sender configuration before the [Enroll in sequence](/reference/sequences/enroll-in-sequence) block. Confirm the person — for example, Priya Sharma — resolves to a person record, that the sender has delegated sending, and that the workflow has sequence access.
+
+<Note>
+  Re-enrolling someone who is already in the sequence does not fail the run, so a duplicate enrollment is never the cause. Look at the recipient type, the sender, and access first.
+</Note>
+
+## Formula validation fails
+
+A [Formula](/reference/calculations/formula) block fails outright when an input is missing or the wrong type; it returns no partial result, so the whole block errors.
+
+- A numeric variable is empty, so the formula has nothing to compute. This is the most common cause.
+- An input carried unexpected text where a number was expected.
+- The formula uses an invalid operator or function.
+
+**Fix.** Set a fallback of `0` on every numeric variable that could be empty — this is the documented fix and belongs on essentially every formula you write. Then test the block against real run data in the [run viewer](/explanation/runs-and-debugging) to confirm the inputs resolve to the types the formula expects.
+
+## Credit usage is higher than expected
+
+Unexpected credit spend comes from volume, not from a single pricey block: a workflow firing more often than you thought, or a paid block running on records it should have filtered out first.
+
+- An unscoped trigger fires on far more events than intended. Scope the trigger to a specific attribute where possible.
+- A [Loop](/reference/utilities/loop) wraps a 1-credit write, so the per-run cost scales with the number of items.
+- An AI block runs before the [Filter](/reference/conditions/filter), so it processes records that a filter would have excluded.
+- Two duplicate workflows are both active, doubling the writes.
+
+**Fix.** Open the [run viewer](/explanation/runs-and-debugging) to inspect run volume, the executed path, and per-run credits, then cross-check against billing usage. Move any [Filter](/reference/conditions/filter) ahead of paid blocks, set a Loop **Limit** while testing, and disable duplicate workflows. For the per-block costs and plan allowances behind these numbers, see [credits & pricing explained](/reference/credits-and-pricing).
+
+<Note>
+  Per-workflow credit caps were removed in the new engine, so there is no cap to set as a safety net. Control spend by scoping triggers, filtering before paid blocks, and limiting loops instead.
+</Note>
+
+## See also
+
+- [Production runbook](/troubleshooting/runbook)
+- [Runs, debugging & publishing](/explanation/runs-and-debugging)
+- [Variables & data passing](/explanation/variables)
+- [Choosing the right trigger](/explanation/triggers)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+
+---
+
+_Source: [Attio Help Center — Troubleshooting workflows](https://attio.com/help/reference/automations/workflows/troubleshooting-workflows). Last reviewed against the Attio Help Center, June 2026._

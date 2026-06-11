@@ -1,0 +1,20 @@
+---
+title: Troubleshooting
+description: Troubleshooting a failing Attio workflow starts in the run viewer, not in the block editor.
+icon: stethoscope
+---
+
+Troubleshooting a failing Attio workflow starts in the run viewer, not in the block editor. The run viewer shows you the exact inputs each block received and the outputs it produced, so you can trace upstream to where the first wrong value entered the chain. Reach for it before you change any configuration, because most "broken" workflows are wired correctly and fed bad data. For the run viewer, draft-versus-published runs, and retry semantics, see [Runs, debugging & publishing](/explanation/runs-and-debugging).
+
+<CardGroup cols={2}>
+  <Card title="Common errors" icon="triangle-alert" href="/troubleshooting/common-errors">
+    Match a symptom to its cause and fastest fix, from a workflow that never fired to an empty variable, a list-entry mismatch, or unexpected credit usage.
+  </Card>
+  <Card title="Production runbook" icon="clipboard-list" href="/troubleshooting/runbook">
+    Step-by-step procedures for live incidents: failed runs, runaway volume, a bad data write, an external-app outage, and the weekly review that catches them early.
+  </Card>
+</CardGroup>
+
+---
+
+_Source: [Attio Help Center — Troubleshooting workflows](https://attio.com/help/reference/automations/workflows/troubleshooting-workflows). Last reviewed against the Attio Help Center, June 2026._

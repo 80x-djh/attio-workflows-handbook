@@ -14,36 +14,32 @@ Thanks for helping keep this handbook accurate. It only stays useful if every cl
 Every behavioral or cost claim needs **one** of:
 
 1. A link to an official Attio source (docs, changelog, help center), or
-2. A `verified in workspace on <date>` note describing what you observed.
+2. A documented workspace observation describing what you saw and when.
 
 PRs without sourcing are closed. "It probably works like X" is not a contribution.
 
 ## Before you write
 
-Read `STYLE.md` first. Page anatomy (frontmatter, section order, See also) is enforced by CI:
+Read [STYLE.md](./STYLE.md) — it is the enforced writing standard (MDN-style page anatomy, Mintlify components, fact discipline). Then preview and check your change locally:
 
 ```sh
-npm run build
-node scripts/check-pages.mjs
+npm i -g mint
+cd mintlify
+mint dev             # preview
+mint validate        # strict build — must pass
+mint broken-links    # must report no broken links
 ```
 
-Both must pass before a PR can merge.
-
-## Running locally
-
-```sh
-npm install
-npm run dev
-```
+`mint validate` and `mint broken-links` also run in CI on every pull request.
 
 ## PR checklist
 
-- [ ] `page-type` frontmatter set correctly
-- [ ] "See also" section present
-- [ ] Example values are realistic (real-looking object/attribute names, not `foo`/`bar`)
-- [ ] No restated credit tables — link to [/start/credits-and-pricing/](https://handbook.80x.ai/start/credits-and-pricing/) instead
-- [ ] Every behavioral/cost claim is sourced (link or verification note)
-- [ ] `npm run build` and `node scripts/check-pages.mjs` pass
+- [ ] Page follows the anatomy for its type in [STYLE.md](./STYLE.md) (opening summary, section order, `## See also`)
+- [ ] Mintlify components only — no Starlight `:::` asides, no Astro imports
+- [ ] Internal links are root-relative with no trailing slash, and resolve (`mint broken-links` passes)
+- [ ] Example values are realistic (`jane@acme.com`, `Priya Sharma`), never `foo`/`bar`/`test123`
+- [ ] No restated credit tables — link to [/reference/credits-and-pricing](https://handbook.80x.ai/reference/credits-and-pricing) instead
+- [ ] Every behavioral/cost claim is sourced (official link or a workspace observation)
 
 ## Licensing of contributions
 

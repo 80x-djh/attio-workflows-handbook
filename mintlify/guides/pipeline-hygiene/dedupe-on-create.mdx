@@ -1,0 +1,170 @@
+---
+title: Dedupe on create
+description: Catch duplicate companies and people the instant a record is created by matching on a reliable key and flagging collisions for human review.
+icon: copy-check
+---
+
+Catch duplicate companies and people the instant a record is created by matching on a reliable key and flagging collisions for human review. This recipe fires on the [Record created](/reference/triggers/record-created) trigger, looks up an existing match with [Find records](/reference/records/find-records), and branches with [If](/reference/conditions/if). When a match exists, it consolidates safe fields with [Update record](/reference/records/update-record), drops the new record onto a review list with [Add record to list](/reference/lists/add-record-to-list), and posts a heads-up through the [Slack](/reference/integrations) block so a person decides what to merge. A new record is the cheapest moment to catch a duplicate, because nothing downstream has attached to it yet.
+
+| | |
+| --- | --- |
+| **Difficulty** | Advanced |
+| **Time to build** | ~20 minutes |
+| **Trigger** | [Record created](/reference/triggers/record-created) (People or Companies) |
+| **Blocks used** | [Find records](/reference/records/find-records), [If](/reference/conditions/if), [Update record](/reference/records/update-record), [Add record to list](/reference/lists/add-record-to-list), [Slack](/reference/integrations) |
+| **Credit cost per run** | 0 credits when no match; up to 3 credits when a match is found, consolidated, and posted to Slack |
+| **Plan required** | Plus and above |
+
+## Prerequisites
+
+Confirm each item before you build, because a missing key or an unscoped list turns this recipe into a source of false positives.
+
+- **Plan:** Plus or higher, which runs on the new Workflows engine.
+- **Integrations:** Slack is connected to the workspace and has a channel the workflow can post to, such as `#crm-hygiene`.
+- **Objects and attributes:** the Companies object has a populated `domain` attribute, or the People object has a populated `email` attribute — whichever you are deduping. The chosen key must be the field your team actually fills in, not an optional one.
+- **A review list:** a list named "Possible duplicate" exists on the same object, with at least a `Matched record` reference attribute and a `Reviewed?` checkbox so a person can clear entries. See [Records vs list entries](/explanation/records-vs-list-entries) for why a list is the right home for review state.
+- **Access:** the workflow runs under the workspace's automation identity. Confirm in [Permissions & workflow access](/explanation/permissions-and-access) that this identity can read the object and write to the list.
+
+## How it works
+
+The workflow reads the new record's dedup key, searches the same object for any other record carrying that key, and branches on the result. When a match exists, it consolidates the obviously-safe fields onto the older record and flags the new one for human review. When no match exists, the run stops for free. The workflow never auto-merges, because a single key collision can still be two different real-world entities — a deliberate split is safer than a wrong merge.
+
+The blocks execute in this order:
+
+1. [Record created](/reference/triggers/record-created) fires on a new Company or Person.
+2. [Find records](/reference/records/find-records) searches the same object for the matching key and excludes the new record's own ID.
+3. [If](/reference/conditions/if) checks whether Find returned at least one record.
+4. On the match branch, [Update record](/reference/records/update-record) consolidates fields onto the existing record, [Add record to list](/reference/lists/add-record-to-list) flags the new record for review, and the [Slack](/reference/integrations) block posts a heads-up.
+5. On the no-match branch, the [If](/reference/conditions/if) condition stops the run, which costs nothing.
+
+## Build steps
+
+<Steps>
+  <Step title="Add the Record created trigger">
+    Create a new workflow and add the [Record created](/reference/triggers/record-created) trigger. Scope it to a single object: run one copy for Companies and a separate copy for People, because the dedup key differs between them.
+
+    | Field | Value |
+    | --- | --- |
+    | Trigger | Record created |
+    | Object | Companies |
+    | Run as | CRM Automation (workspace bot identity) |
+  </Step>
+
+  <Step title="Find a record with the same key">
+    Add a [Find records](/reference/records/find-records) block. Search the same object for any record whose key equals the new record's key, and exclude the new record itself so a record never matches on its own value.
+
+    | Field | Value |
+    | --- | --- |
+    | Object | Companies |
+    | Filter — Domain | is `{{trigger.record.domain}}` |
+    | Filter — Record ID | is not `{{trigger.record.id}}` |
+    | Sort | Created at, ascending (oldest first) |
+    | Limit | 5 |
+
+    For People, set the filter to `email is {{trigger.record.email}}`. Use one exact, normalized key, such as `acme.com`, rather than a partial name match.
+  </Step>
+
+  <Step title="Branch on whether a match exists">
+    Add an [If](/reference/conditions/if) condition that checks whether Find returned anything. When the count is zero, the condition stops the run for free.
+
+    | Field | Value |
+    | --- | --- |
+    | Condition | `{{step2.records.count}}` is greater than `0` |
+    | If true | continue to the consolidation step |
+    | If false | stop run |
+  </Step>
+
+  <Step title="Consolidate safe fields onto the existing record">
+    On the true branch, add an [Update record](/reference/records/update-record) block that targets the oldest match — the first record Find returned. Copy only fields that are unambiguously additive: fill blanks on the existing record from the new one. Never overwrite a populated field, and never delete the new record automatically.
+
+    | Field | Value |
+    | --- | --- |
+    | Record to update | `{{step2.records.first.id}}` |
+    | Description | keep existing if set, else `{{trigger.record.description}}` |
+    | LinkedIn | keep existing if set, else `{{trigger.record.linkedin}}` |
+    | Owner | leave unchanged |
+  </Step>
+
+  <Step title="Flag the new record for human review">
+    Add an [Add record to list](/reference/lists/add-record-to-list) block that puts the *new* record onto the "Possible duplicate" list with a pointer to its match. This is the safety valve: a person, not the workflow, decides the merge.
+
+    | Field | Value |
+    | --- | --- |
+    | List | Possible duplicate |
+    | Record to add | `{{trigger.record.id}}` |
+    | Matched record | `{{step2.records.first.id}}` |
+    | Reviewed? | `No` |
+  </Step>
+
+  <Step title="Post a Slack heads-up">
+    Add a [Slack](/reference/integrations) block so the data owner sees the collision in real time rather than discovering it in a report.
+
+    | Field | Value |
+    | --- | --- |
+    | Channel | `#crm-hygiene` |
+    | Message | `Possible duplicate: "{{trigger.record.name}}" ({{trigger.record.domain}}) matches an existing record. Added to the review list — please confirm before merging. Owner: Priya Sharma` |
+  </Step>
+</Steps>
+
+## Variable mapping
+
+| Variable | Source block | Field | Example value |
+| --- | --- | --- | --- |
+| New record key | [Record created](/reference/triggers/record-created) | `trigger.record.domain` | `acme.com` |
+| New record ID | [Record created](/reference/triggers/record-created) | `trigger.record.id` | `rec_8f2a…` |
+| New record name | [Record created](/reference/triggers/record-created) | `trigger.record.name` | `Acme Corp` |
+| Match count | [Find records](/reference/records/find-records) | `step2.records.count` | `1` |
+| Matched record ID | [Find records](/reference/records/find-records) | `step2.records.first.id` | `rec_1b90…` |
+| Owner notified | [Slack](/reference/integrations) | message body | `Priya Sharma` |
+
+For People runs, the key variable is `trigger.record.email`, for example `jane@acme.com`. See [Variables & data passing](/explanation/variables) for the full reference syntax.
+
+## Credit cost worked example
+
+The [Record created](/reference/triggers/record-created) trigger, the [Find records](/reference/records/find-records) lookup, and the [If](/reference/conditions/if) condition are all free — a condition that stops the run costs nothing. Only the writes on the match branch cost credits:
+
+- [Update record](/reference/records/update-record) costs 1 credit.
+- [Add record to list](/reference/lists/add-record-to-list) costs 1 credit.
+- [Slack](/reference/integrations) costs 1 credit.
+
+A clean create with no match costs 0 credits. A flagged duplicate costs 3 credits with the Slack step, or 2 credits without it.
+
+Suppose your team creates 800 companies a month and roughly 4% collide on domain, which is 32 flagged duplicates. That works out to `32 × 3 = 96 credits` a month, while the other 768 creates cost nothing. Compare that monthly total against your plan's included allowance on [Credits & pricing explained](/reference/credits-and-pricing). This recipe adds no AI block, so there is no variable token-based cost to estimate. If you later add a [Classify record](/reference/ai/classify-record) step to score fuzzy matches, gate it behind the [If](/reference/conditions/if) so it runs only on collisions, then sample about 10 records and read the per-run cost in the run viewer rather than assuming a fixed number.
+
+## Test plan
+
+1. **Create a known duplicate.** With the workflow live, create a new company `Acme Corp` with domain `acme.com` while an `acme.com` record already exists. This fires [Record created](/reference/triggers/record-created).
+2. **Check Find.** In run history, open the [Find records](/reference/records/find-records) step and confirm it returned exactly the older `acme.com` record and excluded the new one. The value of `step2.records.count` should be `1`.
+3. **Check the branch.** The [If](/reference/conditions/if) condition should resolve true and continue.
+4. **Check the writes.** Confirm [Update record](/reference/records/update-record) filled only blank fields on the older record, [Add record to list](/reference/lists/add-record-to-list) added the new record to "Possible duplicate" with the match pointer, and the [Slack](/reference/integrations) block posted to `#crm-hygiene`.
+5. **Send a deliberately failing input.** Create `Globex Inc` with domain `globex.io`, a domain nothing else uses. The run should reach [If](/reference/conditions/if), resolve false, and stop. In run history the run shows 0 credits and no writes. If it still flags something, your Find filter is not using a unique key.
+6. **Confirm where to look.** Open [Runs, debugging & publishing](/explanation/runs-and-debugging) to inspect each step's inputs, outputs, and credit usage for both runs.
+
+## Failure modes
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Every new record flags itself | The Find filter does not exclude the trigger record | Add `Record ID is not {{trigger.record.id}}` to the [Find records](/reference/records/find-records) filter. |
+| Real distinct companies get consolidated | The key is not actually unique, such as matching on name | Switch to a unique key — `domain` for companies, `email` for people — and normalize case and whitespace. |
+| Existing data gets clobbered | [Update record](/reference/records/update-record) overwrites populated fields | Fill only blanks and keep the existing value when it is set. Never auto-delete the new record. |
+| Workflow loops on its own update | An update fires another create-style chain | This trigger fires on create, not update, so it does not re-fire in this recipe. If you add an update-based variant, review [Infinite loops and safety](/explanation/infinite-loops-and-safety). |
+| Obvious duplicates go unflagged | Records share a real-world entity but not the exact key, such as a typo in the domain | Accept that exact-key dedup misses fuzzy cases and add a separate review pass. Do not loosen the key into false positives. |
+| Slack step fails | The channel was renamed or the bot was removed | Reconnect Slack and reselect `#crm-hygiene` in the [Slack](/reference/integrations) block. |
+
+## Variations
+
+### People by email and companies by domain
+
+Run two copies of this workflow. For People, scope the [Record created](/reference/triggers/record-created) trigger to People and set the [Find records](/reference/records/find-records) filter to `email is {{trigger.record.email}}`. Everything else — the [If](/reference/conditions/if), the flag, and the Slack post — stays the same. Do not try to handle both objects in one workflow, because the keys and consolidation fields differ.
+
+### Flag only, no consolidation
+
+When your team does not trust automated field copying, remove the [Update record](/reference/records/update-record) step. Keep [Find records](/reference/records/find-records), the [If](/reference/conditions/if), [Add record to list](/reference/lists/add-record-to-list), and the [Slack](/reference/integrations) heads-up. This drops the per-flag cost to 2 credits and leaves every merge decision to a person reviewing the "Possible duplicate" list.
+
+## See also
+
+- [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep)
+- [Records vs list entries](/explanation/records-vs-list-entries)
+- [Find records](/reference/records/find-records)
+- [Add record to list](/reference/lists/add-record-to-list)
+- [Merge duplicate records](https://attio.com/help/apps/other-apps/merging-records)

@@ -1,0 +1,80 @@
+---
+title: Third-party blocks
+description: Third-party blocks come from connected apps and let workflows receive events from external systems or push actions out to them.
+icon: blocks
+---
+
+Third-party blocks come from connected apps and let workflows receive events from external systems or push actions out to them. They appear in the block picker once you connect the app, and they fall into two shapes: triggers that start a workflow when something happens in the outside tool, and actions that send data outward when the workflow runs. This page covers what those blocks can do, what they cost, and how to ship them without writing to production systems by accident.
+
+## Understanding what third-party blocks cover
+
+A connected app contributes its own triggers and actions to the workflow builder. The exact set depends on the app, but the common patterns are:
+
+- **Slack alerts** for stage changes and new inbound leads. See [Slack deal alerts on stage change](/guides/route-and-sequence/slack-deal-alerts) for a full build.
+- **Form intake** from Typeform and similar tools, which arrives as a trigger you can route into a record.
+- **Sequence activity** from Outreach and other engagement platforms.
+- **Campaign sync** with Mailchimp and similar email tools.
+- **Ecosystem actions** for Webflow, Notion, Linear, and other connected apps.
+- **Custom app blocks** you build yourself with the App SDK (software development kit). See [App SDK custom blocks](/guides/platform-patterns/app-sdk-custom-blocks).
+
+When no native block exists for a service, the [Send HTTP request](/reference/utilities/send-http-request) block calls any REST API directly, so an absent integration is rarely a hard stop.
+
+## Connecting an app first
+
+A block only appears in the builder after its app is connected to the workspace. Connect the app before you start wiring a workflow around it.
+
+<Steps>
+  <Step title="Connect the app in workspace settings">
+    Open the app's integration page in your Attio workspace settings and authorize it. The member who completes this step owns the connection.
+  </Step>
+  <Step title="Add the block in the workflow builder">
+    In the workflow editor, open the block picker and search for the app by name. Its triggers and actions now appear alongside the native blocks.
+  </Step>
+  <Step title="Map the inputs to your data">
+    Configure the block's fields, referencing earlier outputs where needed — for example, sending `jane@acme.com` to a Mailchimp audience or posting a deal name to `#revenue` in Slack.
+  </Step>
+</Steps>
+
+## Confirming an integration block's cost
+
+An integration block that sends or receives data externally generally costs 1 credit each time it executes. Free logic blocks such as conditions and delays still consume no credits, and AI blocks remain variable.
+
+The block sidebar is the authoritative place to confirm a cost before you build:
+
+- A fixed-cost block shows its credit cost.
+- An AI block shows a dynamic cost.
+- A free block shows no cost.
+
+For the full credit table, plan allowances, and timeout numbers, see [Credits & pricing explained](/reference/credits-and-pricing). Per-workflow credit caps were removed in the new engine, so there is no cap to set on integration spend — control it with conditions and filters instead.
+
+## Treating external writes as production operations
+
+A block that writes to Slack, Mailchimp, Outreach, or any other live system is a production operation, not a draft. Build it with the same care you would give a write to your own CRM.
+
+<Warning>
+  An external action fires for real every time the workflow runs. A misconfigured Slack or Mailchimp block can message customers or sync the wrong audience before you notice. Gate every external write behind a [condition or filter](/explanation/conditions-and-filters), and test against a safe record such as `Priya Sharma` at `acme.com` before you publish.
+</Warning>
+
+## Planning for credential ownership
+
+The member who connects an app owns that connection, and the connection's access leaves with them. If that person changes roles or leaves the company, every workflow that depends on their connection can stop working.
+
+Decide up front who owns each connection, and prefer a shared or service account over a personal one for anything business-critical. Review ownership whenever a team member's status changes.
+
+## Replacing repeated HTTP calls with a custom block
+
+When a [Send HTTP request](/reference/utilities/send-http-request) call to the same service becomes a repeated pattern across workflows, package it as a custom workflow block with the App SDK. A custom block hides the authentication and request shape behind named inputs, so colleagues configure it like any native block instead of re-deriving the request each time. See [HTTP and JSON patterns](/guides/platform-patterns/http-json-patterns) for when to stay with a raw request, and [App SDK custom blocks](/guides/platform-patterns/app-sdk-custom-blocks) for the build.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Send HTTP request](/reference/utilities/send-http-request)
+- [App SDK custom blocks](/guides/platform-patterns/app-sdk-custom-blocks)
+- [HTTP and JSON patterns](/guides/platform-patterns/http-json-patterns)
+- [Slack deal alerts on stage change](/guides/route-and-sequence/slack-deal-alerts)
+- [Credits & pricing explained](/reference/credits-and-pricing)

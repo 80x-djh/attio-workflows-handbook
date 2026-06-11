@@ -1,0 +1,115 @@
+---
+title: Conditions & filters
+description: Conditions are the attribute-operator-value tests that drive every decision in an Attio workflow, shared by the Filter, If, and Switch blocks.
+icon: filter
+---
+
+Conditions are the attribute-operator-value tests that drive every decision in an Attio workflow, shared by the [Filter](/reference/conditions/filter), [If](/reference/conditions/if), and [Switch](/reference/conditions/switch) blocks. A condition reads a value, compares it against a target, and returns true or false. Each of the three decision blocks wraps that same machinery in a different shape: Filter gates a single path, If splits into two, and Switch routes into many.
+
+Learn the condition system once and all three blocks become interchangeable in your head. The skill that matters for a go-to-market (GTM) engineer is not memorizing which block to reach for — it is writing condition logic that evaluates the way you read it, so a workflow guarding a credit-burning AI step or a customer-facing email never fires on the wrong record.
+
+All three decision blocks are free in the new engine. They consume no credits, so you can layer them as densely as the logic needs, and you can put the cheapest, most selective check first in any workflow to spare every paid block downstream. This page covers how to build a condition, how operators differ by attribute type, how multi-value attributes and trigger outputs behave, the `and`/`or` mistake that lets the wrong records through, and where to place conditions for the lowest cost.
+
+## Building a condition
+
+A condition is three parts in order: an **attribute**, an **operator**, and a **value**. You pick the attribute to read, choose how to compare it, and supply the value to compare against. The simplest useful condition gates a [Filter](/reference/conditions/filter) so that only the records you care about continue.
+
+Consider a workflow on a deal that should proceed only for won deals. Add a Filter immediately after the trigger and configure one condition:
+
+| Part | Value |
+| --- | --- |
+| Attribute | `Stage` |
+| Operator | `is` |
+| Value | `Won` |
+
+A deal sitting at `Won` passes the Filter and the run continues; a deal at `Negotiation` stops at the Filter, and nothing downstream executes.
+
+To combine tests, chain conditions with **and** or **or**. Conditions joined by `and` must all be true; conditions joined by `or` need only one. For logic that mixes the two — `(A and B) or (C and D)` — open the condition's three-dot menu and choose **Convert to advanced condition** to create a nested group. Nested groups are the only correct way to express mixed precedence, and the next sections show why a flat list gets it wrong.
+
+## Choosing operators by attribute type
+
+The operators Attio offers depend on the attribute's type, because comparing text is not the same as comparing a date. You will not find `contains` on a number, and you will not find `greater than` on a status. This table lists the operators available per type.
+
+| Attribute type | Operators |
+| --- | --- |
+| Text | is, is not, contains, does not contain, starts with, ends with, empty, not empty |
+| Number / currency | greater than, greater or equal to, less than, less or equal to, is, is not, empty, not empty |
+| Date / timestamp | after, at or after, before, at or before, empty, not empty |
+| Select / status | is, is not, empty, not empty |
+| Any | empty, not empty |
+
+Suppose you want only enterprise-sized deals to continue. On a `Deal value` currency attribute, configure the condition with the `greater or equal to` operator and the value `50000`:
+
+| Part | Value |
+| --- | --- |
+| Attribute | `Deal value` |
+| Operator | `greater or equal to` |
+| Value | `50000` |
+
+A deal worth $80,000 passes; a deal worth $12,000 stops at the Filter. The `empty` and `not empty` operators exist on every type, which is how you guard against missing data — `Owner is not empty` keeps a routing step from running on an unowned record.
+
+## Matching multi-value attributes
+
+Multi-value attributes — multi-selects and multi-reference relationships — hold more than one value at once, so Attio evaluates a condition against the whole set. A condition is true **if any one value in the set matches**. There is no built-in operator that requires every value to match.
+
+Take a `Tags` multi-select that can hold `Customer`, `Partner`, and `Champion` on the same record. A condition checking that set behaves like this:
+
+| Part | Value |
+| --- | --- |
+| Attribute | `Tags` |
+| Operator | `contains` |
+| Value | `Customer` |
+
+A record tagged `Partner` and `Customer` passes, because one of its tags is `Customer`; a record tagged only `Partner` does not. If you genuinely need "every value matches" semantics — for example, "all tags are in my approved set" — there is no condition operator for it, so evaluate the rule in an [Execute code](/reference/calculations/execute-code) block instead and branch on its boolean output. The Execute code block costs `Variable (complexity-based)`.
+
+## Testing trigger and block outputs
+
+Conditions are not limited to record attributes. A condition can read any output produced by an earlier block in the path — the trigger's new and previous values, a parsed webhook field, a match count from a Find block. This is what turns Filter from a record gate into a precise guard against the bugs that plague event-driven workflows.
+
+The most valuable pattern is the true-transition guard. An attribute-change trigger fires on every save, including re-saves that do not actually change the value you care about. Pair two conditions with `and` to fire only on a real transition into `Won`:
+
+| Condition | Operator | Value |
+| --- | --- | --- |
+| `New value` | is | `Won` |
+| `Previous value` | is not | `Won` |
+
+A deal moving from `Negotiation` to `Won` passes both conditions and the run proceeds once; a deal already at `Won` that is saved again fails the second condition and stops. The same technique builds the standard [infinite-loop guard](/explanation/infinite-loops-and-safety) — a condition of `Updated by` type `is not` `Workflow` keeps a workflow from re-triggering on its own writes. After a [Parse JSON](/reference/utilities/parse-json) block, you can route a [Switch](/reference/conditions/switch) on any field in the parsed payload.
+
+## Avoiding the and/or trap
+
+Mixing `and` with `or` in a flat condition list is the single most common way a filter passes records it should not. A flat list does not carry parentheses, so the engine applies its own precedence, and the result rarely matches how you read the line. The classic broken filter reads like this:
+
+> `Stage is Won` **or** `Stage is Lost` **and** `Owner is Priya Sharma`
+
+You probably meant "the deal is closed (won or lost) and owned by Priya Sharma." Written flat, the `and` binds tighter, so the filter actually passes *any* won deal regardless of owner, plus lost deals owned by Priya Sharma. To get the intended logic, convert to an advanced condition and build a nested group: an outer `and` joining `Owner is Priya Sharma` with an inner `or` group of `(Stage is Won or Stage is Lost)`.
+
+| Group | Condition |
+| --- | --- |
+| Outer (`and`) | `Owner is Priya Sharma` |
+| Inner (`or`) | `Stage is Won` or `Stage is Lost` |
+
+Now a won deal owned by jane@acme.com fails, and only Priya Sharma's closed deals pass. When a filter lets through records it should not, check the `and`/`or` structure first — Attio's own troubleshooting guidance points to the same culprit.
+
+## Placing conditions for lowest cost
+
+Where you put a condition decides what the rest of the workflow costs. Conditions are free; the AI, HTTP, sequence, and write blocks behind them are not. The rule is to put your cheapest, most selective check immediately after the trigger, so the run stops before it reaches anything billable.
+
+Compare two shapes of the same workflow. With the Filter first, the Filter stops the run on the 95% of events that do not qualify, and those runs cost nothing because no paid block downstream ever executes. With the web agent first, the agent runs on every single event and you pay for it before the Filter ever discards the result.
+
+Front-loading the Filter is free and saves the entire downstream bill on every run that does not matter. For the per-block credit figures behind that math, see [Credits & pricing explained](/reference/credits-and-pricing).
+
+<Note>
+**First match wins, and an empty Default stops silently.** A [Switch](/reference/conditions/switch) evaluates its cases in order and runs only the first true path, so order cases from most to least specific. If no case matches and the Default path is empty, the run ends quietly at the Switch — connect a Default (even just a Slack ping) whenever "none matched" should do something.
+</Note>
+
+## See also
+
+- [Filter](/reference/conditions/filter)
+- [If](/reference/conditions/if)
+- [Switch](/reference/conditions/switch)
+- [Variables & data passing](/explanation/variables)
+- [Infinite loops and safety](/explanation/infinite-loops-and-safety)
+
+---
+
+*Source: [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.*

@@ -1,0 +1,86 @@
+---
+title: Delete list entry
+description: The Delete list entry block (Lists) removes one entry from an Attio list while leaving its underlying record untouched.
+icon: trash-2
+---
+
+The **Delete list entry** block (Lists) removes one entry from an Attio list while leaving its underlying record untouched. It deletes the link between a record and a list, not the record itself, so the company or person stays in your object. Because the deletion is a permanent write, point the block at a single, confirmed entry rather than the broad output of a lookup.
+
+| | |
+| --- | --- |
+| **Category** | Lists |
+| **Credit cost** | 1 credit |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All paid plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| List | List | Yes | None | The list the entry belongs to. |
+| Entry | List entry | Yes | None | The specific list entry to delete. Pass a single entry, not a collection. |
+
+## Outputs
+
+None.
+
+The block does not expose a useful downstream output. To act on the same record after deletion, reference the record from an earlier step such as the trigger or a [Find records](/reference/records/find-records) lookup, because no `{{ steps.delete_list_entry.* }}` value is available afterward.
+
+## Behavior
+
+The block deletes exactly one list entry per run. It accepts a list entry, so wire it to a value the workflow has already resolved to a single entry, such as the trigger entry or one item from a loop.
+
+Deletion is permanent and immediate. Attio removes the entry and any list-only attribute values stored on it, including stage, source, and priority. The underlying record keeps all of its object attributes and stays in the workspace.
+
+If the entry no longer exists when the block runs, the run fails on that block rather than skipping. To process several entries safely, resolve them with [Find list entries](/reference/lists/find-list-entries) and pass each one through a [Loop](/reference/utilities/loop) so that one missing entry fails only its own iteration.
+
+## Gotchas
+
+- **It deletes the entry, not the record.** The block removes the record's membership in one list and erases that list's entry attributes. The record itself survives, so use it when you want to remove something from a pipeline view without deleting the company or person. See [Records vs list entries](/explanation/records-vs-list-entries).
+- **The deletion is permanent.** There is no undo and no downstream output to recover the deleted values. Gate the block behind an [If](/reference/conditions/if) or [Filter](/reference/conditions/filter) condition so it only fires on the exact records you mean to remove.
+- **A missing entry fails the run.** If the entry was already deleted or never matched, the block errors instead of passing. When the entry might not exist, confirm it with [Find list entries](/reference/lists/find-list-entries) first and branch on whether a match was returned.
+
+## Examples
+
+### Removing a lost deal from the onboarding list
+
+When a deal for Acme is marked Lost, drop Acme from the active onboarding list so the Customer Success view stays clean.
+
+| Field | Value |
+| --- | --- |
+| List | `Onboarding` |
+| Entry | `{{ steps.find_list_entries.entries[0] }}` |
+
+Acme is removed from the onboarding list, the deal record stays in the `Deals` object, and the onboarding view no longer shows Acme.
+
+### Pruning a duplicate pipeline entry
+
+After a [Find list entries](/reference/lists/find-list-entries) lookup returns two entries for the same company, delete the older one inside a [Loop](/reference/utilities/loop) so the pipeline shows a single card per account.
+
+```json
+{
+  "list": "Sales pipeline",
+  "entry": "{{ steps.loop.current_item }}"
+}
+```
+
+The duplicate entry for Acme is removed, one card remains on the `Sales pipeline` list, and the loop continues to the next matched company.
+
+## Credit cost worked example
+
+Each run of **Delete list entry** costs 1 credit because it is a write. A workspace that sweeps roughly 200 lost or stale deals off a pipeline list each month spends about 200 credits on this block. Compare that monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing); the lookup and condition blocks that feed it are free, so only the deletions themselves bill.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Add record to list](/reference/lists/add-record-to-list)
+- [Update list entry](/reference/lists/update-list-entry)
+- [Find list entries](/reference/lists/find-list-entries)
+- [Records vs list entries](/explanation/records-vs-list-entries)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

@@ -1,0 +1,100 @@
+---
+title: Record updated
+description: The Record updated trigger fires when an object attribute changes on an existing record in the selected object.
+icon: pencil
+---
+
+The **Record updated** trigger (Triggers) fires when an object attribute changes on an existing record in the selected object. Scope it to a single attribute whenever you can: an unscoped trigger fires on every change to any attribute on any record of the object, which is the leading cause of mystery credit burn. It deliberately ignores values set at creation time and changes to list attributes, so reach for [Attribute value changed](/reference/triggers/attribute-value-changed) or [List entry updated](/reference/triggers/list-entry-updated) when you need those.
+
+| | |
+| --- | --- |
+| **Category** | Triggers (automatic) |
+| **Credit cost** | Free |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All paid plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Object | Object | Yes | — | The object whose records the trigger monitors, such as `companies` or `deals`. |
+| Attribute | Attribute | No | All attributes | If set, the trigger fires only when this attribute changes. If unset, it fires on every change to any attribute on any record of the object. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Record | Record | The updated `companies` record for `acme.com` | The full record at the moment the trigger fires. |
+| Updated by | Actor | `Priya Sharma` | The person, integration, or workflow that performed the update. Filter on this to ignore a workflow's own writes. |
+| Timestamp | Datetime | `2026-06-11T14:32:00Z` | When the update happened. |
+| New value | Attribute value | `Customer Success` | Present only when the trigger is scoped to an attribute. |
+| Previous value | Attribute value | `Account Executive` | Present only when the trigger is scoped to an attribute. |
+
+Reference the updated record's identifier in a later block as `{{ steps.record_updated.record_id }}`, and reference a scoped attribute's change as `{{ steps.record_updated.new_value }}` and `{{ steps.record_updated.previous_value }}`.
+
+## Behavior
+
+The trigger fires once per update event on a record of the selected object. An update is any change to an object attribute after the record already exists, so an edit by a teammate, an enrichment write, an API `PATCH`, or another workflow all qualify.
+
+New and previous values exist only when you scope the trigger to a single attribute. An unscoped trigger reports that the record changed, but it cannot tell you which attribute changed or what the value was before, so transition filters such as `New value is X and Previous value is not X` work only on a scoped trigger.
+
+The trigger does not fire for two documented cases. It ignores values written during record creation, because a record created with a value was never "updated" — a deal created as `Won` never crosses this trigger. It also ignores changes to list attributes, because moving a record's stage on a pipeline list is a list-entry change rather than an object-attribute change. See [Records vs list entries](/explanation/records-vs-list-entries) for the distinction.
+
+Because any actor can update a record, including the workflows you build, the trigger can fire on its own writes. Filter on the actor or scope the trigger to an attribute your workflows never touch to keep a run from re-firing itself. See [Infinite loops and safety](/explanation/infinite-loops-and-safety) for the guard pattern.
+
+## Gotchas
+
+- **Unscoped is a run-volume firehose.** Without an attribute, every enrichment pass, every sync, and every bulk edit fires the trigger once per touched record, which floods run history and burns credits on whatever paid blocks follow. Scope the trigger to the one attribute the workflow cares about, and add a [Filter](/reference/conditions/filter) immediately after it as a second line of defense.
+- **The trigger re-fires its own writes.** If this workflow, or any workflow, updates the same object, that write is itself an update and starts the trigger again, which can loop. Guard it with a [Filter](/reference/conditions/filter) set to `Updated by → Type → is not → Workflow`, or scope the trigger to an attribute your workflows never write.
+- **New and previous values are missing on an unscoped trigger.** Transition logic such as `New value is X and Previous value is not X` reads `New value` and `Previous value`, which exist only on a scoped trigger. Scope the trigger to the attribute you are testing before you build the transition filter.
+- **Creation-time values never reach this trigger.** A record imported or created with the field already set does not count as an update, so a "field became X" rule misses every record born with X. Trigger on [Attribute value changed](/reference/triggers/attribute-value-changed) instead, which fires at creation and on later edits.
+- **Stage moves on a list never reach this trigger.** Pipeline stage usually lives as a list attribute, and changing it is a list-entry change, not an object-attribute change. Use [List entry updated](/reference/triggers/list-entry-updated) for pipeline movement.
+
+## Examples
+
+### Routing an ownership change to the new owner
+
+This workflow runs a handover when a company's account owner changes, while ignoring its own and other workflows' writes.
+
+| Field | Value |
+| --- | --- |
+| Trigger | Record updated |
+| Object | `companies` |
+| Attribute | `Owner` |
+| Filter | `Updated by → Type → is not → Workflow` |
+| Next block | [Create task](/reference/tasks/create-task) "Intro handover call" |
+| Assignee | `{{ steps.record_updated.new_value }}` |
+| Due date | Today plus 3 days, via [Adjust time](/reference/calculations/adjust-time) |
+
+When `Priya Sharma` reassigns the `acme.com` company to `Jane Okafor`, the trigger fires, the filter confirms a human made the change, and a handover task lands on Jane's queue due in three days.
+
+### Acting only on a true status transition
+
+This workflow alerts a channel when a company's status first becomes `At risk`, and ignores re-saves of the same status.
+
+```json
+{
+  "trigger": "Record updated",
+  "object": "companies",
+  "attribute": "Status",
+  "filter": {
+    "new_value": "At risk",
+    "previous_value": { "is_not": "At risk" }
+  }
+}
+```
+
+A re-save that leaves `Status` on `At risk` fails the `previous_value is_not At risk` test, so the alert fires only on the genuine move into `At risk` rather than on every save.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Attribute value changed](/reference/triggers/attribute-value-changed)
+- [List entry updated](/reference/triggers/list-entry-updated)
+- [Record created](/reference/triggers/record-created)
+- [Choosing the right trigger](/explanation/triggers)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

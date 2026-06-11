@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://handbook.80x.ai/sitemap-index.xml

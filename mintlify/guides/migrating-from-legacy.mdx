@@ -1,0 +1,123 @@
+---
+title: Migrate legacy workflows
+description: Migrating a legacy Attio workflow means rebuilding it in the new engine, testing it against real trigger data, and cutting over without duplicating writes.
+icon: arrow-right-left
+---
+
+Migrating a legacy Attio workflow means rebuilding it in the new engine, testing it against real trigger data, and cutting over without duplicating writes. You can no longer create new legacy workflows; existing ones keep running, and Attio says sunset notice will come "well in advance." Treat each migration like a production software replacement, not a one-click conversion: inventory the legacy workflow, rebuild it, test it on real data, then swap the two over deliberately.
+
+The new engine is where the better pricing and the new capabilities live. You get [agent blocks](/reference/agents/custom-agent), the [Execute code](/reference/calculations/execute-code) block, multi-trigger support, advanced variables, copy and paste across workspaces, retry, pause, and resume, and custom blocks built with the App SDK. None of that is reason to rush a write-enabled workflow into production before it is proven.
+
+<Note>
+The new engine reprices everything. Keep [Pricing changes](/guides/migrating-from-legacy/pricing-changes) open while you rebuild so a cheaper legacy step does not become an expensive one, and consult [Credits & pricing explained](/reference/credits-and-pricing) for the full credit model.
+</Note>
+
+## Migration order
+
+Sequence the work so the highest-leverage migrations land first and the safe, low-value ones wait. Migrate in this order:
+
+1. High-volume workflows where the cheaper new pricing matters now.
+2. Workflows that use legacy research blocks, which the [Web agent](/reference/agents/web-agent) replaces.
+3. Workflows with many logic, delay, and lookup steps, which run free in the new engine.
+4. Workflows that operators touch daily.
+5. Low-volume back-office workflows.
+
+Leave stable, low-value legacy workflows running until the high-leverage ones are done. A workflow that fires twice a month and writes nothing costly earns nothing by being rebuilt early.
+
+## Inventory the legacy workflow
+
+Document the legacy workflow before you change anything, because the new builder will not show you what the old one did once you start over. Capture each of the following:
+
+- The trigger and its trigger conditions.
+- Every block and every branch.
+- The variables passed between blocks.
+- The objects, lists, sequences, and apps the workflow touches.
+- The credit-heavy sections.
+- Whether the workflow writes to the same object or list that triggered it.
+
+Screenshot the legacy canvas before you touch anything. That last point — whether the workflow writes back to its own trigger source — decides whether a parallel run is safe, so flag it now rather than discovering it during cutover.
+
+## Rebuild and verify the new workflow
+
+Ask Attio can recreate a legacy workflow in the new builder. Treat that draft as a starting point rather than a guarantee. Rebuild with the assistant, then open the result and check every block against your inventory before you trust it.
+
+<Steps>
+<Step title="Generate a first draft with Ask Attio">
+Ask Attio to recreate the legacy workflow in the new builder. The new workflow is created disabled, which is what you want. Keep it disabled until testing passes.
+</Step>
+<Step title="Confirm the trigger mapped correctly">
+Open the new trigger and check it matches the legacy intent. Renamed triggers are a common trap: the legacy `Attribute changed` trigger is now [Attribute value changed](/reference/triggers/attribute-value-changed), so confirm the right one was chosen.
+</Step>
+<Step title="Check every variable's source">
+Walk each block and confirm its [variables](/explanation/variables) read from the block you expect. A draft can wire a variable to a plausible but wrong source, which surfaces only as an empty value at run time.
+</Step>
+<Step title="Confirm filters preserve the same logic">
+Compare each condition against the legacy version. The legacy `If/else` block is now [If](/reference/conditions/if), and a rebuilt branch can invert or drop a clause without an obvious error.
+</Step>
+<Step title="Re-check formatting and renamed options">
+Slack messages use standard Markdown in the new engine, so a message that relied on legacy formatting may render differently. Verify any renamed picklist options still map to the branches that depend on them.
+</Step>
+<Step title="Grant workflow write access">
+Confirm the new workflow has the write permissions it needs. Missing [access](/explanation/permissions-and-access) usually looks like a broken block, not a broken migration, so check it before you blame the build.
+</Step>
+</Steps>
+
+## Test with real trigger data
+
+Test the new workflow against real trigger data before it touches production, using test records wherever you can. Open the **Runs** tab and inspect each run, as covered in [Runs, debugging & publishing](/explanation/runs-and-debugging):
+
+- The inputs and outputs for each block.
+- The path the run actually took versus the path you expected.
+- The credit usage.
+- Any empty variables or yellow warnings.
+- The [loop](/reference/utilities/loop) iteration behavior, if the workflow processes many records.
+
+If you change the workflow after a failed run, trigger a fresh run to validate the fix. Retrying an old run replays the originally published version, so a retry will not pick up your edit.
+
+## Cut over safely
+
+Cut over only once the new workflow matches the legacy output on real data. Switch the two deliberately rather than flipping them at once.
+
+<Steps>
+<Step title="Publish the new workflow">
+Publish the new workflow so its current version is the one that runs.
+</Step>
+<Step title="Disable the legacy workflow">
+Disable the legacy workflow so the two cannot fire on the same trigger.
+</Step>
+<Step title="Fire one production-safe test">
+Trigger one production-safe test, such as a record you can later clean up, and confirm the new workflow handles it end to end.
+</Step>
+<Step title="Watch the first week">
+Watch failure notifications and credit usage for the first week. I check this daily for the first few days, then weekly through the first month.
+</Step>
+</Steps>
+
+<Warning>
+Do not run old and new write-enabled workflows in parallel unless you are deliberately testing duplicate-safe behavior. Two enabled workflows on the same trigger write twice, which duplicates records, double-enrolls sequences, and burns credits silently.
+</Warning>
+
+## Common migration surprises
+
+Several legacy names and behaviors changed in the new engine. Watch for these when your rebuilt workflow behaves differently from the original:
+
+- The `Attribute changed` trigger is now [Attribute value changed](/reference/triggers/attribute-value-changed).
+- The `If/else` block is now [If](/reference/conditions/if).
+- The `Research record` block is now the [Web agent](/reference/agents/web-agent).
+- Prompt-completion work now belongs in the [Custom agent](/reference/agents/custom-agent) block.
+- Slack messages use standard Markdown in the new engine.
+- Logic, delays, lookups, and round robin run free in the new engine.
+- AI blocks are priced per token rather than as fixed one- or ten-credit blocks, and the [Execute code](/reference/calculations/execute-code) block costs **Variable (complexity-based)**.
+- Workflow write access is still explicit. Missing access often looks like a broken block, not a broken migration.
+
+Per-workflow credit caps were removed in the new engine, so do not try to recreate one as a safety limit. For the full list of renamed and replaced blocks, see [Block changes reference](/guides/migrating-from-legacy/block-changes).
+
+## See also
+
+- [Pricing changes](/guides/migrating-from-legacy/pricing-changes)
+- [Block changes reference](/guides/migrating-from-legacy/block-changes)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+- [Runs, debugging & publishing](/explanation/runs-and-debugging)
+- [What's new in the 2026 Workflows engine](/explanation/whats-new)
+
+*Source: [Migrate your legacy workflows](https://attio.com/help/reference/automations/workflows/migrate-your-legacy-workflows), Attio Help Center. Last reviewed against the Attio Help Center, June 2026.*

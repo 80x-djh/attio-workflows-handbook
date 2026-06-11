@@ -1,0 +1,95 @@
+---
+title: Aggregate values
+description: The Aggregate values block (Calculations) reduces a list of numeric or currency values to a single sum, average, minimum, or maximum.
+icon: sigma
+---
+
+The **Aggregate values** block (Calculations) reduces a list of numeric or currency values to a single sum, average, minimum, or maximum. It is the standard way to roll up many records into one figure inside a run, such as totaling every open deal for a company. The result lives only in the run unless you write it to a record or list entry with a later block.
+
+| | |
+| --- | --- |
+| **Category** | Calculations |
+| **Credit cost** | Free — logic blocks consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Values | Number or currency list | Yes | None | A list of numbers or currency amounts, usually a variable from a [Find records](/reference/records/find-records) or [Find list entries](/reference/lists/find-list-entries) block. |
+| Aggregation type | Choice | Yes | None | One of `Sum`, `Average`, `Minimum`, or `Maximum`. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Aggregated result | Number or currency | `48000` | A single value computed across the input list. |
+
+Reference the aggregated result downstream as `{{ steps.aggregate_values.result }}`.
+
+## Behavior
+
+The block reads the entire input list at once and returns one value, so you run it after a block that has already gathered the records rather than once per item inside a [Loop](/reference/utilities/loop). `Sum` adds every value; `Average` divides the sum by the count; `Minimum` and `Maximum` return the smallest and largest values in the list.
+
+The input must resolve to numeric or currency values. Currency amounts aggregate on their numeric component, so a list of currency values returns a numeric result that you format when you write it back.
+
+The output is computed fresh on each run and is not stored anywhere on its own. To keep the figure, pass it into an [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) block in the same run. The block consumes no credits because it is a calculation, so the only credit cost in a roll-up flow comes from the lookup and the write.
+
+## Gotchas
+
+- **The result vanishes after the run.** The aggregated value is a run variable, not a stored field, so nothing persists once the run finishes. Write it to a record or list entry with [Update record](/reference/records/update-record) or [Update list entry](/reference/lists/update-list-entry) if the figure needs to stick.
+- **Text and other types are not aggregated.** The block expects numbers or currency, so feeding it a text attribute or a record reference produces no usable sum. Map the input to a numeric or currency attribute, or convert upstream with a [Formula](/reference/calculations/formula) block first.
+- **An empty input list has no values to roll up.** When the upstream [Find records](/reference/records/find-records) block returns nothing, there is no list to aggregate. Branch on the count with an [If](/reference/conditions/if) block before the aggregation so an empty result does not overwrite a stored total with a blank.
+
+## Examples
+
+### Totaling open pipeline for a company
+
+This flow rolls up the value of every open deal on a company and stores the total on the company record. A [Find records](/reference/records/find-records) block gathers the deals first, then **Aggregate values** sums their amounts.
+
+| Field | Value |
+| --- | --- |
+| Values | `{{ steps.find_records.deal_value }}` |
+| Aggregation type | `Sum` |
+
+With three open deals worth $20,000, $18,000, and $10,000, the block returns `48000`, which an [Update record](/reference/records/update-record) block then writes to the company's `total_pipeline_value` attribute.
+
+### Finding the largest deal in a territory
+
+This flow reports the biggest single deal in a region so a manager can see the top opportunity at a glance. A [Find records](/reference/records/find-records) block returns every deal tagged `EMEA`, and **Aggregate values** takes the maximum.
+
+```json
+{
+  "values": "{{ steps.find_records.deal_value }}",
+  "aggregation_type": "Maximum"
+}
+```
+
+Across deal values of $12,000, $44,000, and $9,500, the block returns `44000`, which a [Broadcast message](/reference/workspace/broadcast-message) block posts to the revenue team.
+
+### Averaging deal size for a daily digest
+
+This flow computes the average open-deal size for a [Recurring schedule](/reference/triggers/recurring-schedule) digest. A [Find records](/reference/records/find-records) block collects the open deals, and **Aggregate values** averages their amounts.
+
+| Field | Value |
+| --- | --- |
+| Values | `{{ steps.find_records.deal_value }}` |
+| Aggregation type | `Average` |
+
+Given deal values of $20,000, $18,000, and $10,000, the block returns `16000`, which the digest reports as the team's current average deal size.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Formula](/reference/calculations/formula)
+- [Find records](/reference/records/find-records)
+- [Update record](/reference/records/update-record)
+- [Variables & data passing](/explanation/variables)
+- [Daily pipeline digest to Slack](/guides/pipeline-hygiene/pipeline-digest)

@@ -1,0 +1,100 @@
+---
+title: Workflow governance
+description: Workflow governance is the set of naming, ownership, access, and review practices that keep production Attio workflows safe to operate.
+icon: shield-check
+---
+
+Workflow governance is the set of naming, ownership, access, and review practices that keep production Attio workflows safe to operate. A workflow that fires on a real trigger and writes to real records is infrastructure, not a convenience macro, so it earns the same discipline you give a deploy pipeline: a predictable name, a named owner, the least access that still works, and a recurring review.
+
+The cost of skipping governance is paid later and quietly. An unnamed workflow that nobody owns keeps spending credits after the person who built it leaves, a paused run sits unnoticed for a month, and a wiring mistake on a broadly permissioned workflow corrupts records at automation speed. None of these surface in the builder; they surface in the run history and the credit bill.
+
+This page gives you a working convention for each governance surface. After reading it you can name a new workflow so a teammate understands it at a glance, write a description that survives an offboarding, set access so only maintainers can touch live automations, and run a review cadence that catches drift before it becomes an incident.
+
+## Naming workflows predictably
+
+A workflow name states its subject, its trigger, and its outcome, so anyone scanning the workflow list reads intent without opening anything. Use a single fixed pattern and apply it to every workflow in the workspace:
+
+```text
+[Object/List] - [Trigger] -> [Outcome]
+```
+
+Each segment maps to a real part of the workflow. The first names the [object or list](/explanation/records-vs-list-entries) the workflow watches, the second names the [trigger](/explanation/triggers) that starts a run, and the third names what the run produces.
+
+```text
+Deals - Stage won -> Slack alert
+Inbound list - New entry -> Route owner
+Companies - Domain added -> Enrichment
+```
+
+A reader who has never opened `Deals - Stage won -> Slack alert` already knows it watches the `Deals` object, fires when a deal reaches a won stage, and posts to Slack — enough to decide whether it is the workflow they are looking for.
+
+## Documenting owner and intent
+
+The description carries the operating facts the name has no room for, so it is the first thing a future maintainer reads when a workflow misbehaves. Treat it as the workflow's runbook entry rather than a label, and include every field in this set:
+
+| Field | Why it belongs there |
+| --- | --- |
+| Owner | The person accountable when the workflow fails or overspends. |
+| Business purpose | The outcome the workflow exists to produce, in plain go-to-market (GTM) terms. |
+| Trigger | The exact event that starts a run, so volume is predictable. |
+| Expected monthly volume | The run count you expect, to baseline the review. |
+| Credit model | Which blocks spend credits and roughly how much per run. |
+| Rollback instruction | The first action to take to stop or reverse the workflow. |
+
+A complete description for the deal-alert workflow reads: owner Priya Sharma; purpose notify the deal team the moment a deal is won; trigger deal stage changes to Won; ~120 runs per month; one Slack message per run through a [third-party block](/reference/integrations), no credit-bearing AI blocks; rollback set the workflow to Off and re-publish.
+
+That single paragraph is what lets a teammate who has never seen the workflow disable it correctly during an incident — even if Priya is on holiday.
+
+## Granting the least access that works
+
+Three separate permission systems sit behind every workflow, and governance means setting each to the minimum that still lets the workflow run. The detail lives in [Permissions & workflow access](/explanation/permissions-and-access); the governance rule is short.
+
+Set **workspace access to the lowest level anyone should have**, usually Read only, then grant **Read and write** or **Full access** upward to the specific people who maintain automations. This matters because of one non-obvious rule: more specific settings can only grant *additional* access, never reduce it, so an individual "No access" assignment does nothing if the workspace default is already Full.
+
+```text
+Workspace default:  Read only
+Maintainers (Priya Sharma, Jane Cooper):  Full access
+Everyone else:  inherits Read only
+```
+
+With this configuration, only the two named maintainers can edit or publish a live revenue automation, and a new hire who joins the workspace can study workflows without being able to break one. Anyone with edit rights can change a live automation, so treat workflow edit access like production deploy rights, because that is what it is.
+
+<Warning>
+A workflow has **no write access to objects by default** and only gains it when an admin grants it deliberately, object by object. Grant write to one object at a time rather than broadly — a workflow with wide write access plus a wiring mistake can damage records at automation speed.
+</Warning>
+
+## Reviewing weekly, then monthly
+
+A governance review is a recurring read of the run history that catches drift before it becomes an incident, so it runs on a fixed cadence rather than only after something breaks. I check this weekly for the first month after a workflow launches, then settle into a lighter monthly pass once it is stable.
+
+The first-month weekly review looks for problems that show up early and cheaply:
+
+- Failed runs, traced in the workflow's [run history](/explanation/runs-and-debugging) to the first block that produced a wrong value.
+- Credit usage, compared against the expected per-run cost recorded in the description.
+- Duplicate records or tasks, the classic sign of a self-triggering workflow or a missing dedupe guard.
+- Actual run volume against the expected monthly volume in the description.
+
+Once a workflow is stable, the monthly review shifts to slower forms of drift — the kind that accumulate while nothing appears to be wrong:
+
+- The named owner is still at the company and still owns it.
+- Every attribute the workflow reads or writes still exists and still has the expected type.
+- Downstream app credentials, such as a connected Slack workspace, are still authorized.
+- No run has been left paused and forgotten.
+
+Running this pass on the deal-alert workflow surfaces, for example, that a `stage` attribute was renamed last week and the trigger now matches nothing — a silent failure the run count exposes immediately, because the expected ~120 runs dropped to zero.
+
+<Note>
+Credit usage is one of the most important review signals, and the full per-block cost table and plan allowances live in one place: [Credits & pricing explained](/reference/credits-and-pricing). Baseline each workflow's expected spend against that page rather than guessing.
+</Note>
+
+## See also
+
+- [Permissions & workflow access](/explanation/permissions-and-access)
+- [Runs, debugging & publishing](/explanation/runs-and-debugging)
+- [Production runbook](/troubleshooting/runbook)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+- [Overview of workflows](https://attio.com/help/reference/automations/workflows/overview-of-workflows)
+
+---
+
+*Sources: [Overview of workflows](https://attio.com/help/reference/automations/workflows/overview-of-workflows), [Manage access to objects](https://attio.com/help/reference/managing-your-data/objects/manage-access-to-objects), and [Manage workspace and seat credits](https://attio.com/help/reference/workspace-settings-billing/manage-workspace-and-seat-credits) (Attio Help Center). Last reviewed against the Attio Help Center, June 2026.*

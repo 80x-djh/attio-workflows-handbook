@@ -1,0 +1,89 @@
+---
+title: Round robin
+description: The Round robin block picks one workspace member from a configured set, cycling through the set across workflow runs.
+icon: users
+---
+
+The **Round robin** block (Workspace) picks one workspace member from a configured set, cycling through the set across workflow runs. It only selects a user; it never writes that selection anywhere, so you pair it with a write block such as [Update record](/reference/records/update-record) or [Create task](/reference/tasks/create-task) to act on the pick. Its rotation state persists across runs, which is what gives each successive run the next member in turn rather than a random repeat.
+
+| | |
+| --- | --- |
+| **Category** | Workspace |
+| **Credit cost** | Free — logic blocks consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Users | List of workspace members | Yes | None | The members the block cycles through. Order the set deliberately; rotation follows it. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Picked user | Workspace member | Priya Sharma | The single member selected on this run. |
+| Picked user's email | Email | priya@acme.com | The selected member's email address, ready to reference directly. |
+
+Reference the selected member downstream as `{{ steps.round_robin.picked_user }}`, and the member's email as `{{ steps.round_robin.picked_user_email }}`.
+
+## Behavior
+
+The block advances a rotation pointer each time it runs. On the first run it returns the first member in the configured set; on the next run it returns the second; and so on, wrapping back to the start after the last member. Because this pointer persists across workflow runs rather than resetting per run, two consecutive inbound leads route to two different members, which is the entire point of round-robin assignment.
+
+The block selects exactly one member per run and produces no record write of its own. Wire the picked user into a following block to assign an owner, set a task assignee, or address a notification.
+
+The configured set is a fixed list of members. The block does not check whether a member is out of office, over capacity, or otherwise eligible — it simply returns the next entry. Filter the run before the block reaches it if you need to route only qualifying leads.
+
+## Gotchas
+
+- **The assignment never lands.** The block picks a member but writes nothing, so the owner field stays empty if you stop here. Follow it with [Update record](/reference/records/update-record), [Update list entry](/reference/lists/update-list-entry), or [Create task](/reference/tasks/create-task) and map the picked user into the relevant field.
+- **A departed member still gets leads.** The set is a static list, so a member who has left the team keeps their turn in the rotation until you remove them. Audit the configured set whenever the team changes.
+- **Unqualified leads consume a turn.** Every run that reaches the block advances the rotation, even for spam or out-of-territory leads, which silently skews the balance. Put a [Filter](/reference/conditions/filter) before the block so only qualified records reach it.
+
+## Examples
+
+### Assigning new leads to a sales-development pod
+
+A [Record created](/reference/triggers/record-created) trigger on the People object reaches the block, which rotates through the sales-development representative (SDR) pod and hands the pick to [Update record](/reference/records/update-record).
+
+| Field | Value |
+| --- | --- |
+| Users | Priya Sharma, Marcus Lee, Dana Okoye |
+| Downstream block | Update record |
+| Field updated | `owner` |
+| Mapped value | `{{ steps.round_robin.picked_user }}` |
+
+Result: the first new lead is assigned to Priya Sharma, the next to Marcus Lee, the third to Dana Okoye, and the fourth wraps back to Priya Sharma.
+
+### Rotating a follow-up task across an account team
+
+After a [Filter](/reference/conditions/filter) keeps only deals above $50,000, the block selects the next account executive and a [Create task](/reference/tasks/create-task) block assigns the follow-up to that person.
+
+```json
+{
+  "round_robin": {
+    "users": ["Priya Sharma", "Marcus Lee", "Dana Okoye"]
+  },
+  "create_task": {
+    "assignee": "{{ steps.round_robin.picked_user }}",
+    "content": "Follow up on Acme renewal within 24 hours"
+  }
+}
+```
+
+Result: each qualifying deal creates a follow-up task assigned to the next account executive in turn, so the workload spreads evenly across the team.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Celebration](/reference/workspace/celebration)
+- [Permissions & workflow access](/explanation/permissions-and-access)
+- [Round-robin lead routing](/guides/route-and-sequence/round-robin-routing)
+- [Inbound routing by territory and seniority](/guides/route-and-sequence/territory-routing)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

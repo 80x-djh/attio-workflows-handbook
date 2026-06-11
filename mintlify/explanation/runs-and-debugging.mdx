@@ -1,0 +1,111 @@
+---
+title: Runs, debugging & publishing
+description: A run is one execution of a published workflow, and the run viewer records every input, output, and error so you can operate workflows like production software.
+---
+
+A **run** is one execution of a published workflow, and the run viewer records every input, output, and error so you can operate workflows like production software. A workflow edits your CRM on every run, so treating each run as a deployable, observable unit is the difference between a tidy pipeline and a Friday afternoon spent undoing 400 bad writes.
+
+This page covers the operational surface of a workflow: how a draft becomes live, how to read a single run in the viewer, how to trace a failure back to its true cause, and how to recover with rerun, retry, pause, and cancel. By the end you can publish a change without disturbing in-flight runs, diagnose a red error indicator that surfaced three blocks downstream of the real bug, and decide whether a failed run is safe to retry from the failed block or needs a fresh trigger.
+
+The run viewer sits on every workflow's **Runs** tab. It is the first place to look when something fired and the second place to look when something didn't.
+
+## Publishing a workflow
+
+A workflow does nothing until you publish it. You build on a **draft** canvas, and no [trigger](/explanation/triggers) fires until you click **Publish**. Once a workflow is live, further edits stay in draft until you click **Publish changes**, or you click **Discard changes** to revert to the live version. Publishing validates the canvas first: a misconfigured block gets a red error indicator and blocks the publish until you fix it.
+
+Consider a workflow that watches the `deals` object and posts to `#revenue` on a stage change. You add a [Filter](/reference/conditions/filter) block to skip test deals, then publish the change.
+
+| Field | Value |
+| --- | --- |
+| Live version | v3 (no filter) |
+| Draft change | Add **Filter**: `name` does not contain `[test]` |
+| Action | Click **Publish changes** |
+
+The new version goes live as v4, and every run triggered from this moment uses the filtered logic.
+
+The one rule that surprises people: **in-flight runs finish on the version they started on.** A run that began before your edit completes on the old logic. This matters most when a [Delay](/reference/delays/delay) block parks a run for days — that parked run will finish on whatever version was live when it started, not the version you just published.
+
+<Note>
+Set the **workflow timezone** on the **Settings** tab before you publish anything date-sensitive. Every date and time operation in the run uses it, and the default is rarely the one your RevOps brain assumes. Failed-run email notifications are also configured on the **Settings** tab — on by default for workflows you create, capped at one email per failure reason per day.
+</Note>
+
+## Reading a run
+
+The **Runs** tab lists every execution of a workflow. Click one and the canvas becomes a frozen snapshot of exactly what happened on that run. Green arrows mark the executed path, green checks mark successful blocks, and a red icon marks the failure point. The sidebar carries the run-level facts: hover a run for its runtime, start and end times, and the **credits consumed** — your per-run cost meter.
+
+Suppose a run on the `people` object failed while creating a task for Priya Sharma. You open the run and inspect the blocks in order.
+
+| Block | What the viewer shows |
+| --- | --- |
+| **Find records** | Outputs: 1 record, `Priya Sharma` |
+| **Create task** | Inputs: assignee `null` — red icon |
+
+The red icon sits on **Create task**, but its **Inputs** panel shows an empty assignee, which points upstream to where that value should have been set.
+
+Click any block to open its **Inputs** panel (what the block received) and its **Outputs** panel (what it passed on). A [Loop](/reference/utilities/loop) block adds `<` and `>` arrows so you can step through each iteration; an agent block expands to show each step the agent took and what it produced. Reading these panels in order is the whole skill — the run viewer never hides what a block saw or what it returned.
+
+## Tracing a failure to its cause
+
+A failure usually *surfaces* downstream of where it *starts*. The red icon marks the block that could not proceed, not always the block that broke. Tracing means walking backward from the symptom to the divergence.
+
+1. Open the failed block and read both the error message and its **Inputs**.
+2. Decide whether the input is wrong or the block itself is misconfigured.
+3. If an input looks wrong, open the upstream block that produced it and read its **Outputs**.
+4. Repeat until you reach the block where expectation and reality first diverge — that block is the bug, regardless of where the red icon sits.
+
+In the Priya Sharma example, the error surfaced on **Create task**, but tracing the empty assignee upstream reveals a [Find records](/reference/records/find-records) block that returned a person with no owner. The fix belongs there, not on the block that turned red. The exact error strings and their remedies are catalogued in [Common errors](/troubleshooting/common-errors).
+
+## Rerunning and retrying
+
+Every run offers a way to run it again, and the two paths are not interchangeable. A successful run offers **Rerun**, which executes the whole workflow again with the original trigger data. A failed run offers **Retry**, which gives two choices.
+
+- **Retry from start** re-executes the entire workflow from the trigger with the original data.
+- **Retry from failed** resumes at the failed block and skips the blocks that already completed.
+
+Reach for **Retry from failed** when the failure was transient — an external API blip, say — and the earlier blocks already wrote data. Resuming from the failed block avoids re-running the successful writes and double-writing records.
+
+Imagine a [Send HTTP request](/reference/utilities/send-http-request) block that timed out after an [Update record](/reference/records/update-record) block already set a deal to `Closed Won`. Retrying from start would set the stage twice; retrying from the failed block runs only the HTTP call.
+
+| Option | Re-runs the Update block? | When to use |
+| --- | --- | --- |
+| Retry from start | Yes | Trigger data was bad; you want a clean pass |
+| Retry from failed | No | The earlier writes were correct; only the tail failed |
+
+Two facts govern every retry. First, **a retry runs the workflow version that was published when the run originally triggered, not your fixed version.** To verify a fix, you must trigger a *new* run. Second, attempts stack under the same run behind an **Attempt** dropdown, so you can compare a before-and-after of the same execution.
+
+What does not happen is automatic retry. The new engine does not retry failed runs on its own; a failed run stays failed until a human acts. That is why the failure-notification emails matter and why anything business-critical deserves a periodic "did this actually run" check. On cost, failed blocks consume no credits, but every block that succeeded before the failure does — so a retry-from-start re-bills the work the retry-from-failed would have skipped. For the full credit math, see [Credits & pricing explained](/reference/credits-and-pricing).
+
+## Pausing, resuming, and cancelling
+
+A run in progress can be paused, resumed, or cancelled. **Pause** lets the current block finish, then halts before the next one. **Resume** continues from where the pause stopped. **Cancel** is permanent: the current block still completes and bills, but nothing after it runs.
+
+Pause is the most underused control in the engine. When you spot bad data mid-run — a [Find records](/reference/records/find-records) block that returned 4,000 companies instead of 40, for instance — pause the run, open the offending block, read its **Inputs** and **Outputs**, and only then decide whether to resume or cancel. Pausing turns a panic into a diagnosis: you act on full information instead of guessing while writes pile up.
+
+## Running a pre-publish check
+
+Thirty seconds of checks before you click **Publish** prevents most incidents. Run through this list every time, and run through it twice for any workflow that writes to the object it triggers on.
+
+1. Is the trigger scoped to a specific attribute where possible, with an early [Filter](/reference/conditions/filter) to drop records you don't want? See [Conditions & filters](/explanation/conditions-and-filters).
+2. Is there a [loop guard](/explanation/infinite-loops-and-safety) if the workflow writes to the same object it triggers on?
+3. Are all variables wired with no yellow warnings, and do formula inputs have [fallbacks](/explanation/variables)?
+4. Are write [permissions](/explanation/permissions-and-access) granted on both sides of every relationship the workflow touches?
+5. Have you estimated the worst-case run cost with the [credit math](/reference/credits-and-pricing), and set the [Loop](/reference/utilities/loop) **Limit** while testing?
+6. Have you test-triggered the workflow once and traced that run in the viewer?
+
+A workflow that passes all six is one you can publish without watching it. A workflow that fails any of them is one you'll be debugging in the Runs tab within the hour.
+
+<Warning>
+Deleting a workflow cancels all in-flight runs immediately and is permanent. Disabling stops only *new* runs and lets in-progress ones finish; archiving pauses the workflow the same way. A workflow that has ever run can only be archived, never deleted — so for anything that has fired even once, archive instead.
+</Warning>
+
+## See also
+
+- [Choosing the right trigger](/explanation/triggers)
+- [Variables & data passing](/explanation/variables)
+- [Infinite loops and safety](/explanation/infinite-loops-and-safety)
+- [Common errors](/troubleshooting/common-errors)
+- [Production runbook](/troubleshooting/runbook)
+
+---
+
+_Source: Attio Help Center — [Overview of workflows](https://attio.com/help/reference/automations/workflows/overview-of-workflows), [Create a workflow](https://attio.com/help/reference/automations/workflows/create-a-workflow), and [Troubleshooting workflows](https://attio.com/help/reference/automations/workflows/troubleshooting-workflows). Last reviewed against the Attio Help Center, June 2026._

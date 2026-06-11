@@ -1,0 +1,239 @@
+---
+title: Block reference overview
+description: Every Attio Workflows block — 11 triggers and 33 steps — has its own reference page with inputs, outputs, credit cost, and a worked example.
+icon: book-open
+---
+
+Every Attio Workflows block — 11 triggers and 33 steps — has its own reference page with inputs, outputs, credit cost, and a worked example. Every workflow you build is assembled from these blocks, and each reference page follows the same fixed schema, so once you have read one you can skim the rest.
+
+Credit costs follow one rule: triggers, logic, and lookups are free, writes and external calls cost 1 credit, and AI is token-priced. The [Credits & pricing explained](/reference/credits-and-pricing) page carries the full table and the per-plan allowances; every block page links to it rather than repeating it.
+
+## Triggers
+
+A trigger starts a workflow run, and every trigger is free. If you are unsure which one fits your case, read [Choosing the right trigger](/explanation/triggers).
+
+<CardGroup cols={2}>
+  <Card title="Record command" icon="square-mouse-pointer" href="/reference/triggers/record-command">
+    Runs when a person clicks Run workflow on selected records.
+  </Card>
+  <Card title="Record created" icon="circle-plus" href="/reference/triggers/record-created">
+    Runs automatically when a new record is created in an object.
+  </Card>
+  <Card title="Record updated" icon="pencil" href="/reference/triggers/record-updated">
+    Runs when an object attribute changes after the record exists.
+  </Card>
+  <Card title="List entry command" icon="list-checks" href="/reference/triggers/list-entry-command">
+    Runs when a person triggers it on selected list entries.
+  </Card>
+  <Card title="Record added to list" icon="list-plus" href="/reference/triggers/record-added-to-list">
+    Runs automatically when a record joins a list.
+  </Card>
+  <Card title="List entry updated" icon="list-restart" href="/reference/triggers/list-entry-updated">
+    Runs when a list attribute changes after the entry exists.
+  </Card>
+  <Card title="Attribute value changed" icon="diff" href="/reference/triggers/attribute-value-changed">
+    Runs when an attribute is set or changed, including at creation.
+  </Card>
+  <Card title="Task created" icon="square-check" href="/reference/triggers/task-created">
+    Runs automatically when any new task is created.
+  </Card>
+  <Card title="Webhook received" icon="webhook" href="/reference/triggers/webhook-received">
+    Runs when an external system POSTs to the workflow's URL.
+  </Card>
+  <Card title="Manual run" icon="play" href="/reference/triggers/manual-run">
+    Runs when you click Trigger workflow in the editor.
+  </Card>
+  <Card title="Recurring schedule" icon="clock" href="/reference/triggers/recurring-schedule">
+    Runs on a daily, weekly, monthly, or cron schedule.
+  </Card>
+</CardGroup>
+
+## Agents
+
+An agent block runs an AI agent against your workspace, and its tool access stays read-only, gated by the "Run as" permission model.
+
+<CardGroup cols={2}>
+  <Card title="Custom agent" icon="bot" href="/reference/agents/custom-agent">
+    Runs a configured AI agent with read-only tools over your data.
+  </Card>
+  <Card title="Web agent" icon="globe" href="/reference/agents/web-agent">
+    Runs an AI agent that researches the public web.
+  </Card>
+</CardGroup>
+
+## AI
+
+An AI block applies a model to a record or to text, and each one is token-priced.
+
+<CardGroup cols={2}>
+  <Card title="Classify record" icon="tags" href="/reference/ai/classify-record">
+    Assigns a record to one of your defined categories.
+  </Card>
+  <Card title="Classify text" icon="tag" href="/reference/ai/classify-text">
+    Assigns a text input to one of your defined categories.
+  </Card>
+  <Card title="Summarize record" icon="text" href="/reference/ai/summarize-record">
+    Writes a short summary of a record and its activity.
+  </Card>
+</CardGroup>
+
+## Records
+
+A record block reads or writes the records in an object, and each write costs 1 credit.
+
+<CardGroup cols={2}>
+  <Card title="Create record" icon="square-plus" href="/reference/records/create-record">
+    Creates a new record in an object.
+  </Card>
+  <Card title="Create or update record" icon="copy-plus" href="/reference/records/create-or-update-record">
+    Upserts a record, matching on an attribute you choose.
+  </Card>
+  <Card title="Update record" icon="square-pen" href="/reference/records/update-record">
+    Sets attribute values on an existing record.
+  </Card>
+  <Card title="Find records" icon="search" href="/reference/records/find-records">
+    Looks up records that match a filter, with no credit cost.
+  </Card>
+</CardGroup>
+
+## Lists
+
+A list block reads or writes list entries, which differ from records. See [Records vs list entries](/explanation/records-vs-list-entries) for the distinction.
+
+<CardGroup cols={2}>
+  <Card title="Add record to list" icon="list-plus" href="/reference/lists/add-record-to-list">
+    Adds a record to a list as a new entry.
+  </Card>
+  <Card title="Update list entry" icon="list-restart" href="/reference/lists/update-list-entry">
+    Sets list-specific attribute values on an entry.
+  </Card>
+  <Card title="Delete list entry" icon="list-x" href="/reference/lists/delete-list-entry">
+    Removes an entry from a list without deleting the record.
+  </Card>
+  <Card title="Find list entries" icon="list-filter" href="/reference/lists/find-list-entries">
+    Looks up list entries that match a filter, with no credit cost.
+  </Card>
+</CardGroup>
+
+## Sequences
+
+A sequence block adds a person to an Attio sequence or takes them out of one.
+
+<CardGroup cols={2}>
+  <Card title="Enroll in sequence" icon="mail-plus" href="/reference/sequences/enroll-in-sequence">
+    Adds a person to an email sequence.
+  </Card>
+  <Card title="Exit from sequence" icon="mail-x" href="/reference/sequences/exit-from-sequence">
+    Removes a person from a sequence they are enrolled in.
+  </Card>
+</CardGroup>
+
+## Tasks
+
+A task block creates a task or marks one complete.
+
+<CardGroup cols={2}>
+  <Card title="Create task" icon="square-check-big" href="/reference/tasks/create-task">
+    Creates a task linked to a record, with an assignee and due date.
+  </Card>
+  <Card title="Complete task" icon="check-check" href="/reference/tasks/complete-task">
+    Marks an existing task as done.
+  </Card>
+</CardGroup>
+
+## Calculations
+
+A calculation block transforms data inside a run, and most of these are free logic blocks. Reference their outputs with the [Variables and expressions reference](/reference/variable-syntax).
+
+<CardGroup cols={2}>
+  <Card title="Execute code" icon="code" href="/reference/calculations/execute-code">
+    Runs a sandboxed code snippet; cost is variable (complexity-based).
+  </Card>
+  <Card title="Adjust time" icon="calendar-clock" href="/reference/calculations/adjust-time">
+    Shifts a date or time by an offset you specify.
+  </Card>
+  <Card title="Aggregate values" icon="sigma" href="/reference/calculations/aggregate-values">
+    Reduces a list of values to a sum, count, or other total.
+  </Card>
+  <Card title="Formula" icon="variable" href="/reference/calculations/formula">
+    Computes a value from an expression over your inputs.
+  </Card>
+  <Card title="Random number" icon="dices" href="/reference/calculations/random-number">
+    Returns a random number within a range you set.
+  </Card>
+</CardGroup>
+
+## Conditions
+
+A condition block decides which branch a run takes, and all condition blocks are free.
+
+<CardGroup cols={2}>
+  <Card title="Filter" icon="filter" href="/reference/conditions/filter">
+    Stops the run unless the record matches your criteria.
+  </Card>
+  <Card title="If" icon="git-branch" href="/reference/conditions/if">
+    Splits the run into a true branch and a false branch.
+  </Card>
+  <Card title="Switch" icon="split" href="/reference/conditions/switch">
+    Routes the run down one of several labelled branches.
+  </Card>
+</CardGroup>
+
+## Delays
+
+A delay block pauses a run for a duration or until a moment, and both are free.
+
+<CardGroup cols={2}>
+  <Card title="Delay" icon="timer" href="/reference/delays/delay">
+    Pauses the run for a fixed duration.
+  </Card>
+  <Card title="Delay until" icon="calendar-check" href="/reference/delays/delay-until">
+    Pauses the run until a specific date or time.
+  </Card>
+</CardGroup>
+
+## Workspace
+
+A workspace block acts on your team rather than on a single record, from routing assignees to posting messages.
+
+<CardGroup cols={2}>
+  <Card title="Round robin" icon="repeat" href="/reference/workspace/round-robin">
+    Assigns work evenly across a group of teammates.
+  </Card>
+  <Card title="Celebration" icon="party-popper" href="/reference/workspace/celebration">
+    Triggers a celebration in the workspace for the team to see.
+  </Card>
+  <Card title="Broadcast message" icon="megaphone" href="/reference/workspace/broadcast-message">
+    Posts a message to a workspace channel or audience.
+  </Card>
+</CardGroup>
+
+## Utilities
+
+A utility block handles iteration and external HTTP, the plumbing the other categories depend on. See [HTTP and JSON patterns](/guides/platform-patterns/http-json-patterns) for common shapes.
+
+<CardGroup cols={2}>
+  <Card title="Loop" icon="repeat-2" href="/reference/utilities/loop">
+    Runs a set of blocks once for each item in a collection.
+  </Card>
+  <Card title="Parse JSON" icon="braces" href="/reference/utilities/parse-json">
+    Turns a JSON string into structured fields you can reference.
+  </Card>
+  <Card title="Send HTTP request" icon="send" href="/reference/utilities/send-http-request">
+    Calls an external API and returns its response.
+  </Card>
+</CardGroup>
+
+## Third-party blocks
+
+Connected apps contribute their own triggers and actions, including Slack, Outreach, Mailchimp, Mixmax, Typeform, and newer ecosystem blocks like Webflow, Notion, and Linear.
+
+<CardGroup cols={2}>
+  <Card title="Third-party blocks" icon="puzzle" href="/reference/integrations">
+    Triggers and actions that connected apps add to your block library.
+  </Card>
+</CardGroup>
+
+---
+
+*Source: [Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.*

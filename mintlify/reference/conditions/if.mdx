@@ -1,0 +1,95 @@
+---
+title: If
+description: The If block (Conditions) routes a workflow down one of two paths based on whether its conditions are true.
+icon: git-branch
+---
+
+The **If** block (Conditions) routes a workflow down one of two paths based on whether its conditions are true. The true path runs when every condition matches; the false path runs in every other case. It evaluates logic only, so it consumes no credits and produces no data output.
+
+| | |
+| --- | --- |
+| **Category** | Conditions |
+| **Credit cost** | Free — logic blocks consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Conditions | Condition group | Yes | None | The true path runs when the conditions match; the false path runs otherwise. Conditions can compare trigger data, earlier step outputs, or record attributes. |
+
+## Outputs
+
+None.
+
+The **If** block controls which downstream path runs and does not expose a data output. Reference outputs from the blocks you place on each path, not from **If** itself — for example, a record updated on the true path is available downstream as `{{ steps.update_record.record_id }}`.
+
+## Behavior
+
+The **If** block evaluates its conditions once, the moment the run reaches it, and then commits to a single path for the rest of that run. The true path runs when every condition in the group is satisfied; the false path runs whenever even one condition is not met, including when an input is empty or null. Only one path ever runs per execution.
+
+Each path is independent. You can connect blocks to the true path, the false path, both, or neither. A path with no blocks connected simply ends the run quietly when it is taken, which is a valid way to stop on the false branch.
+
+Because the two paths reconverge nowhere by default, a block that runs only on the true path produces an output that does not exist on the false path. Read more about passing data between branches in [Variables & data passing](/explanation/variables).
+
+## Gotchas
+
+- **The false path runs on empty input, not just on a logical "no".** A condition such as `Owner is jane@acme.com` fails both when the owner is someone else and when the record has no owner at all. Add an explicit "is not empty" condition first if a missing value should take a different route.
+- **More than two outcomes belong in Switch, not nested If blocks.** Chaining several **If** blocks to fan out three or more cases is hard to read in run history and easy to misorder. Use [Switch](/reference/conditions/switch) for ordered multi-case routing instead.
+- **Downstream blocks see only their own branch's outputs.** A block on the false path cannot reference an output produced on the true path, because that block never ran. Compute any shared value before the **If** block so both paths can read it.
+- **Legacy workflows called this block If/else.** If you are migrating, the new engine renames it to **If**; the routing behavior is unchanged. See [Migrate legacy workflows](/guides/migrating-from-legacy).
+
+## Examples
+
+### Routing a deal by amount
+
+Send large deals to a Slack alert and let smaller deals continue silently.
+
+| Field | Value |
+| --- | --- |
+| Condition | `Amount` is greater than `50000` |
+| True path | [Broadcast message](/reference/workspace/broadcast-message) to `#big-deals` |
+| False path | No blocks connected |
+
+A deal worth `75000` takes the true path and posts to `#big-deals`; a deal worth `12000` takes the false path and the run ends without an alert.
+
+### Splitting traffic for an A/B test
+
+Pair the **If** block with a random number to assign records to two variants in roughly equal shares.
+
+| Field | Value |
+| --- | --- |
+| Upstream block | [Random number](/reference/calculations/random-number) with minimum `0`, maximum `1` |
+| Condition | `{{ steps.random_number.result }}` is greater than `0.5` |
+| True path | [Update record](/reference/records/update-record) sets `Variant` to `A` |
+| False path | [Update record](/reference/records/update-record) sets `Variant` to `B` |
+
+A record that draws `0.81` is tagged `Variant A`; a record that draws `0.22` is tagged `Variant B`, giving an even split over many runs.
+
+### Guarding against a missing email
+
+Branch on whether a contact has an email before enrolling them in a sequence.
+
+| Field | Value |
+| --- | --- |
+| Condition | `Email` is not empty |
+| True path | [Enroll in sequence](/reference/sequences/enroll-in-sequence) `Outbound welcome` |
+| False path | [Create task](/reference/tasks/create-task) "Find email for Priya Sharma" assigned to the owner |
+
+A contact with `priya@acme.com` is enrolled in `Outbound welcome`; a contact with no email instead creates a follow-up task for the owner, so no run silently does nothing.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Switch](/reference/conditions/switch)
+- [Filter](/reference/conditions/filter)
+- [Conditions & filters](/explanation/conditions-and-filters)
+- [Inbound routing by territory and seniority](/guides/route-and-sequence/territory-routing)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

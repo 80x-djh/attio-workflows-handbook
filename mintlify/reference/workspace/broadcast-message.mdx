@@ -1,0 +1,89 @@
+---
+title: Broadcast message
+description: The Broadcast message block shows an in-app popup notification to selected workspace users.
+icon: megaphone
+---
+
+The **Broadcast message** block (Workspace) shows an in-app popup notification to selected workspace users. It interrupts the people you target in real time, so reserve it for high-signal events that someone must see the moment a workflow runs.
+
+| | |
+| --- | --- |
+| **Category** | Workspace |
+| **Credit cost** | Free |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Style | Enum | Yes | — | `Neutral`, `Success`, `Warning`, or `Error`. Sets the popup color and icon. |
+| Target | User list | Yes | — | The workspace users who see the popup. |
+| Title | Text | Yes | — | The popup headline, for example `New enterprise lead`. |
+| Description | Text | No | Empty | The popup body, for example `Acme just submitted a demo request.` |
+| Duration | Duration | Yes | — | How long the popup stays on screen before it dismisses itself. |
+
+## Outputs
+
+None.
+
+The **Broadcast message** block sends a notification and returns no values for later blocks to consume. When a downstream block needs the same data the popup showed, reference the upstream block that produced it, such as `{{ steps.find_records.records }}`, rather than the broadcast.
+
+## Behavior
+
+The block delivers the popup to every user in `Target` who is signed in to Attio when the workflow runs. The popup appears in the Attio app, not by email or Slack, so a targeted user who is offline never sees that notification. The block does not queue or resend the popup, and it writes nothing to a record, so there is no durable trace once the popup dismisses.
+
+`Style` is presentation only. A `Warning` or `Error` style changes the popup's color and icon but does not stop the run or signal a failure to the engine. The run continues to the next block regardless of the style you pick.
+
+`Duration` governs only how long the popup remains visible. A longer duration keeps the message on screen but does not change who receives it or whether it is delivered.
+
+## Gotchas
+
+- **Offline users miss the message.** The popup only renders inside the Attio app for users who are signed in at run time, so a targeted user who is offline gets nothing and there is no record of the attempt. When the recipient must see the event later, follow the broadcast with a durable channel such as a [Slack post](/guides/route-and-sequence/slack-deal-alerts) or a [Create task](/reference/tasks/create-task) block.
+- **Over-broadcasting trains people to dismiss popups.** Because the block interrupts humans in real time, firing it on routine events teaches the team to swipe popups away without reading them. Reserve broadcasts for high-signal moments and route the everyday updates to a quieter channel.
+- **The block leaves no audit trail.** A broadcast notifies and then disappears, so it is the wrong tool when you need a lasting record of who was alerted. Pair it with a [Create task](/reference/tasks/create-task) block or a write to a record when accountability matters.
+
+## Examples
+
+### Alerting the owner about a high-priority inbound lead
+
+A territory-routing workflow assigns a hot inbound lead and broadcasts a warning-styled popup to the new owner so they pick it up immediately.
+
+| Field | Value |
+| --- | --- |
+| Style | `Warning` |
+| Target | `{{ steps.round_robin.picked_user }}` |
+| Title | `High-priority lead assigned to you` |
+| Description | `Acme requested a demo and scored 92. Respond within 15 minutes.` |
+| Duration | `30 seconds` |
+
+When the run reaches this block, the assigned owner sees an orange popup naming the lead, and the run continues to the next block without cost.
+
+### Confirming a successful nightly sync to admins
+
+A scheduled maintenance workflow finishes and broadcasts a success-styled popup to the two workspace admins so they know the overnight job completed.
+
+| Field | Value |
+| --- | --- |
+| Style | `Success` |
+| Target | `Priya Sharma, Dan Hull` |
+| Title | `Nightly enrichment sync complete` |
+| Description | `412 records updated. No errors.` |
+| Duration | `10 seconds` |
+
+The admins who are signed in see a green confirmation popup; any admin who is offline at run time sees nothing, so a critical job should also write its result somewhere durable.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Celebration](/reference/workspace/celebration)
+- [Create task](/reference/tasks/create-task)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+- [Slack deal alerts on stage change](/guides/route-and-sequence/slack-deal-alerts)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

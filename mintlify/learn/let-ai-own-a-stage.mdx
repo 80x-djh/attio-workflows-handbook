@@ -1,0 +1,69 @@
+---
+title: "Track 4 — Let AI own a stage"
+description: An AI agent owns a whole funnel segment read-only, gated behind a free filter, with the credit math proven on a sample before it touches a live trigger.
+---
+
+An AI agent owns a whole funnel segment read-only, gated behind a free filter, with the credit math proven on a sample before it touches a live trigger. In the earlier tracks a workflow assisted a human; in this track it carries the research and qualification for an entire stage on its own. The difference that makes this safe is discipline: the agent only reads, it only fires on records that clear a bar, and you know what a run costs before you publish.
+
+<Note>
+  **Prerequisites:** finish [Track 1 — Capture and qualify](/learn/capture-and-qualify), then read [Permissions & workflow access](/explanation/permissions-and-access) and [Infinite loops and safety](/explanation/infinite-loops-and-safety).
+
+  **By the end you can:** stand up a read-only research-and-qualification agent that owns a funnel segment, and reason about its permissions, credit cost, and loop safety before you publish.
+</Note>
+
+This track is written for the solo Attio consultant, or the technical RevOps lead, who templatizes agent patterns across client workspaces. In that work a surprise credit bill is a fireable offense, so every pattern here defaults to read-only access and explicit spend.
+
+## The shift this track makes
+
+An owned stage hands a segment of the funnel to an agent block instead of a rep. The agent researches a record read-only under the [**Run as**](/explanation/permissions-and-access) permission model, decides fit, and writes its conclusion to a source field that downstream blocks route on. A free [**Filter**](/reference/conditions/filter) sits in front of the agent so it spends only on records that deserve the look. Cost discipline is the whole game, because AI blocks are variable and token-based — you sample before you trust.
+
+The agent's read-only posture is what makes ownership safe. An agent's tool access is read-only, gated by the **Run as** model: run it as the workflow with the minimum read tools enabled, not as a member, unless the task genuinely needs one person's private context. Pair that with a guard filter and the worst-case outcome is wasted reads, not corrupted data or a runaway loop.
+
+## Build the owned stage
+
+These steps stand up the pattern on a Companies funnel. Treat the [**AI ICP-fit research and routing**](/guides/signals-and-ai/inbound-lead-research) recipe as the full, field-level build; the stems below are the reasoning you apply to any owned stage.
+
+<Steps>
+  <Step title="Start on a manual trigger, not an automatic one">
+    Wire the workflow to [**Record command**](/reference/triggers/record-command) first, so a person clicks **Run workflow** on a record to fire it. Manual runs keep spend tied to human intent while you prove the pattern. You swap in an automatic trigger such as [**Record added to list**](/reference/triggers/record-added-to-list) only after the credit math holds.
+  </Step>
+  <Step title="Gate the agent behind a free filter">
+    Put a [**Filter**](/reference/conditions/filter) immediately before the agent and let only records that clear your ideal customer profile (ICP) threshold continue. The filter consumes no credits, so a stopped run costs nothing. This single block is what stops the token-priced agent from ever touching raw, low-fit traffic.
+  </Step>
+  <Step title="Run the agent read-only">
+    Add a [**Web agent**](/reference/agents/web-agent) or [**Custom agent**](/reference/agents/custom-agent) and give it a read-only **Run as** identity so it can read records and the web but cannot write. Ask two to four specific qualification questions, and instruct the agent to answer `unknown` when it cannot verify a claim. Enable web access only when the task actually needs the web, since external page content can influence agent behavior.
+  </Step>
+  <Step title="Classify the research into a band">
+    Feed the agent's answer into [**Classify record**](/reference/ai/classify-record) to turn the prose into an `A`, `B`, or `C` fit band on the record. A band is a value downstream blocks can branch on; raw agent prose is not. This keeps routing deterministic even though the research is judgment-based.
+  </Step>
+  <Step title="Save the output, then route on the band">
+    Agent outputs are not saved automatically, so follow the agent with [**Update record**](/reference/records/update-record) and map the summary into a long-text attribute such as `icp_research`. Route only the qualified bands onward — assign an owner, post to `#revenue`, create a first-touch task — and let the `C` band stop. Writing the band to a source field also gives you an idempotency stamp for loop safety.
+  </Step>
+  <Step title="Prove the credit math on a sample">
+    Run the workflow manually on about ten representative records and read the per-run cost in run history before you wire it to a live trigger. AI blocks are variable, so you measure rather than estimate. When the sampled cost holds against your expected monthly volume, swap **Record command** for the automatic trigger; for client work, keep it on a command so spend stays explicit.
+  </Step>
+</Steps>
+
+<Warning>
+  An agent that reads a record and writes back to an attribute the trigger watches can re-fire the workflow against itself. Scope the trigger to one attribute, never write the attribute the trigger watches, and add an early filter on `Updated by` → Type → is not → Workflow. See [Infinite loops and safety](/explanation/infinite-loops-and-safety) for the full guard set.
+</Warning>
+
+## What a run costs
+
+A run's cost is the agent's token-based charge plus 1 credit for each write the workflow makes, while the filter, the trigger, and any branching logic are free. Per-workflow credit caps were removed in the new engine, so the filter and your ten-record sample — not a cap — are what keep spend bounded. For the full cost model, plan allowances, and how token-based AI pricing behaves, see [Credits & pricing explained](/reference/credits-and-pricing).
+
+## Where this goes next
+
+The Challenge for this track is the [**AI ICP-fit research and routing**](/guides/signals-and-ai/inbound-lead-research) recipe: gate a read-only agent behind a filter so it runs only on records that clear your bar, classify fit, write the summary to source fields, route only the qualified, and prove the credit math on a ten-record sample before the live trigger. For client work, fire it from a command so spend is always explicit.
+
+## See also
+
+- [AI ICP-fit research and routing](/guides/signals-and-ai/inbound-lead-research)
+- [Funding-signal outbound that beats competitors to a fresh raise](/guides/signals-and-ai/funding-signal-outbound)
+- [AI agents playbook](/guides/signals-and-ai/ai-agents-playbook)
+- [HTTP and JSON patterns](/guides/platform-patterns/http-json-patterns)
+- [Credits & pricing explained](/reference/credits-and-pricing)
+
+---
+
+_Source: [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library) and [managing access to objects](https://attio.com/help/reference/managing-your-data/objects/manage-access-to-objects). Last reviewed against the Attio Help Center, June 2026._

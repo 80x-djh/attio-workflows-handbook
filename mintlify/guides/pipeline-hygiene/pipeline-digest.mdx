@@ -1,0 +1,160 @@
+---
+title: Daily pipeline digest to Slack
+description: A daily pipeline digest posts new and stalled deals, plus the new pipeline total, to your sales channel every weekday morning for zero AI credits.
+icon: clock
+---
+
+A **daily pipeline digest** posts new and stalled deals, plus the new pipeline total, to your sales channel every weekday morning for zero AI credits. The workflow fires on a [Recurring schedule](/reference/triggers/recurring-schedule) at the start of each business day. It reads fresh deals with [Find records](/reference/records/find-records), rolls them up with [Aggregate values](/reference/calculations/aggregate-values), lists the deals that have gone quiet with a second [Find records](/reference/records/find-records), and posts the whole picture in-app with [Broadcast message](/reference/workspace/broadcast-message). The team starts the day knowing what is new and what is slipping, and nobody has to run a report.
+
+| | |
+| --- | --- |
+| **Difficulty** | Intermediate |
+| **Time to build** | About 15 minutes |
+| **Trigger** | [Recurring schedule](/reference/triggers/recurring-schedule), weekday mornings |
+| **Blocks used** | [Find records](/reference/records/find-records), [Aggregate values](/reference/calculations/aggregate-values), [Broadcast message](/reference/workspace/broadcast-message) |
+| **Credit cost per run** | 0 credits — every block is a free read or a free workspace block |
+| **Plan required** | Plus and higher |
+
+## Prerequisites
+
+- A workspace on the **Plus** plan or higher.
+- A **Deals** object with a **Stage** status attribute that has a **Closed won** option and a **Closed lost** option.
+- An **Amount** number attribute on **Deals**, so the digest can total new pipeline.
+- A **Created at** system timestamp on **Deals**, which marks when each deal was added.
+- A **Last activity** date attribute on **Deals**, which marks the last time a rep touched the deal.
+- An **Owner** attribute on **Deals** if you plan to scope or attribute the digest by rep.
+- A workspace audience for [Broadcast message](/reference/workspace/broadcast-message) — for example, a **Sales** team broadcast that everyone watches.
+
+No API key or external integration is required. Every block in this recipe is native, and [Broadcast message](/reference/workspace/broadcast-message) posts inside Attio rather than to Slack's API.
+
+## How it works
+
+The workflow wakes on a fixed schedule and does three free reads. It counts and totals the deals created since yesterday, then it lists the deals that have stalled, then it assembles a single in-app broadcast from those results. Nothing writes to a record, so the whole run costs zero credits. The one thing you must get right is the schedule's timezone, because "since yesterday" has to mean yesterday for your team and not for a server in another hemisphere.
+
+The blocks run in this order:
+
+1. [Recurring schedule](/reference/triggers/recurring-schedule) fires on weekday mornings in a fixed timezone.
+2. [Find records](/reference/records/find-records) returns deals created since yesterday.
+3. [Aggregate values](/reference/calculations/aggregate-values) counts those deals and sums their `Amount`.
+4. [Find records](/reference/records/find-records) returns open deals with no activity in seven or more days.
+5. [Broadcast message](/reference/workspace/broadcast-message) posts the formatted digest.
+
+## Build steps
+
+<Steps>
+  <Step title="Add the recurring schedule trigger">
+    Create a new workflow and add the [Recurring schedule](/reference/triggers/recurring-schedule) trigger. Set it to run on weekday mornings, then pin the timezone to where your team works. People skip the timezone, and without it the schedule runs in coordinated universal time (UTC) and your "yesterday" window drifts by hours.
+
+    | Field | Value |
+    | --- | --- |
+    | Frequency | Weekly |
+    | Days | Monday–Friday |
+    | Time | 08:00 |
+    | Timezone | Europe/London — set this to your team's timezone |
+  </Step>
+
+  <Step title="Find deals created since yesterday">
+    Add a [Find records](/reference/records/find-records) block on the **Deals** object. Filter to deals created in the last day so the digest covers exactly the fresh pipeline.
+
+    | Field | Value |
+    | --- | --- |
+    | Object | Deals |
+    | Filter | `Created at` is on or after `now - 1 day` |
+    | Sort | `Created at`, newest first |
+    | Limit | 50 |
+  </Step>
+
+  <Step title="Aggregate the new deals">
+    Add an [Aggregate values](/reference/calculations/aggregate-values) block and feed it the records from step 2. Produce two outputs — a count of new deals and the sum of their `Amount` — so the digest leads with hard numbers.
+
+    | Field | Value |
+    | --- | --- |
+    | Input | Find records (step 2), `records` |
+    | Operation 1 | Count, output as `new_count` |
+    | Operation 2 | Sum of `Amount`, output as `new_value` |
+    | Empty handling | Treat no records as `0` |
+  </Step>
+
+  <Step title="Find stalled deals">
+    Add a second [Find records](/reference/records/find-records) block on **Deals**. Filter to open deals that have not moved in a week so the team sees what is slipping, not only what is new.
+
+    | Field | Value |
+    | --- | --- |
+    | Object | Deals |
+    | Filter | `Stage` is not `Closed won` and `Stage` is not `Closed lost` |
+    | Filter | `Last activity` is before `now - 7 days` |
+    | Sort | `Last activity`, oldest first |
+    | Limit | 10 |
+  </Step>
+
+  <Step title="Broadcast the digest">
+    Add a [Broadcast message](/reference/workspace/broadcast-message) block and compose the digest from the variables you produced. Keep it scannable — counts first, then a short stalled list — so owners know exactly what to chase.
+
+    | Field | Value |
+    | --- | --- |
+    | Audience | Sales team |
+    | Title | Daily pipeline digest |
+    | Message | New deals today: `{{ steps.aggregate.new_count }}` worth `{{ steps.aggregate.new_value }}`. Stalled (7+ days, oldest first): `{{ steps.find_stalled.records }}`. Owners, please update before standup. — Priya Sharma |
+  </Step>
+</Steps>
+
+## Variable mapping
+
+| Variable | Source block | Field | Example value |
+| --- | --- | --- | --- |
+| New deals | [Find records](/reference/records/find-records) (step 2) | `records` | Acme (acme.com), Northwind, Globex |
+| New deal count | [Aggregate values](/reference/calculations/aggregate-values) | `new_count` | 6 |
+| New pipeline value | [Aggregate values](/reference/calculations/aggregate-values) | `new_value` | $148,000 |
+| Stalled deals | [Find records](/reference/records/find-records) (step 4) | `records` | Initech (8 days), Umbrella (11 days) |
+| Owner | [Find records](/reference/records/find-records) (step 2) | `Owner` | Priya Sharma |
+
+For the exact reference syntax that pulls a block's output into a later step, see [Variables & data passing](/explanation/variables).
+
+## Credit cost worked example
+
+This recipe is the credit-conscious operator's favorite, because it costs **0 credits per run**. The [Recurring schedule](/reference/triggers/recurring-schedule) trigger is free, both [Find records](/reference/records/find-records) blocks are free reads, [Aggregate values](/reference/calculations/aggregate-values) is free math, and [Broadcast message](/reference/workspace/broadcast-message) is a free workspace block. There are no data writes, no external calls, and no AI blocks anywhere in the run.
+
+At a realistic 22 business days per month, the digest runs 22 times for a total of 22 × 0 = **0 credits per month**. The whole workflow stays comfortably inside any plan's allowance — see [Credits & pricing explained](/reference/credits-and-pricing) for the canonical model.
+
+The math only changes if you add a write. If you later stamp a "last digested" date on each stalled deal inside a [Loop](/reference/utilities/loop), the cost becomes the per-iteration write multiplied by the number of stalled deals. Until then, this workflow is genuinely free to run forever.
+
+## Test plan
+
+1. Open the workflow and use **Run now**, a [Manual run](/reference/triggers/manual-run), to fire it on demand instead of waiting for tomorrow's schedule. Keep the run viewer open in a second tab.
+2. Confirm that step 2's [Find records](/reference/records/find-records) returns only deals created in the last day. Check the record count in run history.
+3. Confirm that [Aggregate values](/reference/calculations/aggregate-values) outputs a `new_count` and a `new_value` that match those records. A count of `0` and a value of `0` is a valid result on a quiet day.
+4. Confirm that step 4's [Find records](/reference/records/find-records) returns open deals last touched seven or more days ago, oldest first.
+5. Confirm that [Broadcast message](/reference/workspace/broadcast-message) posts to the Sales audience with the counts and stalled list filled in from the variables, with no empty `{{ }}` placeholders.
+6. **Run one deliberately failing input.** Leave the trigger timezone unset, or on UTC, while your team is on Europe/London, then run the workflow at 08:00 local time. The "since yesterday" window is now off by your UTC offset, so deals created late last evening get missed or double-counted. Fix it by pinning the timezone in step 1 and re-running, after which the count matches what you see in the Deals view.
+
+## Failure modes
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Digest counts do not match the Deals view | The schedule timezone is unset, so "since yesterday" is computed in UTC | Pin the timezone in the [Recurring schedule](/reference/triggers/recurring-schedule) trigger |
+| New pipeline value is blank or wrong | The aggregate summed the wrong attribute, or `Amount` is empty on some deals | Point the sum at the `Amount` attribute and treat empty as `0` in [Aggregate values](/reference/calculations/aggregate-values) |
+| Stalled list never empties | `Last activity` is not updated when reps work a deal | Confirm what writes to `Last activity`, or filter on a stage-changed timestamp instead |
+| Broadcast shows raw `{{ }}` text | A variable reference points at a block that returned nothing | Check the source block in run history and confirm the variable path in the message |
+| Digest fires on weekends | Days are set to all week instead of Monday–Friday | Restrict the schedule to weekdays in step 1 |
+
+## Variations
+
+### Per-team digests
+
+When pipeline is split by team or region, duplicate the workflow per segment and add an `Owner` or `Region` filter to each [Find records](/reference/records/find-records) block — for example, `Owner` is in the EMEA team. Point each [Broadcast message](/reference/workspace/broadcast-message) at that team's audience. Each squad gets a digest about its own deals instead of one firehose.
+
+### Weekly exec rollup
+
+Change the [Recurring schedule](/reference/triggers/recurring-schedule) to Monday mornings only and widen step 2's window to `now - 7 days`. Add a third [Find records](/reference/records/find-records) for deals that hit `Closed won` in the same window, so the exec digest reports new, won, and stalled for the week. Everything stays free, because it is the same blocks on a longer cadence.
+
+## See also
+
+- [Stale-deal sweep](/guides/pipeline-hygiene/stale-deal-sweep)
+- [Choosing the right trigger](/explanation/triggers)
+- [Aggregate values](/reference/calculations/aggregate-values)
+- [Broadcast message](/reference/workspace/broadcast-message)
+- [Attio: Workflows overview](https://attio.com/help/workflows)
+
+---
+
+_Source: [Attio Help Center — Workflows overview](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026._

@@ -1,0 +1,96 @@
+---
+title: Find list entries
+description: The Find list entries block (List lookup step) returns the entries in a selected list that match your filter conditions.
+icon: filter
+---
+
+The **Find list entries** block (List lookup step) returns the entries in a selected list that match your filter conditions. It is the bridge from a record to that record's entry inside a list, which most list-writing blocks require as input. Use it whenever a workflow holds a record but needs to read or change the record's place in a pipeline list.
+
+| | |
+| --- | --- |
+| **Category** | List lookup step |
+| **Credit cost** | Free — lookup blocks consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans that include Workflows |
+| **Limits** | Returns at most 100 entries per run; the limit is required. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| List | List | Yes | — | The list to search. |
+| Limit | Number | Yes | — | Maximum number of entries to return. Caps at 100. |
+| Filter | Filter | Yes | — | The conditions an entry must match to be returned. |
+
+The filter can combine list attributes with related record context. A common pattern filters on the parent company so that the block returns the entry that belongs to the record the workflow is already holding.
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Matching list entries | List of entries | `Acme — Stage: Discovery` | Every entry that satisfied the filter, up to the limit. |
+| Number of matches | Number | `1` | The count of returned entries. |
+
+Reference the matched entries downstream as `{{ steps.find_list_entries.entries }}`, and the match count as `{{ steps.find_list_entries.count }}`. Pass a single entry into a block that expects one entry, such as [Update list entry](/reference/lists/update-list-entry), or pass the whole collection into a [Loop](/reference/utilities/loop) to process each match in turn.
+
+## Behavior
+
+The block reads the list and returns every entry that matches the filter, in the list's own order, up to the limit you set. It never writes anything, which is why it is free.
+
+When no entry matches, the block does not fail. It returns an empty collection and a match count of `0`, so a downstream [If](/reference/conditions/if) block can branch on whether anything was found.
+
+The block returns a collection, even when exactly one entry matches. A later block that expects a single entry consumes only the first item in that collection. To act on more than the first match, send the collection through a [Loop](/reference/utilities/loop).
+
+This block looks up list entries, not the parent records themselves. To find records by object attributes instead, use [Find records](/reference/records/find-records).
+
+## Gotchas
+
+- **The limit is required and caps at 100.** The field has no default, and Attio rejects a value above 100. If a list could match more entries than you need, narrow the filter rather than raising the limit, because the eleventh page of matches is simply unreachable in one run.
+- **A single-entry block silently uses only the first match.** Passing the collection into a block that expects one entry consumes the first item and ignores the rest, with no error. Wrap the collection in a [Loop](/reference/utilities/loop) whenever more than one entry can match.
+- **No match is a valid result, not a failure.** An empty result returns a count of `0`, so the run continues to the next block. Guard later steps with an [If](/reference/conditions/if) block when an empty result should change the path.
+- **Entries are not records.** The block returns list entries, so feeding its output into a record block fails. Keep list output flowing into list blocks such as [Update list entry](/reference/lists/update-list-entry) and [Delete list entry](/reference/lists/delete-list-entry).
+
+## Examples
+
+### Finding a company's pipeline entry to advance its stage
+
+A workflow that triggers on a company record needs the company's entry in a sales-pipeline list before it can move the deal forward. This example finds that single entry by matching the company.
+
+| Field | Value |
+| --- | --- |
+| List | Pipeline |
+| Limit | `1` |
+| Filter | `Company` is the current record |
+
+The block returns the one pipeline entry for the company, which a following [Update list entry](/reference/lists/update-list-entry) block then advances from `Discovery` to `Evaluation`.
+
+### Finding every stalled entry in a list to process in a loop
+
+A scheduled hygiene workflow needs each entry in a renewals list whose stage has not changed recently. This example returns a collection and hands it to a loop.
+
+```json
+{
+  "list": "Renewals",
+  "limit": 100,
+  "filter": {
+    "stage": "At risk",
+    "last_stage_change_before": "30 days ago"
+  }
+}
+```
+
+The block returns up to 100 at-risk entries; a [Loop](/reference/utilities/loop) then runs an [Update list entry](/reference/lists/update-list-entry) on each one to flag it for review.
+
+## Source
+
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Find records](/reference/records/find-records)
+- [Update list entry](/reference/lists/update-list-entry)
+- [Loop](/reference/utilities/loop)
+- [Records vs list entries](/explanation/records-vs-list-entries)
+- [Daily renewal watch at 90, 60, and 30 days](/guides/pipeline-hygiene/renewal-watch)

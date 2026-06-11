@@ -1,0 +1,91 @@
+---
+title: Attribute value changed
+description: The Attribute value changed trigger (Triggers) starts a workflow when an attribute is set or changed, including values set at record or list-entry creation.
+icon: pencil
+---
+
+The **Attribute value changed** trigger (Triggers) starts a workflow when an attribute is set or changed, including values set at record or list-entry creation. Unlike [Record updated](/reference/triggers/record-updated) and [List entry updated](/reference/triggers/list-entry-updated), it fires on creation-time values, so it is the safer choice for most stage and status rules. Point it at an object to watch an object attribute, or at a list to watch a list attribute.
+
+| | |
+| --- | --- |
+| **Category** | Triggers |
+| **Credit cost** | Free — triggers consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Object or List | Object or list reference | Yes | None | Choose where the attribute lives. Pick the list when the attribute is a list attribute, such as a pipeline `stage`. |
+| Attribute | Attribute reference | Yes | None | The single attribute to monitor. The trigger fires only when this attribute is set or changes. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Record or list entry | Record or list-entry reference | `Acme Corp` deal | Parent record data for an object attribute, or list-entry data for a list attribute. |
+| New value | Matches the attribute type | `Won` | The value the attribute holds after the change. |
+| Previous value | Matches the attribute type | `Negotiation` | The value the attribute held before the change. Empty when the attribute is set for the first time. |
+| Actor | Actor reference | `Priya Sharma` | The user, integration, or workflow that set or changed the value. |
+| Timestamp | Timestamp | `2026-06-11T14:32:00Z` | When the change happened. |
+
+Reference the new value in a later block as `{{ steps.attribute_value_changed.new_value }}`, and the previous value as `{{ steps.attribute_value_changed.previous_value }}`.
+
+## Behavior
+
+The trigger evaluates one attribute on one object or list. It fires when that attribute moves from empty to a value, from one value to another, or from a value back to empty. Because it also fires when the value is set during record or list-entry creation, a deal created directly as `Won` triggers it — the case that [Record updated](/reference/triggers/record-updated) and [List entry updated](/reference/triggers/list-entry-updated) miss.
+
+Each firing exposes both the new value and the previous value, so you can detect a true transition rather than any touch of the attribute. On the first-ever set of an attribute, the previous value is empty. Re-saving the same value does not count as a change, so the trigger does not fire when the value is unchanged.
+
+A workflow that writes back to the same attribute re-fires this trigger, because a workflow is an actor like any other. Scope the trigger to an attribute your workflows never write, or guard the run with an early [Filter](/reference/conditions/filter) on the actor, to avoid a trigger loop. See [infinite loops and safety](/explanation/infinite-loops-and-safety).
+
+## Gotchas
+
+- **Watches the object, misses the list.** A pipeline `stage` is usually a list attribute, not an object attribute, so a trigger pointed at the object never fires on stage moves. Point the trigger at the list instead, and read [records vs list entries](/explanation/records-vs-list-entries) to tell the two apart.
+- **Fires on every set, not only the transition you want.** Without a value check, the trigger runs each time the attribute changes to anything, including back-and-forth edits. Add an early [Filter](/reference/conditions/filter) comparing the new value to the target, such as `New value is Won`.
+- **Re-fires the same stage as a fresh win.** A re-save of `Won` over `Won` does not fire, but a move from `Won` to `Negotiation` and back to `Won` does. Filter for a true transition with `New value is Won` **and** `Previous value is not Won`, or a re-entered deal sends a duplicate alert.
+- **Loops when a workflow writes the attribute.** If any workflow updates the watched attribute, this trigger fires again and can chain into a loop. Filter out the workflow actor, or watch an attribute that workflows never set.
+
+## Examples
+
+### Alerting on a closed-won deal
+
+Point the trigger at the `Sales pipeline` list and watch the `Stage` attribute, then filter for the true transition into `Won` before alerting.
+
+| Field | Value |
+| --- | --- |
+| Object or List | `Sales pipeline` (list) |
+| Attribute | `Stage` |
+| Filter | `New value is Won` **and** `Previous value is not Won` |
+| Then | Post to `#wins`, then run [Celebration](/reference/workspace/celebration) |
+
+When a rep drags `Acme renewal` from `Negotiation` to `Won`, the workflow posts to `#wins` and fires a celebration. A deal re-saved as `Won` sends nothing, because the previous value was already `Won`.
+
+### Catching a status set at creation
+
+Point the trigger at the `Companies` object and watch the `Lifecycle` attribute so that companies created already marked `Customer` are caught, not just those edited later.
+
+```json
+{
+  "object": "companies",
+  "attribute": "lifecycle",
+  "filter": "new_value is Customer",
+  "then": "Create task \"Schedule kickoff\" assigned to Priya Sharma"
+}
+```
+
+A company imported with `Lifecycle` set to `Customer` fires the trigger and creates the kickoff task, where [Record updated](/reference/triggers/record-updated) would have stayed silent because the value was set at creation.
+
+## Source
+
+Attio Help Center — [Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library). Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Record updated](/reference/triggers/record-updated)
+- [List entry updated](/reference/triggers/list-entry-updated)
+- [Choosing the right trigger](/explanation/triggers)
+- [Records vs list entries](/explanation/records-vs-list-entries)
+- [Slack deal alerts on stage change](/guides/route-and-sequence/slack-deal-alerts)

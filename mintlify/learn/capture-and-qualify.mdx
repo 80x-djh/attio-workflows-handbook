@@ -1,0 +1,63 @@
+---
+title: "Track 1 — Capture and qualify"
+description: "Capture and qualify makes inbound and webhook leads arrive enriched, scored on fit and intent, and tagged for routing."
+---
+
+**Capture and qualify** makes inbound and webhook leads arrive enriched, scored on fit and intent, and tagged for routing. This track is for a 12-rep B2B SaaS team drowning in form-fills, where data quality is the number-one complaint and good leads sit unworked while someone copies fields by hand. You build the front of the funnel as three shippable workflows, and you pay for AI only where it changes a decision.
+
+<Note>
+**Prerequisites:** finish [Build your first workflow](/learn/build-your-first-workflow), then skim [Records vs list entries](/explanation/records-vs-list-entries) and [Conditions & filters](/explanation/conditions-and-filters).
+
+**By the end you can:** ingest a lead by webhook, enrich only its empty fields cheapest-first, and score it into an A/B/C band that decides the next action.
+</Note>
+
+## The mental model
+
+Qualification is a stack. Fit asks whether this is the right kind of company. Intent asks whether they are showing buying signals. Engagement asks whether they have touched you yet. You filter on the cheap, free signals first, and you spend money — enrichment calls, AI classification — only on the records that clear the bar.
+
+This is the signal waterfall: enrich when a signal fires, not on every raw lead. The cheapest filter is a [Filter](/reference/conditions/filter) block, which stops a run silently and costs nothing, so it belongs in front of every billable step. The engine vocabulary used across this track lives in the [Glossary](/reference/glossary).
+
+## Build the three modules in order
+
+Each step is a complete, follow-along build in [Guides](/guides) that you ship into your own workspace. Work them in order: the webhook gives you a clean record, the waterfall fills it, and the score turns it into a routing decision.
+
+<Steps>
+  <Step title="Take in leads from anywhere, safely">
+    Build a single webhook front door that never creates a duplicate. The [Webhook received](/reference/triggers/webhook-received) trigger accepts form fills, product sign-ups, and partner feeds at one endpoint; you [Parse JSON](/reference/utilities/parse-json) field by field, drop anything without a usable identity, match on a stable key with [Find records](/reference/records/find-records), and write with [Create or update record](/reference/records/create-or-update-record) so a repeat submission updates the existing record instead of cloning it.
+
+    Follow the full build in [Webhook lead intake with safe upsert](/guides/capture-and-qualify/webhook-lead-intake).
+  </Step>
+  <Step title="Fill the gaps cheaply">
+    Enrich the record cheapest-first and stop on the first hit. You call providers in price order, write only the fields that are empty, and never overwrite verified data, so a record the first provider covers never pays for the second. This is the signal waterfall applied to enrichment.
+
+    Follow the full build in [Cheapest-first enrichment waterfall](/guides/capture-and-qualify/enrichment-waterfall).
+  </Step>
+  <Step title="Turn signals into a score a rep trusts">
+    Combine fit, intent, and engagement into one transparent score with a [Formula](/reference/calculations/formula) block, then branch on the band with a [Switch](/reference/conditions/switch). Because the score is arithmetic rather than an opaque model output, a rep can open the run and see exactly why a lead is an A. Each band routes to a different next action.
+
+    Follow the full build in [Score leads into explainable bands](/guides/capture-and-qualify/signal-scoring).
+  </Step>
+</Steps>
+
+## What this costs
+
+Most of this track is free. Triggers, [Parse JSON](/reference/utilities/parse-json), [Filter](/reference/conditions/filter), [Find records](/reference/records/find-records), [Formula](/reference/calculations/formula), and [Switch](/reference/conditions/switch) are logic and lookup blocks that consume no credits, so you can qualify aggressively before you spend anything. Credits are spent only on the writes and the enrichment calls at the end of each path, and any record a [Filter](/reference/conditions/filter) rejects costs zero. The new engine no longer enforces per-workflow credit caps, so estimate the spend yourself before you publish — read [Credits & pricing explained](/reference/credits-and-pricing) for the per-block costs and your plan's monthly allowance.
+
+## The challenge
+
+Combine the three modules into one funnel. Ingest a lead by webhook, enrich only the empty fields, score it into an A/B/C band, and let the band decide the next action. When a B-band record routes to nurture and an A-band record routes to a rep with a first-touch task, you have built the front of a modern funnel — and you have spent credits only on the leads that earned them.
+
+The third module is where the bands become routing, so build it last and test the A path on a real record. Start the combined build from [Score leads into explainable bands](/guides/capture-and-qualify/signal-scoring).
+
+## Where this goes next
+
+Once leads arrive qualified, [Track 2 — Route and sequence](/learn/route-and-sequence) gets the right rep on the right account and keeps enroll and exit hygiene clean. The band this track produces becomes the input that routing reads.
+
+*Source: [Workflows — Attio Help Center](https://attio.com/help/workflows). Last reviewed against the Attio Help Center, June 2026.*
+
+## See also
+
+- [Score leads into explainable bands](/guides/capture-and-qualify/signal-scoring)
+- [Track 2 — Route and sequence](/learn/route-and-sequence)
+- [Conditions & filters](/explanation/conditions-and-filters)
+- [Credits & pricing explained](/reference/credits-and-pricing)

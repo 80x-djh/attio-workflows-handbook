@@ -1,0 +1,87 @@
+---
+title: Adjust time
+description: The Adjust time block (Calculations) shifts a timestamp forward or backward by a configured offset and unit.
+icon: clock
+---
+
+The **Adjust time** block (Calculations) shifts a timestamp forward or backward by a configured offset and unit. Use it to derive a relative date, such as a follow-up due seven days after a deal moves stage, without writing a formula. The offset is signed: a positive value moves the timestamp into the future, and a negative value moves it into the past.
+
+| | |
+| --- | --- |
+| **Category** | Calculations |
+| **Credit cost** | Free — calculation blocks consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| `timestamp` | Timestamp | Yes | None | The base time to shift. Accepts a fixed timestamp or a variable from an earlier step. |
+| `offset` | Number | Yes | None | The amount to shift by. A positive value moves the timestamp forward; a negative value moves it backward. |
+| `unit` | Enum | Yes | None | The granularity of the offset: seconds, minutes, hours, days, weeks, months, or years. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| `adjusted_timestamp` | Timestamp | `2026-06-18T09:00:00Z` | The base timestamp after the offset and unit are applied. |
+
+Reference the result in a later block as `{{ steps.adjust_time.adjusted_timestamp }}`.
+
+## Behavior
+
+The block evaluates synchronously and returns a single timestamp; it does not pause the run the way [Delay](/reference/delays/delay) does. Adjusting a timestamp is arithmetic on the date value, so the run continues to the next block.
+
+The `unit` you pick decides how the offset is measured. Fixed units (seconds, minutes, hours, days, and weeks) add a constant duration. Calendar units (months and years) move by the calendar, which is the reason these two units appear here but not on [Delay](/reference/delays/delay).
+
+Source the `timestamp` input from a field that is always set. If the input resolves to an empty value, the block has no base time to shift, so map it from a trigger field that is always present or guard the block with an [If](/reference/conditions/if) check first.
+
+## Gotchas
+
+- **Wrong unit list copied from Delay.** Adjust time offers seconds, minutes, hours, days, weeks, months, and years, but [Delay](/reference/delays/delay) and [Delay until](/reference/delays/delay-until) stop at weeks. A flow that adjusts by months and then expects an equivalent Delay will not find a months option. Compute the target time with Adjust time, then pass the result to [Delay until](/reference/delays/delay-until).
+- **Negative versus positive sign reversed.** A positive offset moves the timestamp forward and a negative offset moves it backward. Setting `offset` to `-7` when you meant a task due in a week schedules it a week in the past. Confirm the sign against the result preview before publishing.
+- **Empty timestamp input has nothing to shift.** Adjust time has no base time to work from when the `timestamp` input resolves to an empty value, such as a deal whose date attribute was never filled in. Source the input from a field that is always set, or branch on an [If](/reference/conditions/if) block that checks the value first.
+
+## Examples
+
+### Setting a follow-up task seven days out
+
+A deal moves to the In progress stage and a sales rep needs a follow-up task due one week later. Adjust time shifts the current time forward by seven days so the [Create task](/reference/tasks/create-task) block can set the due date.
+
+| Field | Value |
+| --- | --- |
+| `timestamp` | `{{ trigger.timestamp }}` |
+| `offset` | `7` |
+| `unit` | `days` |
+
+The block returns `2026-06-18T15:30:00Z` for a deal updated on `2026-06-11T15:30:00Z`, which becomes the task's due date.
+
+### Computing a 90-day renewal checkpoint
+
+A renewal watch needs the date 90 days before a contract end date. Adjust time shifts the contract end date backward to produce the checkpoint, which a later [If](/reference/conditions/if) block compares against today.
+
+```json
+{
+  "timestamp": "{{ steps.find_records.records.0.contract_end_date }}",
+  "offset": -90,
+  "unit": "days"
+}
+```
+
+For a contract ending `2026-09-30`, the block returns `2026-07-02`, the date the renewal sequence should begin.
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Formula](/reference/calculations/formula)
+- [Delay until](/reference/delays/delay-until)
+- [Variables & data passing](/explanation/variables)
+- [Daily renewal watch at 90, 60, and 30 days](/guides/pipeline-hygiene/renewal-watch)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

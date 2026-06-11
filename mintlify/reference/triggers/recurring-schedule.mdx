@@ -1,0 +1,98 @@
+---
+title: Recurring schedule
+description: The Recurring schedule trigger (scheduled) starts a workflow on a daily, weekly, monthly, or cron-based schedule in a fixed timezone.
+icon: clock
+---
+
+The **Recurring schedule** trigger (scheduled) starts a workflow on a daily, weekly, monthly, or cron-based schedule in a fixed timezone. It carries no triggering record, so scheduled workflows almost always begin by fetching their own data with [Find records](/reference/records/find-records) or [Find list entries](/reference/lists/find-list-entries). The trigger fires in the workflow's configured timezone, which is the single most common source of "it ran an hour early" surprises.
+
+| | |
+| --- | --- |
+| **Category** | Trigger (scheduled) |
+| **Credit cost** | Free — triggers consume no credits |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | All plans |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Frequency | Enum | Yes | — | Daily, weekly, monthly, or advanced cron. |
+| Timezone | Timezone | Yes | — | The zone the schedule fires in. A daily 09:00 run means 09:00 in this zone, not in each viewer's local time. |
+| Frequency settings | Mixed | Yes | — | Time of day, day of week, day of month, or a cron expression, depending on the chosen frequency. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Timestamp | Datetime | `2026-06-15T09:00:00Z` | The moment the run fired. |
+
+Reference the fire time in a later block as `{{ steps.recurring_schedule.timestamp }}` — for example, to label a daily digest with its run date.
+
+## Behavior
+
+The trigger fires on each scheduled occurrence, evaluated in the configured timezone.
+
+Because no record or list entry enters the run, the downstream variable picker exposes only the timestamp. To act on data, add a lookup block as the first step and set its limit while you build, since [Find records](/reference/records/find-records) and [Find list entries](/reference/lists/find-list-entries) return at most 100 results each.
+
+## Gotchas
+
+- **The run fires in the wrong hour.** The schedule uses the workflow's configured timezone, not the viewer's or the workspace owner's. Open the trigger and confirm the *Timezone* field matches the time you mean before you publish.
+- **A scheduled sweep silently processes only part of the pipeline.** [Find records](/reference/records/find-records) and [Find list entries](/reference/lists/find-list-entries) cap at 100 results, so a daily sweep over a larger pipeline misses everything past the cap. Narrow the filter so each run's working set stays under 100, or split the work across more frequent runs.
+- **A looping sweep burns far more credits than expected.** A schedule that fans out across many records with [Loop](/reference/utilities/loop) multiplies every paid block inside the loop by the record count. Estimate worst-case credits — record count multiplied by the per-record paid blocks — before you publish, and keep the limit low while testing.
+
+## Examples
+
+### Sweeping stale open deals every weekday morning
+
+A weekday schedule wakes the workflow, fetches deals with no recent activity, and creates a follow-up task for each owner.
+
+| Field | Value |
+| --- | --- |
+| Frequency | Weekly |
+| Day of week | Monday–Friday |
+| Time of day | `09:00` |
+| Timezone | `America/New_York` |
+
+The workflow then runs [Find records](/reference/records/find-records) for open deals with a stale last-activity date and creates a [Create task](/reference/tasks/create-task) reminder for each owner. At 09:00 New York time each weekday, every stale deal gets a fresh follow-up task assigned to its owner.
+
+### Posting a daily pipeline digest at a fixed time
+
+A once-a-day schedule fires, the workflow aggregates the day's open pipeline, and a Slack message goes out to `#revenue`.
+
+```json
+{
+  "frequency": "daily",
+  "time_of_day": "08:30",
+  "timezone": "Europe/London"
+}
+```
+
+Downstream, the digest message stamps its run date with `{{ steps.recurring_schedule.timestamp }}`. At 08:30 London time every day, `#revenue` receives a digest headed with that morning's date.
+
+### Running a monthly data-hygiene pass with a cron expression
+
+An advanced cron schedule runs a hygiene sweep on the first of each month, outside business hours.
+
+| Field | Value |
+| --- | --- |
+| Frequency | Advanced (cron) |
+| Cron expression | `0 2 1 * *` |
+| Timezone | `UTC` |
+
+The cron expression `0 2 1 * *` fires at 02:00 on the first day of every month. On that schedule the workflow runs its monthly cleanup once, in UTC, when no one is editing records.
+
+## Source
+
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Manual run](/reference/triggers/manual-run)
+- [Webhook received](/reference/triggers/webhook-received)
+- [Choosing the right trigger](/explanation/triggers)
+- [Daily pipeline digest to Slack](/guides/pipeline-hygiene/pipeline-digest)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)

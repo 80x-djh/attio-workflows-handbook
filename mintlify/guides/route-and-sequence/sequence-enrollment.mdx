@@ -1,0 +1,182 @@
+---
+title: Enroll and auto-exit sequences
+description: Enroll a lead in a sequence the moment they qualify, then exit them the moment they reply or book, so a rep and an automated touch never collide.
+---
+
+Enroll a lead in a sequence the moment they qualify, then exit them the moment they reply or book, so a rep and an automated touch never collide. A qualified lead belongs in an outbound sequence within seconds, and they belong out of it the instant the conversation turns human. This is a paired build. Workflow A fires on [Attribute value changed](/reference/triggers/attribute-value-changed), runs a free [Filter](/reference/conditions/filter), and calls [Enroll in sequence](/reference/sequences/enroll-in-sequence). Workflow B fires on the reply or meeting-booked signal and calls [Exit from sequence](/reference/sequences/exit-from-sequence) plus [Update record](/reference/records/update-record). Build both halves, or you double-touch.
+
+| | |
+| --- | --- |
+| **Difficulty** | Intermediate |
+| **Time to build** | About 12 minutes |
+| **Trigger** | [Attribute value changed](/reference/triggers/attribute-value-changed) for both workflows |
+| **Blocks used** | [Filter](/reference/conditions/filter), [Enroll in sequence](/reference/sequences/enroll-in-sequence), [Exit from sequence](/reference/sequences/exit-from-sequence), [Update record](/reference/records/update-record) |
+| **Credit cost per run** | 2 credits per enrollment, 2 credits per exit |
+| **Plan required** | Plus or higher |
+
+## Prerequisites
+
+- An Attio plan of **Plus** or higher. Sequences are gated below Plus.
+- A connected mailbox so sequences can send. Workflow logic does not send mail on its own.
+- A **People** object with a single-select **Status** attribute that includes the value `Qualified`, an **Email** attribute, and an opt-out boolean such as **Unsubscribed**.
+- At least one published sequence and a configured sender or sender pool. This recipe uses a sequence named **EMEA outbound**.
+- A **Sequence enrolled at** date attribute and a **Sequence exit reason** text attribute on People, so each workflow can stamp state for the other to read.
+- Workflow edit access. No API keys or scopes are needed, because both workflows run inside Attio.
+
+## How it works
+
+Two workflows share one piece of state: whether a person is currently enrolled. Workflow A enrolls qualified leads who have a valid email and have not opted out. Workflow B watches for any signal that the conversation went human — a reply, a booked meeting, or a manual stage change — and exits the person before the next sequence step can send. The trigger and the [Filter](/reference/conditions/filter) are free, so you pay only when a write actually happens.
+
+Workflow A runs in this order:
+
+1. [Attribute value changed](/reference/triggers/attribute-value-changed) fires when `Status` changes.
+2. [Filter](/reference/conditions/filter) continues only if the new value is `Qualified`, email is present, and **Unsubscribed** is not true.
+3. [Enroll in sequence](/reference/sequences/enroll-in-sequence) adds the person to **EMEA outbound**.
+4. [Update record](/reference/records/update-record) stamps **Sequence enrolled at**.
+
+Workflow B runs in this order:
+
+1. [Attribute value changed](/reference/triggers/attribute-value-changed) fires when `Status` changes to `Replied`, `Meeting booked`, or `Closed`.
+2. [Filter](/reference/conditions/filter) continues only if **Sequence enrolled at** is set, which proves the person is actually enrolled.
+3. [Exit from sequence](/reference/sequences/exit-from-sequence) removes the person from **EMEA outbound**.
+4. [Update record](/reference/records/update-record) stamps **Sequence exit reason**.
+
+## Build steps
+
+<Steps>
+  <Step title="Add the enrollment trigger (Workflow A)">
+    Create a workflow named **Enroll on qualify**. Add the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger and point it at the People **Status** attribute.
+
+    | Field | Value |
+    | --- | --- |
+    | Object | People |
+    | Attribute | Status |
+    | Trigger on | Any change |
+  </Step>
+
+  <Step title="Gate enrollment with a free filter">
+    Add a [Filter](/reference/conditions/filter) block. This is where you stop unqualified, unreachable, and opted-out records before they cost a credit.
+
+    | Field | Value |
+    | --- | --- |
+    | Condition 1 | `Status` is `Qualified` |
+    | Condition 2 | `Email` is not empty |
+    | Condition 3 | `Unsubscribed` is not true |
+    | Match | All conditions |
+  </Step>
+
+  <Step title="Enroll the person">
+    Add the [Enroll in sequence](/reference/sequences/enroll-in-sequence) block. The recipient must be a **person** record. If the trigger object were a deal, you would map through the relationship attribute that points to the person.
+
+    | Field | Value |
+    | --- | --- |
+    | Sequence | EMEA outbound |
+    | Recipient | `{{trigger.record}}` (Priya Sharma, priya@acme.com) |
+    | Sender | Record owner, falling back to a fixed sender |
+  </Step>
+
+  <Step title="Stamp the enrollment time">
+    Add an [Update record](/reference/records/update-record) block so Workflow B can tell who is actually enrolled.
+
+    | Field | Value |
+    | --- | --- |
+    | Record | `{{trigger.record}}` |
+    | Attribute | `Sequence enrolled at` |
+    | Value | `{{run.started_at}}` |
+  </Step>
+
+  <Step title="Add the exit trigger (Workflow B)">
+    Create a second workflow named **Exit on reply or booking**. Add the [Attribute value changed](/reference/triggers/attribute-value-changed) trigger on the same **Status** attribute. This is the half people skip, and without it a lead who replies keeps getting sequence steps.
+
+    | Field | Value |
+    | --- | --- |
+    | Object | People |
+    | Attribute | Status |
+    | Trigger on | Changed to `Replied`, `Meeting booked`, or `Closed` |
+  </Step>
+
+  <Step title="Filter to enrolled records only">
+    Add a [Filter](/reference/conditions/filter) so you only attempt an exit for people who are actually in the sequence.
+
+    | Field | Value |
+    | --- | --- |
+    | Condition | `Sequence enrolled at` is not empty |
+    | Match | All conditions |
+  </Step>
+
+  <Step title="Exit and stamp the reason">
+    Add the [Exit from sequence](/reference/sequences/exit-from-sequence) block, then an [Update record](/reference/records/update-record) block to record why the person left.
+
+    | Field | Value |
+    | --- | --- |
+    | Sequence | EMEA outbound |
+    | Recipient | `{{trigger.record}}` |
+    | Update attribute | `Sequence exit reason` |
+    | Update value | `{{trigger.attribute.new_value}}` (for example, `Replied`) |
+  </Step>
+</Steps>
+
+## Variable mapping
+
+| Variable | Source block | Field | Example value |
+| --- | --- | --- | --- |
+| `{{trigger.record}}` | Attribute value changed | Triggering record | Priya Sharma (priya@acme.com) |
+| `{{trigger.attribute.new_value}}` | Attribute value changed | New status value | `Qualified` |
+| `{{trigger.attribute.old_value}}` | Attribute value changed | Previous status value | `Working` |
+| `{{run.started_at}}` | Run context | Workflow start timestamp | `2026-06-11T09:14:00Z` |
+| `{{enroll.status}}` | Enroll in sequence | Enrollment result | `enrolled` |
+
+## Credit cost worked example
+
+The trigger and every [Filter](/reference/conditions/filter) are free, so you pay only for the writes.
+
+Workflow A costs 2 credits per qualifying lead: 1 credit for [Enroll in sequence](/reference/sequences/enroll-in-sequence) and 1 credit for the [Update record](/reference/records/update-record) stamp. Workflow B costs 2 credits per lead who replies or books: 1 credit for [Exit from sequence](/reference/sequences/exit-from-sequence) and 1 credit for the stamp.
+
+At a realistic 400 newly qualified leads a month, where 35% reply or book (140 exits):
+
+- Enrollments: 400 × 2 = 800 credits.
+- Exits: 140 × 2 = 280 credits.
+- Monthly total: **1,080 credits**.
+
+Leads filtered out for the wrong status, a missing email, or an opt-out cost nothing, because a [Filter](/reference/conditions/filter) that stops a run is free. To compare this total against your plan's monthly allowance, see [Credits & pricing explained](/reference/credits-and-pricing); allowances are documented only there.
+
+## Test plan
+
+1. In your own workspace, open a test person — Priya Sharma, priya@acme.com — and confirm `Status` is `Working` and **Sequence enrolled at** is empty.
+2. Change `Status` to `Qualified`. Workflow A fires. In run history, expect the [Filter](/reference/conditions/filter) to pass, [Enroll in sequence](/reference/sequences/enroll-in-sequence) to return `enrolled`, and [Update record](/reference/records/update-record) to write a timestamp to **Sequence enrolled at**.
+3. Open run history under the **Runs** tab of Workflow A and confirm two writes are logged, the enrollment and the stamp, with no errors.
+4. Exercise the exit path. Change the same person's `Status` to `Replied`. Workflow B fires, the [Filter](/reference/conditions/filter) passes because **Sequence enrolled at** is set, [Exit from sequence](/reference/sequences/exit-from-sequence) removes them, and **Sequence exit reason** reads `Replied`.
+5. Confirm in the sequence's own enrollment view that Priya is no longer active. This is the proof that you will not double-touch.
+6. Run the deliberately failing input. Set a second test person to `Qualified` but leave `Email` empty. Workflow A fires, the [Filter](/reference/conditions/filter) stops the run, and run history shows zero writes and zero credits consumed. If you instead see an enrollment error, your filter is mis-ordered.
+
+## Failure modes
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Lead enrolled but keeps getting steps after replying | Workflow B was never built, or its trigger does not cover the reply status | Build the paired exit, and add every "conversation went human" status to the exit trigger. |
+| Enroll step errors with an invalid-recipient message | The recipient is a company, list entry, or raw email string, not a person record | Map the recipient through the relationship attribute that resolves to a person. |
+| Exit runs but the person stays in the sequence view | The exit targeted a different sequence than the one they were enrolled in | Pin both workflows to the same sequence, here **EMEA outbound**. |
+| Re-qualified leads enroll twice | `Status` cycles back to `Qualified` after an exit and Workflow A fires again | Add a filter condition that **Sequence enrolled at** is empty before re-enrolling. |
+| Opted-out contacts still enrolled | The suppression field is not in the filter, or consent is computed elsewhere | Keep opt-out, region, and role in the data model and filter on them before [Enroll in sequence](/reference/sequences/enroll-in-sequence). |
+
+## Variations
+
+### Exit on a meeting booked in your calendar tool
+
+If meetings come from an external scheduler, do not wait for a status edit. Swap Workflow B's trigger for [Webhook received](/reference/triggers/webhook-received) fed by the calendar tool, then keep the same [Filter](/reference/conditions/filter), [Exit from sequence](/reference/sequences/exit-from-sequence), and [Update record](/reference/records/update-record) chain. Only the trigger changes.
+
+### Pause instead of exit
+
+If you want to resume the sequence later, for example after a no-show, do not exit. Set a **Sequence paused** boolean with [Update record](/reference/records/update-record) and let your sequence's own send conditions skip paused people, then clear the flag to resume. Exit is permanent for that enrollment, while pausing is recoverable and keeps the credit cost identical, since either path is one write.
+
+## See also
+
+- [Round-robin lead routing](/guides/route-and-sequence/round-robin-routing)
+- [Conditions & filters](/explanation/conditions-and-filters)
+- [Enroll in sequence](/reference/sequences/enroll-in-sequence)
+- [Exit from sequence](/reference/sequences/exit-from-sequence)
+- [Sequences in Attio](https://attio.com/help/apps/sequences)
+
+---
+
+_Source: [Sequences in Attio](https://attio.com/help/apps/sequences) (Attio Help Center). Last reviewed against the Attio Help Center, June 2026._

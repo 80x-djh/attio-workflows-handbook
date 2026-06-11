@@ -1,0 +1,92 @@
+---
+title: Enroll in sequence
+description: The Enroll in sequence block (Sequence step) adds a person record as a recipient in an Attio email sequence.
+icon: mail-plus
+---
+
+The **Enroll in sequence** block (Sequence step) adds a person record as a recipient in an Attio email sequence. The sender must have delegated sending enabled for that sequence, so confirm the sender setup before you rely on this block in production. Always gate enrollment behind a consent and suppression check, because the block sends real outbound email.
+
+| | |
+| --- | --- |
+| **Category** | Sequence step |
+| **Credit cost** | 1 credit |
+| **Engine** | New Workflows engine (June 2026+) |
+| **Plan availability** | Plans that include email sequences |
+| **Limits** | None documented. |
+
+## Inputs
+
+| Input | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| Sequence | Reference | Yes | None | The email sequence to enroll the recipient into. |
+| Recipient | Record | Yes | None | Must be a person record. A company or other object record is not accepted. |
+| Sender | Workspace member | Yes | None | The member whose mailbox sends the sequence emails. The sender needs delegated sending enabled for this sequence. |
+
+## Outputs
+
+| Output | Type | Example | Notes |
+| --- | --- | --- | --- |
+| Enrolled successfully | Boolean | `true` | `true` when enrollment succeeds. The run does not fail when the recipient is already enrolled. |
+
+Reference the result downstream as `{{ steps.enroll_in_sequence.enrolled_successfully }}`.
+
+## Behavior
+
+The block takes one person record and enrolls it into the chosen sequence using the chosen sender's mailbox. It produces a single boolean that reports whether enrollment succeeded.
+
+Enrollment is idempotent for an already-enrolled person. When the recipient is already in the sequence, the block does not enroll a duplicate and the run does not fail, so a re-trigger does not produce a second cadence of emails.
+
+The block acts on one recipient per run. To enroll a set of people, iterate over them with the [Loop](/reference/utilities/loop) block and place **Enroll in sequence** inside the loop body, so each person enrolls in its own iteration.
+
+## Gotchas
+
+- **Recipient must be a person record.** Passing a company record, a list entry, or any non-person object stops the block. Resolve to the person record first, then wire that record into the **Recipient** input.
+- **Sender lacks delegated sending.** When the chosen sender has not enabled delegated sending for the sequence, enrollment cannot send on their behalf and the block fails. Enable delegated sending in the sequence's sender settings, or select a sender who already has it.
+- **No consent filter precedes the block.** Without a gate, you can email people who opted out or who sit on a suppression list. Add a [Filter](/reference/conditions/filter) block that checks consent and suppression before enrollment, and only continue the path for recipients who pass.
+- **Re-triggering a duplicate is not an error.** When a person is already enrolled, the block does not add a second enrollment and the run still does not fail. Do not treat a re-trigger as a failure path, because no error is raised for an already-enrolled recipient.
+
+## Examples
+
+### Enrolling a qualified lead after consent
+
+Enroll a person into a nurture sequence once their lead status reaches `Ready for outbound`, and only after a consent and suppression check passes.
+
+| Field | Value |
+| --- | --- |
+| Sequence | `Outbound nurture` |
+| Recipient | `{{ trigger.record }}` (Priya Sharma) |
+| Sender | `jane@acme.com` |
+
+Priya Sharma is added to the `Outbound nurture` sequence from Jane's mailbox, and `enrolled_successfully` returns `true`.
+
+### Enrolling a list of people with a loop
+
+Enroll every person returned by an earlier lookup by wrapping the block in a [Loop](/reference/utilities/loop), one enrollment per iteration.
+
+```json
+{
+  "sequence": "Re-engagement Q3",
+  "recipient": "{{ steps.loop.current_item }}",
+  "sender": "jane@acme.com"
+}
+```
+
+Each person in the loop is enrolled into `Re-engagement Q3` from Jane's mailbox, and any person already enrolled is skipped without failing the run.
+
+## Credit cost worked example
+
+Each successful enrollment costs 1 credit. A team that enrolls 400 new leads a month into a nurture sequence spends about 400 credits on this block, plus the credits for any paid write or external-call blocks earlier in the same path. Logic blocks such as [Filter](/reference/conditions/filter) and [Loop](/reference/utilities/loop) are free, so the consent gate and the iteration add nothing. Compare the running monthly total against your plan's allowance on [Credits & pricing explained](/reference/credits-and-pricing).
+
+## Source
+
+[Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library).
+
+Last reviewed against the Attio Help Center, June 2026.
+
+## See also
+
+- [Exit from sequence](/reference/sequences/exit-from-sequence)
+- [Filter](/reference/conditions/filter)
+- [Loop](/reference/utilities/loop)
+- [Enroll and auto-exit sequences](/guides/route-and-sequence/sequence-enrollment)
+- [Attio Workflows block library](https://attio.com/help/reference/automations/workflows/workflows-block-library)
